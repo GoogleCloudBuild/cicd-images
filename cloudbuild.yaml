@@ -42,3 +42,6 @@ steps:
 images:
   # Base Images
   - ${_IMAGE_REGISTRY}/gcb-base:${_IMAGE_TAG}
+  # Tool Images
+  - ${_IMAGE_REGISTRY}/docker/dind:${_IMAGE_TAG}
+  - ${_IMAGE_REGISTRY}/docker/cli:${_IMAGE_TAG}
