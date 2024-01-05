@@ -21,6 +21,7 @@ group "tool-images" {
       "docker-dind",
       "gcloud",
       "git",
+      "syft",
     ]
 }
 
@@ -60,6 +61,22 @@ target "git" {
     tags = ["${REGISTRY}/git:${TAG}"]
 }
 
+target "syft" {
+    dockerfile = "Dockerfile"
+    context = "syft"
+    contexts = {
+      go-base = "target:go-base"
+      base = "target:base"
+    }
+    tags = ["${REGISTRY}/syft:${TAG}"]
+}
+
+group "toolchain-images" {
+    targets = [
+      "go",
+    ]
+}
+
 target "go-base" {
   dockerfile = "Dockerfile.base"
   context = "go"
@@ -67,12 +84,6 @@ target "go-base" {
     base = "target:base"
   }
   output = ["type=cacheonly"]
-}
-
-group "toolchain-images" {
-    targets = [
-      "go",
-    ]
 }
 
 target "go" {
