@@ -19,7 +19,7 @@
 FROM base as builder
 
 USER root
-ENV PATH /usr/lib/go-1.21/bin:/root/go/bin:$PATH
+ENV PATH /opt/go-1.21/bin:/root/go/bin:$PATH
 
 WORKDIR /usr/local/go_tools
 COPY tools/go.mod tools/go.sum ./

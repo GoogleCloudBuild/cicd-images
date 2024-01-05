@@ -15,13 +15,19 @@
 # limitations under the License.
 #
 
+FROM google-go.pkg.dev/golang:1.21.5 as go-1.21
+FROM google-go.pkg.dev/golang:1.20.12 as go-1.20
+
 # hadolint ignore=DL3006
 FROM base
 
 USER root
 
 RUN apt-get update && \
-    clean-install git golang-1.20 golang-1.21
+    clean-install git
+
+COPY --chown=nonroot --from=go-1.21 /usr/local/go/ /opt/go-1.21/
+COPY --chown=nonroot --from=go-1.20 /usr/local/go/ /opt/go-1.20/
 
 COPY --chown=nonroot entrypoint.sh /usr/local/bin/
 
