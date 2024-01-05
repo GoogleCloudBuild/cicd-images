@@ -1,0 +1,40 @@
+# syntax=docker/dockerfile:1
+# 
+# Copyright 2023 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+FROM us-docker.pkg.dev/gae-runtimes/runtimes-ubuntu2204/python:3.8.18 as python-3.8
+FROM us-docker.pkg.dev/gae-runtimes/runtimes-ubuntu2204/python:3.12.0 as python-3.12
+
+# hadolint ignore=DL3006
+FROM base
+
+USER root
+# Ubuntu 22 Python version is 3.10
+# TODO(kmonty): Revert back to serverless versions for consistency
+# Though we maybe want to keep the system version even still
+# (e.g to install pipx requires python3)
+RUN apt-get update && \
+    clean-install python3 python3-pip python3-wheel python3-setuptools
+
+COPY --chown=nonroot --from=python-3.8 / /opt/python3.8
+COPY --chown=nonroot --from=python-3.12 / /opt/python3.12
+
+COPY --chown=nonroot entrypoint.sh /usr/local/bin/
+
+ENV GOOGLE_PYTHON_VERSION="3.12"
+USER nonroot
+ENTRYPOINT [ "entrypoint.sh" ]
+CMD [ "python3" ]

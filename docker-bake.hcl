@@ -75,6 +75,7 @@ group "toolchain-images" {
     targets = [
       "go",
       "nodejs",
+      "python",
     ]
 }
 
@@ -113,5 +114,24 @@ target "nodejs" {
     base = "target:nodejs-base"
   }
   tags = ["${REGISTRY}/nodejs:${TAG}"]
+}
+
+target "python-base" {
+  dockerfile = "Dockerfile.base"
+  context = "python"
+  contexts = {
+    base = "target:base"
+  } 
+  output = ["type=cacheonly"]
+}
+
+target "python" {
+  dockerfile = "Dockerfile"
+  context = "python"
+  contexts = {
+    go-base = "target:go-base"
+    base = "target:python-base"
+  }
+  tags = ["${REGISTRY}/python:${TAG}"]
 }
 
