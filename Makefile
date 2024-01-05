@@ -1,6 +1,6 @@
 REGISTRY ?= us-docker.pkg.dev/gcb-catalog-release/catalog
 TAG ?= ubuntu22
-SUBDIRS = base docker gcloud git go syft
+SUBDIRS = base docker gcloud git go nodejs syft
 
 build:
 	docker buildx bake

@@ -74,6 +74,7 @@ target "syft" {
 group "toolchain-images" {
     targets = [
       "go",
+      "nodejs",
     ]
 }
 
@@ -93,5 +94,24 @@ target "go" {
     base = "target:go-base"
   }
   tags = ["${REGISTRY}/go:${TAG}"]
+}
+
+target "nodejs-base" {
+  dockerfile = "Dockerfile.base"
+  context = "nodejs"
+  contexts = {
+    base = "target:base"
+  }
+  output = ["type=cacheonly"]
+}
+
+target "nodejs" {
+  dockerfile = "Dockerfile"
+  context = "nodejs"
+  contexts = {
+    go-base = "target:go-base"
+    base = "target:nodejs-base"
+  }
+  tags = ["${REGISTRY}/nodejs:${TAG}"]
 }
 

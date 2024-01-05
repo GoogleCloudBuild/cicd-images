@@ -50,3 +50,4 @@ images:
   - ${_IMAGE_REGISTRY}/syft:${_IMAGE_TAG}
   # Toolchain Images
   - ${_IMAGE_REGISTRY}/go:${_IMAGE_TAG}
+  - ${_IMAGE_REGISTRY}/nodejs:${_IMAGE_TAG}
