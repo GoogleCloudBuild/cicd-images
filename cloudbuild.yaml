@@ -47,3 +47,5 @@ images:
   - ${_IMAGE_REGISTRY}/docker/cli:${_IMAGE_TAG}
   - ${_IMAGE_REGISTRY}/gcloud:${_IMAGE_TAG}
   - ${_IMAGE_REGISTRY}/git:${_IMAGE_TAG}
+  # Toolchain Images
+  - ${_IMAGE_REGISTRY}/go:${_IMAGE_TAG}

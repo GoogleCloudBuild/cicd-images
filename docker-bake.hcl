@@ -6,7 +6,7 @@ variable "TAG" {
 }
 
 group "default" {
-  targets = ["base", "tool-images"]
+  targets = ["base", "tool-images", "toolchain-images"]
 }
 
 target "base" {
@@ -58,5 +58,29 @@ target "git" {
       base = "target:base"
     }
     tags = ["${REGISTRY}/git:${TAG}"]
+}
+
+target "go-base" {
+  dockerfile = "Dockerfile.base"
+  context = "go"
+  contexts = {
+    base = "target:base"
+  }
+  output = ["type=cacheonly"]
+}
+
+group "toolchain-images" {
+    targets = [
+      "go",
+    ]
+}
+
+target "go" {
+  dockerfile = "Dockerfile"
+  context = "go"
+  contexts = {
+    base = "target:go-base"
+  }
+  tags = ["${REGISTRY}/go:${TAG}"]
 }
 
