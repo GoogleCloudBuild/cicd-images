@@ -45,3 +45,4 @@ images:
   # Tool Images
   - ${_IMAGE_REGISTRY}/docker/dind:${_IMAGE_TAG}
   - ${_IMAGE_REGISTRY}/docker/cli:${_IMAGE_TAG}
+  - ${_IMAGE_REGISTRY}/gcloud:${_IMAGE_TAG}
