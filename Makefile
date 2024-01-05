@@ -1,6 +1,6 @@
 REGISTRY ?= us-docker.pkg.dev/gcb-catalog-release/catalog
 TAG ?= ubuntu22
-SUBDIRS = base
+SUBDIRS = base docker gcloud git
 
 build:
 	docker buildx bake

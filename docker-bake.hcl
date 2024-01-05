@@ -19,7 +19,8 @@ group "tool-images" {
     targets = [
       "docker-cli",
       "docker-dind",
-      "gcloud"
+      "gcloud",
+      "git",
     ]
 }
 
@@ -48,5 +49,14 @@ target "gcloud" {
       base = "target:base"
     }
     tags = ["${REGISTRY}/gcloud:${TAG}"]
+}
+
+target "git" {
+    dockerfile = "Dockerfile"
+    context = "git"
+    contexts = {
+      base = "target:base"
+    }
+    tags = ["${REGISTRY}/git:${TAG}"]
 }
 
