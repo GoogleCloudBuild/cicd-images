@@ -1,0 +1,73 @@
+# Copyright 2022 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# Container structure test to validate the openjdk image.
+schemaVersion: "2.0.0"
+
+commandTests:
+  - name: openjdk 11 installed
+    envVars:
+      - key: GOOGLE_RUNTIME_VERSION
+        value: "11"
+    command: "entrypoint.sh"
+    args: ["java", "--version"]
+    expectedOutput:
+      - "openjdk 11.0.20"
+  - name: openjdk 17 installed
+    envVars:
+      - key: GOOGLE_RUNTIME_VERSION
+        value: "17"
+    command: "entrypoint.sh"
+    args: ["java", "--version"]
+    expectedOutput:
+      - "openjdk 17.0.9"
+  - name: openjdk 21 installed
+    envVars:
+      - key: GOOGLE_RUNTIME_VERSION
+        value: "21"
+    command: "entrypoint.sh"
+    args: ["java", "--version"]
+    expectedOutput:
+      - "openjdk 21.0.1"
+  - name: openjdk 8 not installed
+    envVars:
+      - key: GOOGLE_RUNTIME_VERSION
+        value: "8"
+    command: "entrypoint.sh"
+    args: ["java", "--version"]
+    expectedError:
+      - "openjdk version 8 not installed"
+    exitCode: 1
+  - name: maven installed
+    command: "entrypoint.sh"
+    args: ["mvn", "--version"]
+    expectedOutput:
+      - "Apache Maven 3.9.6"
+  - name: gradle installed
+    command: "entrypoint.sh"
+    args: ["gradle", "--version"]
+    expectedOutput:
+      - "Gradle 8.5"
+
+metadataTest:
+  envVars:
+    - key: GOOGLE_RUNTIME_VERSION
+      value: 21
+    - key: MAVEN_VERSION
+      value: 3.9.6
+    - key: GRADLE_VERSION
+      value: 8.5
+  user: nonroot
+  entrypoint: ["entrypoint.sh"]
+  cmd: ["java"]

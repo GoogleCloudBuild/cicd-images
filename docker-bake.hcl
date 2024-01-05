@@ -76,6 +76,7 @@ group "toolchain-images" {
       "go",
       "nodejs",
       "python",
+      "openjdk",
     ]
 }
 
@@ -114,6 +115,24 @@ target "nodejs" {
     base = "target:nodejs-base"
   }
   tags = ["${REGISTRY}/nodejs:${TAG}"]
+}
+
+target "openjdk-base" {
+  dockerfile = "Dockerfile.base"
+  context = "openjdk"
+  contexts = {
+    base = "target:base"
+  }
+  output = ["type=cacheonly"]
+}
+
+target "openjdk" {
+  dockerfile-inline = "# syntax=docker/dockerfile:1\n FROM base"
+  context = "openjdk"
+  contexts = {
+    base = "target:openjdk-base"
+  }
+  tags = ["${REGISTRY}/openjdk:${TAG}"]
 }
 
 target "python-base" {
