@@ -127,9 +127,10 @@ target "openjdk-base" {
 }
 
 target "openjdk" {
-  dockerfile-inline = "# syntax=docker/dockerfile:1\n FROM base"
+  dockerfile = "Dockerfile"
   context = "openjdk"
   contexts = {
+    go-base = "target:go-base"
     base = "target:openjdk-base"
   }
   tags = ["${REGISTRY}/openjdk:${TAG}"]

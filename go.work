@@ -1,0 +1,8 @@
+go 1.22
+
+use (
+	./go
+	./nodejs/steps
+	./openjdk/steps
+	./python/steps
+)
