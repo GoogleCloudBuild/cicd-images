@@ -8,4 +8,4 @@ build:
 test:
 	container-structure-test test --image ${REGISTRY}/openjdk:${TAG} --config test_config.yaml
 
-.PHONY: build test $(SUBDIRS)
+.PHONY: build test

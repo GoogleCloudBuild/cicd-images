@@ -24,8 +24,19 @@ options:
   dynamic_substitutions: true
 
 steps:
-  - id: build-images
+  - id: build
     name: gcr.io/cloud-builders/docker
+    env:
+      - "REGISTRY=${_IMAGE_REGISTRY}"
+    script: |
+      #!/usr/bin/env bash
+
+      make build
+
+  - id: test
+    name: gcr.io/cloud-builders/docker
+    waitFor:
+      - build
     env:
       - "REGISTRY=${_IMAGE_REGISTRY}"
     script: |
@@ -35,8 +46,27 @@ steps:
         chmod +x container-structure-test-linux-amd64 && \
         mv container-structure-test-linux-amd64 /usr/local/bin/container-structure-test
 
-      make build
       make test
+
+  - id: scan
+    name: us-docker.pkg.dev/scaevola-builder-integration/release/scanvola/scanvola:latest
+    waitFor:
+      - build
+    args:
+      - "--on_demand"
+      # Base Images
+      - "--image=${_IMAGE_REGISTRY}/gcb-base:${_IMAGE_TAG}"
+      # Tool Images
+      - "--image=${_IMAGE_REGISTRY}/docker/dind:${_IMAGE_TAG}"
+      - "--image=${_IMAGE_REGISTRY}/docker/cli:${_IMAGE_TAG}"
+      - "--image=${_IMAGE_REGISTRY}/gcloud:${_IMAGE_TAG}"
+      - "--image=${_IMAGE_REGISTRY}/git:${_IMAGE_TAG}"
+      - "--image=${_IMAGE_REGISTRY}/syft:${_IMAGE_TAG}"
+      # Toolchain Images
+      - "--image=${_IMAGE_REGISTRY}/go:${_IMAGE_TAG}"
+      - "--image=${_IMAGE_REGISTRY}/nodejs:${_IMAGE_TAG}"
+      - "--image=${_IMAGE_REGISTRY}/python:${_IMAGE_TAG}"
+      - "--image=${_IMAGE_REGISTRY}/openjdk:${_IMAGE_TAG}"
 
 # Push the images.
 images:
