@@ -24,6 +24,7 @@ commandTests:
     args: ["java", "--version"]
     expectedOutput:
       - "openjdk 11.0.20"
+
   - name: openjdk 17 installed
     envVars:
       - key: GOOGLE_RUNTIME_VERSION
@@ -32,14 +33,13 @@ commandTests:
     args: ["java", "--version"]
     expectedOutput:
       - "openjdk 17.0.9"
-  - name: openjdk 21 installed
-    envVars:
-      - key: GOOGLE_RUNTIME_VERSION
-        value: "21"
-    command: "entrypoint.sh"
-    args: ["java", "--version"]
+
+  - name: openjdk 21 (default) installed
+    command: "java"
+    args: ["--version"]
     expectedOutput:
       - "openjdk 21.0.1"
+
   - name: openjdk 8 not installed
     envVars:
       - key: GOOGLE_RUNTIME_VERSION
@@ -49,14 +49,16 @@ commandTests:
     expectedError:
       - "openjdk version 8 not installed"
     exitCode: 1
+
   - name: maven installed
-    command: "entrypoint.sh"
-    args: ["mvn", "--version"]
+    command: "mvn"
+    args: ["--version"]
     expectedOutput:
       - "Apache Maven 3.9.6"
+
   - name: gradle installed
-    command: "entrypoint.sh"
-    args: ["gradle", "--version"]
+    command: "gradle"
+    args: ["--version"]
     expectedOutput:
       - "Gradle 8.5"
 

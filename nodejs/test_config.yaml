@@ -24,14 +24,13 @@ commandTests:
     args: ["node", "--version"]
     expectedOutput:
       - "v18.19.0"
-  - name: node 20 installed
-    envVars:
-      - key: GOOGLE_NODEJS_VERSION
-        value: "20"
-    command: "entrypoint.sh"
-    args: ["node", "--version"]
+
+  - name: node 20 (default) installed
+    command: "node"
+    args: ["--version"]
     expectedOutput:
       - "v20.10.0"
+
   - name: node 19 not installed
     envVars:
       - key: GOOGLE_NODEJS_VERSION

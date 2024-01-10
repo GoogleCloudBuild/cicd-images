@@ -19,9 +19,9 @@
 FROM go-base as builder
 
 USER root
-ENV PATH /opt/go-1.21/bin:/root/go/bin:$PATH
 
 WORKDIR /usr/local/go_tools
+ENV GOPATH=/usr/local
 COPY tools/go.mod tools/go.sum ./
 RUN go install github.com/google/go-licenses && \
     go install github.com/anchore/syft/cmd/syft && \
@@ -41,12 +41,12 @@ FROM base
 ARG USER=nonroot
 
 COPY --from=builder --chown=$USER:$USER \
-    /root/go/bin/syft /usr/local/bin/syft
+    /usr/local/bin/syft /usr/local/bin/syft
 COPY --from=builder --chown=$USER:$USER \
     /THIRD_PARTY_NOTICES/syft /THIRD_PARTY_NOTICES/syft
 
 COPY --from=builder --chown=$USER:$USER \
-    /root/go/bin/docker-credential-gcr /usr/local/bin/docker-credential-gcr
+    /usr/local/bin/docker-credential-gcr /usr/local/bin/docker-credential-gcr
 COPY --from=builder --chown=$USER:$USER \
     /THIRD_PARTY_NOTICES/docker-credential-gcr /THIRD_PARTY_NOTICES/docker-credential-gcr
 

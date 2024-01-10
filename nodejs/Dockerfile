@@ -19,9 +19,9 @@
 FROM go-base as builder
 
 USER root
-ENV PATH /opt/go-1.21/bin:/root/go/bin:$PATH
 
 WORKDIR /usr/local/go_tools
+ENV GOPATH=/usr/local
 COPY tools/go.mod tools/go.sum ./
 RUN go install github.com/google/go-licenses
 

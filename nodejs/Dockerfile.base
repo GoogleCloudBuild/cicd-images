@@ -28,6 +28,9 @@ COPY --chown=nonroot --from=node-20 / /opt/node20
 COPY --chown=nonroot entrypoint.sh /usr/local/bin/
 
 ENV GOOGLE_NODEJS_VERSION="20"
+# Default to NodeJS 20, but entrypoint.sh can override the version.
+ENV PATH="/opt/node${GOOGLE_NODEJS_VERSION}/bin:$PATH"
+
 ENTRYPOINT [ "entrypoint.sh" ]
 CMD [ "node" ]
 USER nonroot

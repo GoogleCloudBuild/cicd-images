@@ -48,53 +48,40 @@ commandTests:
     command: "entrypoint.sh"
     args: ["python3", "--version"]
     expectedOutput:
-      - "Python 3.10.12"
-  - name: pip 22.0.2 installed (for python 3.10)
+      - "Python 3.10.13"
+  - name: pip 23.2.1 installed (for python 3.10)
     envVars:
       - key: GOOGLE_PYTHON_VERSION
         value: "3.10"
     command: "entrypoint.sh"
     args: ["pip", "--version"]
     expectedOutput:
-      - "pip 22.0.2"
-  - name: wheel 0.37.1 installed (for python 3.10)
+      - "pip 23.2.1"
+  - name: wheel 0.41.2 installed (for python 3.10)
     envVars:
       - key: GOOGLE_PYTHON_VERSION
         value: "3.10"
     command: "entrypoint.sh"
     args: ["python3", "-m", "wheel", "version"]
     expectedOutput:
-      - "wheel 0.37.1"
-
-  - name: python 3.12 installed
-    envVars:
-      - key: GOOGLE_PYTHON_VERSION
-        value: "3.12"
-    command: "entrypoint.sh"
-    args: ["python3", "--version"]
-    expectedOutput:
-      - "Python 3.12.0"
-  - name: pip3 23.2.1 installed (for python 3.12)
-    envVars:
-      - key: GOOGLE_PYTHON_VERSION
-        value: "3.12"
-    command: "entrypoint.sh"
-    args: ["pip3", "--version"]
-    expectedOutput:
-      - "pip 23.2.1"
-  - name: wheel 0.41.2 installed (for python 3.12)
-    envVars:
-      - key: GOOGLE_PYTHON_VERSION
-        value: "3.12"
-    command: "entrypoint.sh"
-    args: ["python3", "-m", "wheel", "version"]
-    expectedOutput:
       - "wheel 0.41.2"
-  - name: system python installed
+
+  - name: python 3.12 installed (default)
     command: "python3"
     args: ["--version"]
     expectedOutput:
-      - "Python 3.10.12"
+      - "Python 3.12.1"
+  - name: pip3 23.3.1 installed (for python 3.12)
+    command: "pip3"
+    args: ["--version"]
+    expectedOutput:
+      - "pip 23.3.1"
+  - name: wheel 0.42.0 installed (for python 3.12)
+    command: "python3"
+    args: ["-m", "wheel", "version"]
+    expectedOutput:
+      - "wheel 0.42.0"
+
   - name: python 3.7 not installed
     envVars:
       - key: GOOGLE_PYTHON_VERSION

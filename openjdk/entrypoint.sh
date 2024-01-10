@@ -25,7 +25,5 @@ fi
 
 export JAVA_HOME="/opt/jdk-${MAJOR_VERSION}"
 export PATH="$BIN_DIR:$PATH"
-export MAVEN_HOME="/opt/maven-${MAVEN_VERSION}"
-export PATH="${MAVEN_HOME}/bin:/opt/gradle-${GRADLE_VERSION}/bin":$PATH
 
 exec "$@"

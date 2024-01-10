@@ -16,25 +16,22 @@
 #
 
 FROM us-docker.pkg.dev/gae-runtimes/runtimes-ubuntu2204/python:3.8.18 as python-3.8
-FROM us-docker.pkg.dev/gae-runtimes/runtimes-ubuntu2204/python:3.12.0 as python-3.12
+FROM us-docker.pkg.dev/gae-runtimes/runtimes-ubuntu2204/python:3.10.13 as python-3.10
+FROM us-docker.pkg.dev/gae-runtimes/runtimes-ubuntu2204/python:3.12.1 as python-3.12
 
 # hadolint ignore=DL3006
 FROM base
 
-USER root
-# Ubuntu 22 Python version is 3.10
-# TODO(kmonty): Revert back to serverless versions for consistency
-# Though we maybe want to keep the system version even still
-# (e.g to install pipx requires python3)
-RUN apt-get update && \
-    clean-install python3 python3-pip python3-wheel python3-setuptools
-
 COPY --chown=nonroot --from=python-3.8 / /opt/python3.8
+COPY --chown=nonroot --from=python-3.10 / /opt/python3.10
 COPY --chown=nonroot --from=python-3.12 / /opt/python3.12
 
 COPY --chown=nonroot entrypoint.sh /usr/local/bin/
 
 ENV GOOGLE_PYTHON_VERSION="3.12"
+# Default to Python 3.12, but entrypoint.sh can override the version.
+ENV PATH="/opt/python${GOOGLE_PYTHON_VERSION}/bin:$PATH"
+
 USER nonroot
 ENTRYPOINT [ "entrypoint.sh" ]
 CMD [ "python3" ]

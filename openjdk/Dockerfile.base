@@ -61,6 +61,11 @@ RUN set -eux && \
 
 ARG OPENJDK_VERSION_21
 ENV GOOGLE_RUNTIME_VERSION="21"
+ENV MAVEN_HOME="/opt/maven-${MAVEN_VERSION}"
+
+# Default to JDK 21, but entrypoint.sh can override the version.
+ENV JAVA_HOME="/opt/jdk-${GOOGLE_RUNTIME_VERSION}"
+ENV PATH="${MAVEN_HOME}/bin:/opt/gradle-${GRADLE_VERSION}/bin:/opt/jdk-${GOOGLE_RUNTIME_VERSION}/bin:$PATH"
 
 ENTRYPOINT [ "entrypoint.sh" ]
 CMD [ "java" ]
