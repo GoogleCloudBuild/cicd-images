@@ -13,12 +13,6 @@
 # limitations under the License.
 
 schemaVersion: 2.0.0
-commandTests:
-  - name: "which bash"
-    command: "which"
-    args: ["bash"]
-    excludedOutput: [.+]
-    exitCode: 1
 fileExistenceTests:
   - name: "nonroot home directory"
     path: "/home/nonroot"

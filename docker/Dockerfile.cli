@@ -23,7 +23,6 @@ USER root
 ARG CREDS_GCR_VERSION='2.1.19'
 # hadolint ignore=DL3008,DL4006
 RUN set -eux; \
-    apt-get update && apt-get install --no-install-recommends curl ca-certificates gnupg -y ; \
     \
     install -m 0755 -d /etc/apt/keyrings; \
     curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg ; \
@@ -82,7 +81,6 @@ RUN set -eux; \
     docker-ce-cli="5:${DOCKER_VERSION}.*" \
     docker-compose-plugin="${DOCKER_COMPOSE_VERSION}.*" \
     docker-buildx-plugin="${DOCKER_BUILDX_VERSION}.*" \
-    ca-certificates \
     ; \
     ln -s /usr/libexec/docker/cli-plugins/* /usr/local/bin ; \
     docker --version; \

@@ -30,9 +30,6 @@ COPY --chown=nonroot --from=openjdk-21 /jdk-21* /opt/jdk-21/
 
 COPY --chown=nonroot entrypoint.sh /usr/local/bin/
 
-RUN apt-get update && \
-    clean-install curl ca-certificates gnupg unzip
-
 # Install maven
 ENV MAVEN_VERSION=3.9.6
 ARG MAVEN_SHA=706f01b20dec0305a822ab614d51f32b07ee11d0218175e55450242e49d2156386483b506b3a4e8a03ac8611bae96395fd5eec15f50d3013d5deed6d1ee18224

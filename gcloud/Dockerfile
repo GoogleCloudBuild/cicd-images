@@ -21,7 +21,7 @@ FROM base
 USER root
 
 RUN apt-get update -y \
-    && clean-install apt-transport-https ca-certificates gnupg curl python3
+    && clean-install apt-transport-https python3
 
 # Install gcloud CLI and prune unnecessary files
 # hadolint ignore=DL4006

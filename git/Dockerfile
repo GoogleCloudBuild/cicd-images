@@ -23,7 +23,7 @@ USER root
 # Install Git and required packages for git tasks
 RUN apt-get update && \
     apt-get -y upgrade && \
-    clean-install git curl jq openssh-client ca-certificates
+    clean-install git jq openssh-client
 
 # Change to the USER specified by the base image to be used at runtime.
 USER $USER:$USER

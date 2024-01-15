@@ -46,7 +46,6 @@ WORKDIR /
 # Hold required packages to avoid breaking the installation of packages
 RUN apt-mark hold apt gpgv adduser passwd libsemanage-common libsemanage2 libcap2 && \
     apt-get purge -y --allow-remove-essential \
-    bash \
     e2fsprogs \
     libmount1 \
     libsmartcols1 \
@@ -56,7 +55,15 @@ RUN apt-mark hold apt gpgv adduser passwd libsemanage-common libsemanage2 libcap
     ncurses-bin \
     util-linux
 
-RUN clean-install ca-certificates
+# Install common packages needed by CICD processes.
+RUN clean-install \
+    bash \
+    ca-certificates \
+    curl \
+    wget \
+    gnupg \
+    unzip \
+    lsb-release
 
 # Cleanup cached and unnecessary files.
 # Keep copyright notices and licenses available under /usr/share/copyrights.tar.gz.
