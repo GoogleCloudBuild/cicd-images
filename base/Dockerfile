@@ -62,8 +62,7 @@ RUN clean-install \
     curl \
     wget \
     gnupg \
-    unzip \
-    lsb-release
+    unzip
 
 # Cleanup cached and unnecessary files.
 # Keep copyright notices and licenses available under /usr/share/copyrights.tar.gz.
