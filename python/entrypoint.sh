@@ -14,15 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-MINOR_VERSION=$(echo $GOOGLE_PYTHON_VERSION | cut -d. -f1-2)
-
-BIN_DIR="/opt/python${MINOR_VERSION}/bin"
-
-if [ ! -d $BIN_DIR ]; then
-    echo "python version $GOOGLE_PYTHON_VERSION not installed" 1>&2
-    exit 1
-fi
-
-export PATH="$BIN_DIR:$PATH"
+. setup_python.sh
 
 exec "$@"
