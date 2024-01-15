@@ -24,3 +24,5 @@ if [ ! -d $BIN_DIR ]; then
 fi
 
 export PATH="$BIN_DIR:$PATH"
+
+corepack enable
