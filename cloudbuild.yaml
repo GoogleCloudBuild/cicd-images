@@ -71,15 +71,25 @@ steps:
 # Push the images.
 images:
   # Base Images
+  - ${_IMAGE_REGISTRY}/gcb-base:latest
   - ${_IMAGE_REGISTRY}/gcb-base:${_IMAGE_TAG}
   # Tool Images
+  - ${_IMAGE_REGISTRY}/docker/dind:latest
   - ${_IMAGE_REGISTRY}/docker/dind:${_IMAGE_TAG}
+  - ${_IMAGE_REGISTRY}/docker/cli:latest
   - ${_IMAGE_REGISTRY}/docker/cli:${_IMAGE_TAG}
+  - ${_IMAGE_REGISTRY}/gcloud:latest
   - ${_IMAGE_REGISTRY}/gcloud:${_IMAGE_TAG}
+  - ${_IMAGE_REGISTRY}/git:latest
+  - ${_IMAGE_REGISTRY}/syft:latest
   - ${_IMAGE_REGISTRY}/git:${_IMAGE_TAG}
   - ${_IMAGE_REGISTRY}/syft:${_IMAGE_TAG}
   # Toolchain Images
+  - ${_IMAGE_REGISTRY}/go:latest
   - ${_IMAGE_REGISTRY}/go:${_IMAGE_TAG}
+  - ${_IMAGE_REGISTRY}/nodejs:latest
   - ${_IMAGE_REGISTRY}/nodejs:${_IMAGE_TAG}
+  - ${_IMAGE_REGISTRY}/python:latest
   - ${_IMAGE_REGISTRY}/python:${_IMAGE_TAG}
+  - ${_IMAGE_REGISTRY}/openjdk:latest
   - ${_IMAGE_REGISTRY}/openjdk:${_IMAGE_TAG}

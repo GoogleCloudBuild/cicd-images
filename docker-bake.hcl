@@ -12,7 +12,10 @@ group "default" {
 target "base" {
   dockerfile = "Dockerfile"
   context = "base"
-  tags = ["${REGISTRY}/gcb-base:${TAG}"]
+  tags = [
+    "${REGISTRY}/gcb-base:${TAG}",
+    "${REGISTRY}/gcb-base:latest"
+  ]
 }
 
 group "tool-images" {
@@ -31,7 +34,10 @@ target "docker-cli" {
   contexts = {
     base = "target:base"
   }
-  tags = ["${REGISTRY}/docker/cli:${TAG}"]
+  tags = [
+    "${REGISTRY}/docker/cli:${TAG}",
+    "${REGISTRY}/docker/cli:latest",
+  ]
 }
 
 target "docker-dind" {
@@ -40,7 +46,10 @@ target "docker-dind" {
   contexts = {
     base = "target:docker-cli"
   }
-  tags = ["${REGISTRY}/docker/dind:${TAG}"]
+  tags = [
+    "${REGISTRY}/docker/dind:${TAG}",
+    "${REGISTRY}/docker/dind:latest"
+  ]
 }
 
 target "gcloud" {
@@ -49,7 +58,10 @@ target "gcloud" {
     contexts = {
       base = "target:base"
     }
-    tags = ["${REGISTRY}/gcloud:${TAG}"]
+    tags = [
+      "${REGISTRY}/gcloud:${TAG}",
+      "${REGISTRY}/gcloud:latest"
+    ]
 }
 
 target "git" {
@@ -58,7 +70,10 @@ target "git" {
     contexts = {
       base = "target:base"
     }
-    tags = ["${REGISTRY}/git:${TAG}"]
+    tags = [
+      "${REGISTRY}/git:${TAG}",
+      "${REGISTRY}/git:latest",
+    ]
 }
 
 target "syft" {
@@ -68,7 +83,10 @@ target "syft" {
       go-base = "target:go-base"
       base = "target:base"
     }
-    tags = ["${REGISTRY}/syft:${TAG}"]
+    tags = [
+      "${REGISTRY}/syft:${TAG}",
+      "${REGISTRY}/syft:latest"
+    ]
 }
 
 group "toolchain-images" {
@@ -95,7 +113,10 @@ target "go" {
   contexts = {
     base = "target:go-base"
   }
-  tags = ["${REGISTRY}/go:${TAG}"]
+  tags = [
+    "${REGISTRY}/go:${TAG}",
+    "${REGISTRY}/go:latest"
+  ]
 }
 
 target "nodejs-base" {
@@ -114,7 +135,10 @@ target "nodejs" {
     go-base = "target:go-base"
     base = "target:nodejs-base"
   }
-  tags = ["${REGISTRY}/nodejs:${TAG}"]
+  tags = [
+    "${REGISTRY}/nodejs:${TAG}",
+    "${REGISTRY}/nodejs:latest"
+  ]
 }
 
 target "openjdk-base" {
@@ -133,7 +157,10 @@ target "openjdk" {
     go-base = "target:go-base"
     base = "target:openjdk-base"
   }
-  tags = ["${REGISTRY}/openjdk:${TAG}"]
+  tags = [
+    "${REGISTRY}/openjdk:${TAG}",
+    "${REGISTRY}/openjdk:latest"
+  ]
 }
 
 target "python-base" {
@@ -152,6 +179,9 @@ target "python" {
     go-base = "target:go-base"
     base = "target:python-base"
   }
-  tags = ["${REGISTRY}/python:${TAG}"]
+  tags = [
+    "${REGISTRY}/python:${TAG}",
+    "${REGISTRY}/python:latest"
+  ]
 }
 
