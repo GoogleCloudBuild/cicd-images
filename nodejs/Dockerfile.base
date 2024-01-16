@@ -31,6 +31,7 @@ COPY --chown=nonroot entrypoint.sh /usr/local/bin/
 ENV GOOGLE_NODEJS_VERSION="20"
 # Default to NodeJS 20, but setup_nodejs.sh can override the version.
 ENV PATH="/opt/node${GOOGLE_NODEJS_VERSION}/bin:$PATH"
+RUN corepack enable
 
 ENTRYPOINT [ "entrypoint.sh" ]
 CMD [ "node" ]

@@ -24,12 +24,51 @@ commandTests:
     args: ["node", "--version"]
     expectedOutput:
       - "v18.19.0"
+  - name: npm installed
+    envVars:
+      - key: GOOGLE_NODEJS_VERSION
+        value: "18"
+    command: "entrypoint.sh"
+    args: ["npm", "--version"]
+    expectedOutput:
+      - "10.2.3"
+  - name: yarn installed
+    envVars:
+      - key: GOOGLE_NODEJS_VERSION
+        value: "18"
+    command: "entrypoint.sh"
+    args: ["yarn", "--version"]
+    expectedOutput:
+      - "1.22.21"
+  - name: npx installed
+    envVars:
+      - key: GOOGLE_NODEJS_VERSION
+        value: "18"
+    command: "entrypoint.sh"
+    args: ["npx", "--version"]
+    expectedOutput:
+      - "10.2.3"
 
   - name: node 20 (default) installed
     command: "node"
     args: ["--version"]
     expectedOutput:
       - "v20.10.0"
+  - name: npm installed
+    command: "npm"
+    args: ["--version"]
+    expectedOutput:
+      - "10.2.3"
+  - name: yarn installed
+    command: "yarn"
+    args: ["--version"]
+    expectedOutput:
+      - "1.22.21"
+  - name: npx installed
+    command: "npx"
+    args: ["--version"]
+    expectedOutput:
+      - "10.2.3"
 
   - name: node 19 not installed
     envVars:
