@@ -15,8 +15,10 @@
 package cmd
 
 import (
+	"bytes"
 	"fmt"
 	"os"
+	"os/exec"
 	"regexp"
 	"strings"
 
@@ -43,6 +45,8 @@ var publishCmd = &cobra.Command{
 			return err
 		}
 
+		cmd.SilenceUsage = true
+
 		// fetch Artifact Registry Token.
 		token, err := internal.GetToken(cmd.Context())
 		if err != nil {
@@ -60,16 +64,23 @@ var publishCmd = &cobra.Command{
 
 		// Pack the node module into a tar file.
 		packCommand := append([]string{"pack"}, publishCmdArgs.packArgs...)
-		packageName, err := internal.RunCmd("npm", packCommand...)
-		packageName = strings.TrimSpace(packageName)
+		c := exec.Command("npm", packCommand...)
+		var stdout, stderr bytes.Buffer
+		c.Stdout = &stdout
+		c.Stderr = &stderr
+		packageName := strings.TrimSpace(stdout.String())
+		err = c.Run()
 		if err != nil {
 			return fmt.Errorf("error executing 'npm %s': %s", packCommand, err)
 		}
 
 		// publish the tar file.
 		publishArgs := append([]string{"publish", packageName}, publishCmdArgs.publishArgs...)
-		uri, err := internal.RunCmd("npm", publishArgs...)
-		uri = strings.TrimSpace(uri)
+		c = exec.Command("npm", publishArgs...)
+		c.Stdout = &stdout
+		c.Stderr = &stderr
+		err = c.Run()
+		uri := strings.TrimSpace(stdout.String())
 		if err != nil {
 			return fmt.Errorf("error executing 'npm %s': %s", strings.Join(publishArgs, " "), err)
 		}

@@ -14,19 +14,17 @@
 package internal
 
 import (
-	"bytes"
-	"fmt"
+	"os"
 	"os/exec"
 )
 
-func RunCmd(runtime string, command ...string) (string, error) {
+func RunCmd(runtime string, command ...string) error {
 	c := exec.Command(runtime, command...)
-	var stdout, stderr bytes.Buffer
-	c.Stdout = &stdout
-	c.Stderr = &stderr
+	c.Stdout = os.Stdout
+	c.Stderr = os.Stderr
 	err := c.Run()
 	if err != nil {
-		return "", fmt.Errorf("error while executing command: %s", stderr.String())
+		return err
 	}
-	return stdout.String(), nil
+	return nil
 }

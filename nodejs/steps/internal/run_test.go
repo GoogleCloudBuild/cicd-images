@@ -21,13 +21,11 @@ import (
 
 func TestRun(t *testing.T) {
 	t.Run("successful execution", func(t *testing.T) {
-		res, err := RunCmd("echo", "foo")
+		err := RunCmd("echo", "foo")
 		assert.NoError(t, err)
-		assert.Contains(t, res, "foo")
 	})
 	t.Run("failed execution", func(t *testing.T) {
-
-		_, err := RunCmd("non-existent-command", "[foo]")
+		err := RunCmd("non-existent-command", "[foo]")
 		assert.Error(t, err)
 	})
 }

@@ -40,9 +40,9 @@ pull Node artifacts from a GCP Artifact Registry.`,
 		}
 
 		command := nodeCmdArgs.Command
-		var runtime string
+		cmd.SilenceUsage = true
 
-		runtime = command[0]
+		runtime := command[0]
 
 		if runtime != "npm" && runtime != "npx" && runtime != "yarn" && runtime != "node" {
 			return fmt.Errorf("not a valid executing command. Expecting: (npm|npx|yarn), got: %s", runtime)
@@ -64,7 +64,7 @@ pull Node artifacts from a GCP Artifact Registry.`,
 			f, err := os.OpenFile(".npmrc", os.O_CREATE|os.O_WRONLY, 0644)
 			if err != nil {
 				// Handle error opening the file
-				return fmt.Errorf("Error creating .npmrc file: %v", err)
+				return fmt.Errorf("error creating .npmrc file: %v", err)
 			}
 
 			// Write configuration lines to the file
@@ -74,17 +74,16 @@ pull Node artifacts from a GCP Artifact Registry.`,
 			`)
 			if err != nil {
 				// Handle error writing to the file
-				return fmt.Errorf("Error writing to .npmrc file: %v", err)
+				return fmt.Errorf("error writing to .npmrc file: %v", err)
 			}
 		}
 
-		// extract arguements to execute with defined runtime.
+		// extract arguments to execute with defined runtime.
 		if subCommand := command[1:]; subCommand != nil {
-			out, err := internal.RunCmd(runtime, subCommand...)
+			err := internal.RunCmd(runtime, subCommand...)
 			if err != nil {
 				return fmt.Errorf("error executing '%s %s': %s", runtime, strings.Join(subCommand, " "), err)
 			}
-			fmt.Println(out)
 		}
 		return nil
 	},
@@ -107,7 +106,7 @@ func parseNodeArgs(f *pflag.FlagSet) (nodeArguments, error) {
 		return nodeArguments{}, fmt.Errorf("failed to get command: %v", err)
 	}
 	if len(command) < 1 {
-		return nodeArguments{}, fmt.Errorf("Invalid command. Command can not be empty.")
+		return nodeArguments{}, fmt.Errorf("invalid command. Command can not be empty")
 	}
 	return nodeArguments{
 		Command: strings.Fields(command),
