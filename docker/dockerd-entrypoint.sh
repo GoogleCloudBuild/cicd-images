@@ -33,6 +33,16 @@ if [ "$#" -eq 0 ] || [ "${1#-}" != "$1" ]; then
 fi
 
 if [ "$1" = 'dockerd' ]; then
+    # accept passed in arguments
+    if [[ -n "$DOCKERD_ARGS" ]]; then
+        set "$@" "$DOCKERD_ARGS"
+    fi
+
+    # accept passed in arguments
+    if [[ -n "$REG_MIRROR" ]]; then
+        echo  "{\"debug\":true,\"registry-mirrors\":[\"${REG_MIRROR}\"]}" > /etc/docker/daemon.json
+    fi
+
     # set "dockerSocket" to the default *unix socket*
     dockerSocket='unix:///var/run/docker.sock'
     HOSTS="--host=${dockerSocket}"
