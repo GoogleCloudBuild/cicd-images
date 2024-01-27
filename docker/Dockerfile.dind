@@ -19,8 +19,8 @@
 FROM base
 
 # set versions
-ARG DOCKER_VERSION='24.0' \
-    CONTAINERD_VERSION='1.6'
+ARG DOCKER_VERSION='24' \
+    CONTAINERD_VERSION='1'
 ENV DOCKER_VERSION=$DOCKER_VERSION
 
 # https://github.com/docker/docker/blob/master/project/PACKAGERS.md#runtime-dependencies

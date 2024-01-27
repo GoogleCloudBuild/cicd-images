@@ -20,7 +20,7 @@
 FROM base as downloader
 # hadolint ignore=DL3002
 USER root
-ARG CREDS_GCR_VERSION='2.1.19'
+ARG CREDS_GCR_VERSION='2.1.22'
 # hadolint ignore=DL3008,DL4006
 RUN set -eux; \
     \
@@ -58,10 +58,9 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # set versions
-ARG DOCKER_VERSION='24.0' \
-    DOCKER_BUILDX_VERSION='0.11' \
-    DOCKER_COMPOSE_VERSION='2.21' \
-    CREDS_GCR_VERSION='2.1.19'
+ARG DOCKER_VERSION='24' \
+    DOCKER_BUILDX_VERSION='0' \
+    DOCKER_COMPOSE_VERSION='2'
 
 ENV DOCKER_VERSION=$DOCKER_VERSION
 
