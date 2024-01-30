@@ -80,7 +80,6 @@ target "syft" {
     dockerfile = "Dockerfile"
     context = "syft"
     contexts = {
-      go-base = "target:go-base"
       base = "target:base"
     }
     tags = [
@@ -132,7 +131,6 @@ target "nodejs" {
   dockerfile = "Dockerfile"
   context = "nodejs"
   contexts = {
-    go-base = "target:go-base"
     base = "target:nodejs-base"
   }
   tags = [
@@ -154,7 +152,6 @@ target "openjdk" {
   dockerfile = "Dockerfile"
   context = "openjdk"
   contexts = {
-    go-base = "target:go-base"
     base = "target:openjdk-base"
   }
   tags = [
@@ -176,7 +173,6 @@ target "python" {
   dockerfile = "Dockerfile"
   context = "python"
   contexts = {
-    go-base = "target:go-base"
     base = "target:python-base"
   }
   tags = [

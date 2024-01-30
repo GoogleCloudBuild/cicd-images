@@ -15,12 +15,9 @@
 # limitations under the License.
 #
 
-# hadolint ignore=DL3006
-FROM go-base as builder
+FROM google-go.pkg.dev/golang:1.21.5 as builder
 
-USER root
-
-WORKDIR /usr/local/go_tools
+WORKDIR /tools
 ENV GOPATH=/usr/local
 COPY tools/go.mod tools/go.sum ./
 RUN go install github.com/google/go-licenses
@@ -41,5 +38,5 @@ RUN go-licenses check . && \
 # hadolint ignore=DL3006
 FROM base
 
-COPY --from=builder --chown=nonroot:nonroot /app/python-steps /usr/local/bin/python-steps
-COPY --from=builder --chown=nonroot:nonroot /THIRD_PARTY_NOTICES/python-steps /THIRD_PARTY_NOTICES/python-steps
+COPY --from=builder /app/python-steps /usr/local/bin/python-steps
+COPY --from=builder /THIRD_PARTY_NOTICES/python-steps /THIRD_PARTY_NOTICES/python-steps

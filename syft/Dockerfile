@@ -15,13 +15,9 @@
 # limitations under the License.
 #
 
-# hadolint ignore=DL3006
-FROM go-base as builder
+FROM google-go.pkg.dev/golang:1.21.5 as builder
 
-USER root
-
-WORKDIR /usr/local/go_tools
-ENV GOPATH=/usr/local
+WORKDIR /tools
 COPY tools/go.mod tools/go.sum ./
 RUN go install github.com/google/go-licenses && \
     go install github.com/anchore/syft/cmd/syft && \
@@ -40,15 +36,11 @@ FROM base
 
 ARG USER=nonroot
 
-COPY --from=builder --chown=$USER:$USER \
-    /usr/local/bin/syft /usr/local/bin/syft
-COPY --from=builder --chown=$USER:$USER \
-    /THIRD_PARTY_NOTICES/syft /THIRD_PARTY_NOTICES/syft
+COPY --from=builder /go/bin/syft /usr/local/bin/syft
+COPY --from=builder /THIRD_PARTY_NOTICES/syft /THIRD_PARTY_NOTICES/syft
 
-COPY --from=builder --chown=$USER:$USER \
-    /usr/local/bin/docker-credential-gcr /usr/local/bin/docker-credential-gcr
-COPY --from=builder --chown=$USER:$USER \
-    /THIRD_PARTY_NOTICES/docker-credential-gcr /THIRD_PARTY_NOTICES/docker-credential-gcr
+COPY --from=builder /go/bin/docker-credential-gcr /usr/local/bin/docker-credential-gcr
+COPY --from=builder /THIRD_PARTY_NOTICES/docker-credential-gcr /THIRD_PARTY_NOTICES/docker-credential-gcr
 
 USER $USER:$USER
 
