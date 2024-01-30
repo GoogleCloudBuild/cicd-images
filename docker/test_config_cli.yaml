@@ -28,13 +28,13 @@ commandTests:
     args: ["docker-buildx"]
     expectedOutput: ["/usr/local/bin/docker-buildx"]
 fileExistenceTests:
-- name: 'entrypoint'
-  path: '/usr/local/bin/docker-entrypoint.sh'
-  shouldExist: true
+  - name: "entrypoint"
+    path: "/usr/local/bin/docker-entrypoint.sh"
+    shouldExist: true
 metadataTest:
   envVars:
-  - key: USER
-    value: root
-  - key: DOCKER_VERSION
-    value: '^\d{2}\.\d{1,2}$'
-    isRegex: true
+    - key: USER
+      value: root
+    - key: DOCKER_VERSION
+      value: "24"
+      isRegex: true

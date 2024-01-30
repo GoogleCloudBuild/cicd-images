@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Get the changed top-level directories from the current commit.
-changed_dirs=$(git show --name-only --pretty="" HEAD | cut -d "/" -f1 | xargs dirname | uniq)
+changed_dirs=$(git show --name-only --pretty="" HEAD | xargs dirname | cut -d "/" -f1 | uniq)
 
 for dir in $changed_dirs
 do
