@@ -5,4 +5,5 @@ use (
 	./nodejs/steps
 	./openjdk/steps
 	./python/steps
+	./google-cloud-auth
 )

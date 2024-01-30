@@ -25,6 +25,7 @@ group "tool-images" {
       "gcloud",
       "git",
       "syft",
+      "google-cloud-auth",
     ]
 }
 
@@ -116,6 +117,14 @@ target "go" {
     "${REGISTRY}/go:${TAG}",
     "${REGISTRY}/go:latest"
   ]
+}
+
+target "google-cloud-auth" {
+  dockerfile = "Dockerfile"
+  context = "google-cloud-auth"
+  # TODO(@zhangquan): to use shared Catalog base image
+  # only be used as base image for other GCP related images
+  output = ["type=cacheonly"]
 }
 
 target "nodejs-base" {
