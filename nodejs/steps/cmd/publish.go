@@ -68,10 +68,10 @@ var publishCmd = &cobra.Command{
 		var stdout, stderr bytes.Buffer
 		c.Stdout = &stdout
 		c.Stderr = &stderr
-		packageName := strings.TrimSpace(stdout.String())
 		err = c.Run()
+		packageName := strings.TrimSpace(stdout.String())
 		if err != nil {
-			return fmt.Errorf("error executing 'npm %s': %s", packCommand, err)
+			return fmt.Errorf("error executing 'npm %s': %s\n%s", strings.Join(packCommand, " "), stderr.String(), err)
 		}
 
 		// publish the tar file.
@@ -82,7 +82,7 @@ var publishCmd = &cobra.Command{
 		err = c.Run()
 		uri := strings.TrimSpace(stdout.String())
 		if err != nil {
-			return fmt.Errorf("error executing 'npm %s': %s", strings.Join(publishArgs, " "), err)
+			return fmt.Errorf("error executing 'npm %s': %s\n%s", strings.Join(publishArgs, " "), stderr.String(), err)
 		}
 		// remove first two characters of npm publish (e.g. "+  @SCOPE/package@0.0.0" ->  "@SCOPE/package@0.0.0")
 		// Define regular expression to match leading whitespace characters
