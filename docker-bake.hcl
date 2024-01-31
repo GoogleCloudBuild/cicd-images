@@ -127,6 +127,18 @@ target "google-cloud-auth" {
   output = ["type=cacheonly"]
 }
 
+target "cloud-deploy" {
+  dockerfile = "Dockerfile"
+  context = "cloud-deploy"
+  contexts = {
+    base = "target:google-cloud-auth"
+  }
+  tags = [
+    "${REGISTRY}/cloud-deploy:${TAG}",
+    "${REGISTRY}/cloud-deploy:latest"
+  ]
+}
+
 target "nodejs-base" {
   dockerfile = "Dockerfile.base"
   context = "nodejs"

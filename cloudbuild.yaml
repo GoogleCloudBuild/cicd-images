@@ -62,6 +62,7 @@ steps:
       - "--image=${_IMAGE_REGISTRY}/gcloud:${_IMAGE_TAG}"
       - "--image=${_IMAGE_REGISTRY}/git:${_IMAGE_TAG}"
       - "--image=${_IMAGE_REGISTRY}/syft:${_IMAGE_TAG}"
+      - "--image=${_IMAGE_REGISTRY}/cloud-deploy:${_IMAGE_TAG}"
       # Toolchain Images
       - "--image=${_IMAGE_REGISTRY}/go:${_IMAGE_TAG}"
       - "--image=${_IMAGE_REGISTRY}/nodejs:${_IMAGE_TAG}"
@@ -84,6 +85,7 @@ images:
   - ${_IMAGE_REGISTRY}/syft:latest
   - ${_IMAGE_REGISTRY}/git:${_IMAGE_TAG}
   - ${_IMAGE_REGISTRY}/syft:${_IMAGE_TAG}
+  - ${_IMAGE_REGISTRY}/cloud-deploy:${_IMAGE_TAG}
   # Toolchain Images
   - ${_IMAGE_REGISTRY}/go:latest
   - ${_IMAGE_REGISTRY}/go:${_IMAGE_TAG}

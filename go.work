@@ -6,4 +6,5 @@ use (
 	./openjdk/steps
 	./python/steps
 	./google-cloud-auth
+	./cloud-deploy
 )
