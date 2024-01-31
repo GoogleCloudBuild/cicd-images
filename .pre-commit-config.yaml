@@ -26,3 +26,7 @@ repos:
         args:
           - -d
           - relaxed
+  - repo: https://github.com/commitizen-tools/commitizen
+    rev: v3.13.0
+    hooks:
+      - id: commitizen
