@@ -26,6 +26,7 @@ group "tool-images" {
       "git",
       "syft",
       "google-cloud-auth",
+      "cloud-deploy",
     ]
 }
 
