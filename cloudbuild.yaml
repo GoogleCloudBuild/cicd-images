@@ -26,6 +26,7 @@ options:
 steps:
   - id: build
     name: gcr.io/cloud-builders/docker
+    dir: images
     env:
       - "REGISTRY=${_IMAGE_REGISTRY}"
     script: |
@@ -35,6 +36,7 @@ steps:
 
   - id: test
     name: gcr.io/cloud-builders/docker
+    dir: images
     waitFor:
       - build
     env:
@@ -82,9 +84,10 @@ images:
   - ${_IMAGE_REGISTRY}/gcloud:latest
   - ${_IMAGE_REGISTRY}/gcloud:${_IMAGE_TAG}
   - ${_IMAGE_REGISTRY}/git:latest
-  - ${_IMAGE_REGISTRY}/syft:latest
   - ${_IMAGE_REGISTRY}/git:${_IMAGE_TAG}
+  - ${_IMAGE_REGISTRY}/syft:latest
   - ${_IMAGE_REGISTRY}/syft:${_IMAGE_TAG}
+  - ${_IMAGE_REGISTRY}/cloud-deploy:latest
   - ${_IMAGE_REGISTRY}/cloud-deploy:${_IMAGE_TAG}
   # Toolchain Images
   - ${_IMAGE_REGISTRY}/go:latest

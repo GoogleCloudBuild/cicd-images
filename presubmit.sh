@@ -1,13 +1,12 @@
 #!/usr/bin/env bash
+set -euo pipefail
 
-# Get the changed top-level directories from the current commit.
-changed_dirs=$(git show --name-only --pretty="" HEAD | xargs dirname | cut -d "/" -f1 | uniq)
+# Test image builds if the source was modified
+changed_image_dirs=$(git show --name-only --pretty="" HEAD | xargs dirname | grep -E "^images/[^/]+$" | uniq)
 
-for dir in $changed_dirs
+for dir in $changed_image_dirs
 do
-    if [ "${dir}" == "." ]; then
-      echo "Not running build/test in root directory"
-      continue
-    fi
-    make -C "${dir}" build test
+  if [ -d "${dir}" ]; then
+      make -C "${dir}" build test
+  fi
 done
