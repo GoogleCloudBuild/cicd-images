@@ -17,14 +17,14 @@
 
 FROM google-go.pkg.dev/golang:1.21.5 as builder
 
-# hadolint ignore=DL3022,DL3045
+WORKDIR /src
 COPY --from=src . .
 
-WORKDIR /tools
+WORKDIR /src/tools
 RUN go install github.com/google/go-licenses
 
 # Run binary tests, build and license scan.
-WORKDIR /
+WORKDIR /src
 RUN go mod download && \
     go test ./cmd/cloud-deploy/... -timeout 30s && \
     go test ./cmd/google-cloud-auth/... -timeout 30s && \
@@ -44,8 +44,8 @@ RUN go-licenses check ./cmd/google-cloud-auth && \
 # hadolint ignore=DL3006
 FROM base
 
-COPY --from=builder /cloud-deploy /usr/local/bin/cloud-deploy
+COPY --from=builder /src/cloud-deploy /usr/local/bin/cloud-deploy
 COPY --from=builder /THIRD_PARTY_NOTICES/cloud-deploy /THIRD_PARTY_NOTICES/cloud-deploy
 
-COPY --from=builder /google-cloud-auth /usr/local/bin/google-cloud-auth
+COPY --from=builder /src/google-cloud-auth /usr/local/bin/google-cloud-auth
 COPY --from=builder /THIRD_PARTY_NOTICES/google-cloud-auth /THIRD_PARTY_NOTICES/google-cloud-auth

@@ -82,6 +82,7 @@ target "syft" {
     context = "syft"
     contexts = {
       base = "target:base"
+      src = "../"
     }
     tags = [
       "${REGISTRY}/syft:${TAG}",

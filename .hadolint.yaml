@@ -14,3 +14,4 @@
 ignored:
   - DL3002 # last user in multi-stage builds may be root
   - DL3009 # clean-install removes apt-get lists
+  - DL3022 # bake defines contexts so the Dockerfile doesn't have to

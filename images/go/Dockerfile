@@ -17,14 +17,14 @@
 
 FROM google-go.pkg.dev/golang:1.21.5 as builder
 
-# hadolint ignore=DL3022,DL3045
+WORKDIR /src
 COPY --from=src . .
 
-WORKDIR /tools
+WORKDIR /src/tools
 RUN go install github.com/google/go-licenses
 
 # Run binary tests, build and license scan.
-WORKDIR /
+WORKDIR /src
 RUN go mod download && \
     go test ./cmd/go-steps/... -timeout 30s && \
     go build ./cmd/go-steps
@@ -37,5 +37,5 @@ RUN go-licenses check ./cmd/go-steps && \
 # hadolint ignore=DL3006
 FROM base
 
-COPY --from=builder /go-steps /usr/local/bin/go-steps
+COPY --from=builder /src/go-steps /usr/local/bin/go-steps
 COPY --from=builder /THIRD_PARTY_NOTICES/go-steps /THIRD_PARTY_NOTICES/go-steps
