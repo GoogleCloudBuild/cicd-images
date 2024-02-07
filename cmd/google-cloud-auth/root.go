@@ -23,7 +23,7 @@ import (
 var rootCmd = &cobra.Command{
 	Use:   "google-cloud-auth",
 	Short: "Setup Authentication to Google Cloud",
-	Long:  ``, // TODO: add a longer description
+	Long:  ``,
 }
 
 func Execute() {
@@ -33,7 +33,4 @@ func Execute() {
 	}
 }
 
-func init() {
-	// TODO: add root-level flags
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-}
+func init() {}
