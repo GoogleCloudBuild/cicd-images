@@ -17,37 +17,21 @@ package main
 import (
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/GoogleCloudBuild/cicd-images/cmd/nodejs-steps/internal"
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 )
 
 const COMMAND_ARG = "command"
 
 // nodeCmd represents the node command
 var nodeCmd = &cobra.Command{
-	Use:   "runner",
-	Short: "Run a Node command.",
-	Long: `node is for running a Node command.
-It can perform commands from npm, npx and yarn ClIs. It can also
-pull Node artifacts from a GCP Artifact Registry.`,
+	Use:   "auth",
+	Short: "Authenticate npmrc file for use with the Artifact Registry.",
+	Long: `auth is authenticating with Artifact Registry.
+It fetches an access token from application default credentials
+or gcloud CLI and writes it into the users npmrc file`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		nodeCmdArgs, err := parseNodeArgs(cmd.Flags())
-		if err != nil {
-			return err
-		}
-
-		command := nodeCmdArgs.Command
-		cmd.SilenceUsage = true
-
-		runtime := command[0]
-
-		if runtime != "npm" && runtime != "npx" && runtime != "yarn" && runtime != "node" {
-			return fmt.Errorf("not a valid executing command. Expecting: (npm|npx|yarn), got: %s", runtime)
-		}
-
 		// fetch Artifact Registry Token.
 		token, err := internal.GetToken(cmd.Context())
 		if err != nil {
@@ -70,19 +54,11 @@ pull Node artifacts from a GCP Artifact Registry.`,
 			// Write configuration lines to the file
 			defer f.Close() // Close the file after writing
 			_, err = f.WriteString(`@artifact-registry:always-auth=true
-			//artifact-registry.googleapis.com:_authToken=` + token + `
+//artifact-registry.googleapis.com:_authToken=` + token + `
 			`)
 			if err != nil {
 				// Handle error writing to the file
 				return fmt.Errorf("error writing to .npmrc file: %v", err)
-			}
-		}
-
-		// extract arguments to execute with defined runtime.
-		if subCommand := command[1:]; subCommand != nil {
-			err := internal.RunCmd(runtime, subCommand...)
-			if err != nil {
-				return fmt.Errorf("error executing '%s %s': %s", runtime, strings.Join(subCommand, " "), err)
 			}
 		}
 		return nil
@@ -91,24 +67,4 @@ pull Node artifacts from a GCP Artifact Registry.`,
 
 func init() {
 	rootCmd.AddCommand(nodeCmd)
-
-	nodeCmd.Flags().StringP(COMMAND_ARG, "", "", "The Node command to run, e.g. `npm run start` | `yarn ...`")
-	nodeCmd.MarkFlagRequired(COMMAND_ARG)
-}
-
-type nodeArguments struct {
-	Command []string
-}
-
-func parseNodeArgs(f *pflag.FlagSet) (nodeArguments, error) {
-	command, err := f.GetString(COMMAND_ARG)
-	if err != nil {
-		return nodeArguments{}, fmt.Errorf("failed to get command: %v", err)
-	}
-	if len(command) < 1 {
-		return nodeArguments{}, fmt.Errorf("invalid command. Command can not be empty")
-	}
-	return nodeArguments{
-		Command: strings.Fields(command),
-	}, nil
 }
