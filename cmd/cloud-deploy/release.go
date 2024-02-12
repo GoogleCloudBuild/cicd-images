@@ -19,10 +19,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/GoogleCloudBuild/cicd-images/cmd/cloud-deploy/pkg/client"
+	deploy "cloud.google.com/go/deploy/apiv1"
+	"cloud.google.com/go/storage"
 	"github.com/GoogleCloudBuild/cicd-images/cmd/cloud-deploy/pkg/config"
 	"github.com/GoogleCloudBuild/cicd-images/cmd/cloud-deploy/pkg/release"
 	"github.com/spf13/cobra"
+	"google.golang.org/api/option"
 )
 
 var flags config.ReleaseConfiguration
@@ -37,17 +39,20 @@ var releaseCmd = &cobra.Command{
 		if strings.Contains(flags.DeliveryPipeline, "/") {
 			return fmt.Errorf("invalid delivery-pipeline value: %s, only lower-case letters, numbers, and hyphens are allowed", flags.DeliveryPipeline)
 		}
+		if flags.Images != "" && strings.Contains(flags.Images, " ") {
+			return fmt.Errorf("invalid images value: %s, the images string should not contain space", flags.Images)
+		}
 
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var err error
 		ctx := context.Background()
-		cdClient, err := client.NewCloudDeployClient(ctx, userAgent)
+		cdClient, err := deploy.NewCloudDeployClient(ctx, option.WithUserAgent(userAgent))
 		if err != nil {
 			return err
 		}
-		gcsClient, err := client.NewGCSClient(ctx, userAgent)
+		gcsClient, err := storage.NewClient(ctx, option.WithUserAgent(userAgent))
 		if err != nil {
 			return err
 		}
@@ -65,9 +70,12 @@ func init() {
 	releaseCmd.PersistentFlags().StringVar(&flags.DeliveryPipeline, "delivery-pipeline", "", "The delivery pipeline associated with the release")
 	releaseCmd.PersistentFlags().StringVar(&flags.Region, "region", "", "The cloud region for the release")
 	releaseCmd.PersistentFlags().StringVar(&flags.ProjectId, "project-id", "", "The GCP project id")
+	releaseCmd.PersistentFlags().StringVar(&flags.Release, "name", "", "The name of the release to create")
 	releaseCmd.PersistentFlags().StringVar(&flags.Source, "source", ".", "The source location containing skaffold.yaml")
+	releaseCmd.PersistentFlags().StringVar(&flags.Images, "images", "", "The images associated with the release")
 
 	releaseCmd.MarkPersistentFlagRequired("delivery-pipeline")
 	releaseCmd.MarkPersistentFlagRequired("region")
 	releaseCmd.MarkPersistentFlagRequired("project-id")
+	releaseCmd.MarkPersistentFlagRequired("name")
 }

@@ -16,71 +16,76 @@ package release
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"cloud.google.com/go/deploy/apiv1/deploypb"
-	"github.com/GoogleCloudBuild/cicd-images/cmd/cloud-deploy/pkg/client"
 	"github.com/GoogleCloudBuild/cicd-images/cmd/cloud-deploy/pkg/config"
+	"github.com/GoogleCloudBuild/cicd-images/cmd/cloud-deploy/test"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
-const getDeliveryPipelineRequest = "projects/%s/locations/%s/deliveryPipelines/%s"
-
-func TestFetchReleasePipeline_Success(t *testing.T) {
+func TestCreateCloudDeployRelease(t *testing.T) {
 	// setup
 	flags := &config.ReleaseConfiguration{
 		ProjectId:        "id",
 		Region:           "global",
 		DeliveryPipeline: "test-pipeline",
+		Source:           "../../test/testdata/testdata.tgz",
+		Images:           "tag1=image1,tag2=image2",
 	}
-	expectedUID := "test-uid"
 
+	bckName := "test-pipeline-uid_clouddeploy"
+	stagedObj := "/source/1701112633.689433-75c0b8929cb04d7a8a008a38368ac250.tgz"
+
+	// Setup the fake server.
 	ctx := context.Background()
-	req := &deploypb.GetDeliveryPipelineRequest{
-		Name: fmt.Sprintf(getDeliveryPipelineRequest, flags.ProjectId, flags.Region, flags.DeliveryPipeline),
-	}
-	resp := &deploypb.DeliveryPipeline{
-		Uid: expectedUID,
-	}
+	cdClient := test.CreateCloudDeployClient(t, ctx)
+	gcsClient := test.CreateGCSClient(t, []byte{}, bckName, stagedObj)
 
-	mockCDClient := new(client.MockCloudDeployClient)
-	mockCDClient.On("GetDeliveryPipeline", ctx, req).Return(resp, nil)
-
-	// test
-	uid, err := FetchReleasePipeline(ctx, mockCDClient, flags)
-
-	// validate
-	if err != nil {
-		t.Fatalf("unexpected error calling FetchReleasePipeline: %v", err.Error())
-	}
-	if diff := cmp.Diff(expectedUID, uid); diff != "" {
-		t.Errorf("FetchReleasePipeline UID does not match: %v", diff)
+	if err := CreateCloudDeployRelease(ctx, cdClient, gcsClient, flags); err != nil {
+		t.Fatalf("unexpected error when creating release: %s", err.Error())
 	}
 }
 
-func TestFetchReleasePipeline_Failure(t *testing.T) {
-	// setup
-	flags := &config.ReleaseConfiguration{
-		ProjectId:        "id",
-		Region:           "global",
-		DeliveryPipeline: "test-pipeline",
+func TestSetImages_Success(t *testing.T) {
+	tcs := []struct {
+		name            string
+		images          string
+		Release         *deploypb.Release
+		ExpectedRelease *deploypb.Release
+	}{
+		{
+			name:            "no image",
+			Release:         &deploypb.Release{},
+			ExpectedRelease: &deploypb.Release{},
+		},
+		{
+			name:    "2 images",
+			images:  "image1=tag1,image2=tag2",
+			Release: &deploypb.Release{},
+			ExpectedRelease: &deploypb.Release{
+				BuildArtifacts: []*deploypb.BuildArtifact{
+					{
+						Tag:   "tag1",
+						Image: "image1",
+					},
+					{
+						Tag:   "tag2",
+						Image: "image2",
+					},
+				},
+			},
+		},
 	}
-	expectedErr := fmt.Errorf("failed to get pipeline")
 
-	ctx := context.Background()
-	req := &deploypb.GetDeliveryPipelineRequest{
-		Name: fmt.Sprintf(getDeliveryPipelineRequest, flags.ProjectId, flags.Region, flags.DeliveryPipeline),
-	}
+	for _, tc := range tcs {
+		if err := setImages(tc.images, tc.Release); err != nil {
+			t.Fatalf("unexpected error calling setImages(); %s", err)
+		}
 
-	mockCDClient := new(client.MockCloudDeployClient)
-	mockCDClient.On("GetDeliveryPipeline", ctx, req).Return(nil, fmt.Errorf("failed to get pipeline"))
-
-	// test
-	_, err := FetchReleasePipeline(ctx, mockCDClient, flags)
-
-	// validate
-	if diff := cmp.Diff(expectedErr.Error(), err.Error()); diff != "" {
-		t.Errorf("FetchReleasePipeline UID does not match: %v", diff)
+		if diff := cmp.Diff(tc.ExpectedRelease.BuildArtifacts, tc.Release.BuildArtifacts, cmpopts.IgnoreUnexported(deploypb.BuildArtifact{})); diff != "" {
+			t.Errorf("unexpected release config calling setImages(): %s", diff)
+		}
 	}
 }

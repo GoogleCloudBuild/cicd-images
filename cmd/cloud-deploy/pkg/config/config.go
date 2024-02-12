@@ -16,8 +16,10 @@ package config
 
 // ReleaseConfiguration is used to configure the cloud deploy release.
 type ReleaseConfiguration struct {
-	DeliveryPipeline string
-	Region           string
-	ProjectId        string
-	Source           string
+	DeliveryPipeline string // ex: web-app
+	Region           string // ex: us-central1
+	ProjectId        string // ex: my-project
+	Source           string // ex: .
+	Images           string // ex: image1=path/to/image1:v1,image2=path/to/image2:v1
+	Release          string // ex: test-release
 }

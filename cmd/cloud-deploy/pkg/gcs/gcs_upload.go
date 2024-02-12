@@ -24,13 +24,12 @@ import (
 
 	"cloud.google.com/go/deploy/apiv1/deploypb"
 	"cloud.google.com/go/storage"
-	"github.com/GoogleCloudBuild/cicd-images/cmd/cloud-deploy/pkg/client"
 	"github.com/GoogleCloudBuild/cicd-images/cmd/cloud-deploy/pkg/config"
 	"github.com/google/uuid"
 )
 
 // SetSource the source for the release config and creates a default Cloud Storage bucket for staging
-func SetSource(ctx context.Context, pipelineUUID string, flags *config.ReleaseConfiguration, client client.IGCSClient, release *deploypb.Release) error {
+func SetSource(ctx context.Context, pipelineUUID string, flags *config.ReleaseConfiguration, client *storage.Client, release *deploypb.Release) error {
 	source := flags.Source
 	if err := validateSource(source); err != nil {
 		return err
@@ -47,7 +46,7 @@ func SetSource(ctx context.Context, pipelineUUID string, flags *config.ReleaseCo
 	// write to GCS
 	// TODO: support other source type upload
 	object := fmt.Sprintf("source/%v-%s%s", time.Now().UnixMicro(), uuid.New(), filepath.Ext(source))
-	if err := setLocalArchiveSource(ctx, source, bucket, object, client, release); err != nil {
+	if err := uploadLocalArchiveToGCS(ctx, source, bucket, object, client, release); err != nil {
 		return err
 	}
 
@@ -55,12 +54,12 @@ func SetSource(ctx context.Context, pipelineUUID string, flags *config.ReleaseCo
 	return nil
 }
 
-func setLocalArchiveSource(ctx context.Context, source, bucket, object string, client client.IGCSClient, release *deploypb.Release) error {
+func uploadLocalArchiveToGCS(ctx context.Context, source, bucket, object string, client *storage.Client, release *deploypb.Release) error {
 	fmt.Printf("Uploading local archive file %s to gs://%s/%s \n", source, bucket, object)
 	if err := uploadTarball(ctx, client, object, bucket, source); err != nil {
 		return err
 	}
-	release.SkaffoldConfigPath = fmt.Sprintf("gs://%s/%s", bucket, object)
+	release.SkaffoldConfigUri = fmt.Sprintf("gs://%s/%s", bucket, object)
 
 	return nil
 }
@@ -70,13 +69,13 @@ func getDefaultbucket(pipelineUUID string) (string, error) {
 
 	// Bucket name length constraint
 	if len(bucketName) > 63 {
-		return "", fmt.Errorf("The length of the bucket id: %s must not exceed 63 characters", bucketName)
+		return "", fmt.Errorf("the length of the bucket id: %s must not exceed 63 characters", bucketName)
 	}
 
 	return bucketName, nil
 }
 
-func createBucketIfNotExist(ctx context.Context, bucketName, projectId string, client client.IGCSClient) error {
+func createBucketIfNotExist(ctx context.Context, bucketName, projectId string, client *storage.Client) error {
 	bktHandler := client.Bucket(bucketName)
 	// TODO: optimize to "Get-then-Insert" mechanism
 	if err := bktHandler.Create(ctx, projectId, nil); err != nil {
@@ -96,7 +95,7 @@ func createBucketIfNotExist(ctx context.Context, bucketName, projectId string, c
 	return nil
 }
 
-func uploadTarball(ctx context.Context, gcsClient client.IGCSClient, stagedObj, bucketName, fileToUpload string) error {
+func uploadTarball(ctx context.Context, gcsClient *storage.Client, stagedObj, bucketName, fileToUpload string) error {
 	data, err := os.ReadFile(fileToUpload)
 	if err != nil {
 		return fmt.Errorf("unable to read file to upload: %w", err)

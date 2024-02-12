@@ -46,7 +46,7 @@ func TestSetSource_TarFile(t *testing.T) {
 	ctx := context.Background()
 	flags := &config.ReleaseConfiguration{
 		ProjectId: "id",
-		Source:    "./test_data/testdata.tgz",
+		Source:    "../../test/testdata/testdata.tgz",
 	}
 	pipelineUUID := "test-pipeline-uid"
 	release := &deploypb.Release{}
