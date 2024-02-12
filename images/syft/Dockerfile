@@ -17,10 +17,13 @@
 
 FROM google-go.pkg.dev/golang:1.21.5 as builder
 
+WORKDIR /shared-tools
+COPY --from=src tools/ ./
+RUN go install github.com/google/go-licenses
+
 WORKDIR /tools
-COPY tools/go.mod tools/go.sum ./
-RUN go install github.com/google/go-licenses && \
-    go install github.com/anchore/syft/cmd/syft && \
+COPY tools/ ./
+RUN go install github.com/anchore/syft/cmd/syft && \
     go install github.com/GoogleCloudPlatform/docker-credential-gcr/v2
 
 RUN go-licenses check --ignore github.com/xi2/xz --ignore modernc.org/mathutil github.com/anchore/syft/cmd/syft && \
