@@ -15,23 +15,42 @@
 package main
 
 import (
-	"fmt"
+	"context"
 
+	"github.com/GoogleCloudBuild/cicd-images/cmd/cloud-deploy/pkg/client"
+	"github.com/GoogleCloudBuild/cicd-images/cmd/cloud-deploy/pkg/release"
 	"github.com/spf13/cobra"
 )
 
-// releaseCmd represents the release command
+var (
+	deliveryPipeline string
+	region           string
+	projectId        string
+)
+
+const userAgent = "google-gitlab-components:create-cloud-deploy-release"
+
 var releaseCmd = &cobra.Command{
 	Use:   "release",
 	Short: "Create a Cloud Deploy Release",
-	Long:  ``, // TODO: add a longer description
-	Run: func(cmd *cobra.Command, args []string) {
-		// TODO: add release create business logic
-		fmt.Println("release called")
+	Long:  ``,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		var err error
+		cdClient, err := client.NewCloudDeployClient(context.Background(), userAgent)
+		if err != nil {
+			return err
+		}
+
+		if err = release.CreateCloudDeployRelease(context.Background(), cdClient, projectId, region, deliveryPipeline); err != nil {
+			return err
+		}
+		return nil
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(releaseCmd)
-	// TODO: add cloud deploy release flag
+	releaseCmd.PersistentFlags().StringVar(&deliveryPipeline, "delivery-pipeline", "", "The delivery pipeline associated with the release")
+	releaseCmd.PersistentFlags().StringVar(&region, "region", "", "The cloud region for the release")
+	releaseCmd.PersistentFlags().StringVar(&projectId, "project-id", "", "The GCP project id")
 }
