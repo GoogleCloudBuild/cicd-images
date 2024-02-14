@@ -21,19 +21,24 @@ import (
 
 	"cloud.google.com/go/deploy/apiv1/deploypb"
 	"github.com/GoogleCloudBuild/cicd-images/cmd/cloud-deploy/pkg/client"
+	"github.com/GoogleCloudBuild/cicd-images/cmd/cloud-deploy/pkg/config"
 	"github.com/google/go-cmp/cmp"
 )
 
+const getDeliveryPipelineRequest = "projects/%s/locations/%s/deliveryPipelines/%s"
+
 func TestFetchReleasePipeline_Success(t *testing.T) {
 	// setup
-	projectId := "id"
-	region := "global"
-	deliveryPipeline := "test-pipeline"
+	flags := &config.Config{
+		ProjectId:        "id",
+		Region:           "global",
+		DeliveryPipeline: "test-pipeline",
+	}
 	expectedUID := "test-uid"
 
 	ctx := context.Background()
 	req := &deploypb.GetDeliveryPipelineRequest{
-		Name: fmt.Sprintf("projects/%s/locations/%s/deliveryPipelines/%s", projectId, region, deliveryPipeline),
+		Name: fmt.Sprintf(getDeliveryPipelineRequest, flags.ProjectId, flags.Region, flags.DeliveryPipeline),
 	}
 	resp := &deploypb.DeliveryPipeline{
 		Uid: expectedUID,
@@ -43,7 +48,7 @@ func TestFetchReleasePipeline_Success(t *testing.T) {
 	mockCDClient.On("GetDeliveryPipeline", ctx, req).Return(resp, nil)
 
 	// test
-	uid, err := FetchReleasePipeline(ctx, mockCDClient, projectId, region, deliveryPipeline)
+	uid, err := FetchReleasePipeline(ctx, mockCDClient, flags)
 
 	// validate
 	if err != nil {
@@ -56,21 +61,23 @@ func TestFetchReleasePipeline_Success(t *testing.T) {
 
 func TestFetchReleasePipeline_Failure(t *testing.T) {
 	// setup
-	projectId := "id"
-	region := "global"
-	deliveryPipeline := "test-pipeline"
+	flags := &config.Config{
+		ProjectId:        "id",
+		Region:           "global",
+		DeliveryPipeline: "test-pipeline",
+	}
 	expectedErr := fmt.Errorf("failed to get pipeline")
 
 	ctx := context.Background()
 	req := &deploypb.GetDeliveryPipelineRequest{
-		Name: fmt.Sprintf("projects/%s/locations/%s/deliveryPipelines/%s", projectId, region, deliveryPipeline),
+		Name: fmt.Sprintf(getDeliveryPipelineRequest, flags.ProjectId, flags.Region, flags.DeliveryPipeline),
 	}
 
 	mockCDClient := new(client.MockCloudDeployClient)
 	mockCDClient.On("GetDeliveryPipeline", ctx, req).Return(nil, fmt.Errorf("failed to get pipeline"))
 
 	// test
-	_, err := FetchReleasePipeline(ctx, mockCDClient, projectId, region, deliveryPipeline)
+	_, err := FetchReleasePipeline(ctx, mockCDClient, flags)
 
 	// validate
 	if diff := cmp.Diff(expectedErr.Error(), err.Error()); diff != "" {

@@ -18,15 +18,12 @@ import (
 	"context"
 
 	"github.com/GoogleCloudBuild/cicd-images/cmd/cloud-deploy/pkg/client"
+	"github.com/GoogleCloudBuild/cicd-images/cmd/cloud-deploy/pkg/config"
 	"github.com/GoogleCloudBuild/cicd-images/cmd/cloud-deploy/pkg/release"
 	"github.com/spf13/cobra"
 )
 
-var (
-	deliveryPipeline string
-	region           string
-	projectId        string
-)
+var flags config.Config
 
 const userAgent = "google-gitlab-components:create-cloud-deploy-release"
 
@@ -36,12 +33,12 @@ var releaseCmd = &cobra.Command{
 	Long:  ``,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var err error
-		cdClient, err := client.NewCloudDeployClient(context.Background(), userAgent)
+		ctx := context.Background()
+		cdClient, err := client.NewCloudDeployClient(ctx, userAgent)
 		if err != nil {
 			return err
 		}
-
-		if err = release.CreateCloudDeployRelease(context.Background(), cdClient, projectId, region, deliveryPipeline); err != nil {
+		if err = release.CreateCloudDeployRelease(ctx, cdClient, &flags); err != nil {
 			return err
 		}
 		return nil
@@ -50,7 +47,7 @@ var releaseCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(releaseCmd)
-	releaseCmd.PersistentFlags().StringVar(&deliveryPipeline, "delivery-pipeline", "", "The delivery pipeline associated with the release")
-	releaseCmd.PersistentFlags().StringVar(&region, "region", "", "The cloud region for the release")
-	releaseCmd.PersistentFlags().StringVar(&projectId, "project-id", "", "The GCP project id")
+	releaseCmd.PersistentFlags().StringVar(&flags.DeliveryPipeline, "delivery-pipeline", "", "The delivery pipeline associated with the release")
+	releaseCmd.PersistentFlags().StringVar(&flags.Region, "region", "", "The cloud region for the release")
+	releaseCmd.PersistentFlags().StringVar(&flags.ProjectId, "project-id", "", "The GCP project id")
 }
