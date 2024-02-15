@@ -12,12 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package config
+package client
 
-// ReleaseConfiguration is used to configure the cloud deploy release.
-type ReleaseConfiguration struct {
-	DeliveryPipeline string
-	Region           string
-	ProjectId        string
-	Source           string
+import (
+	"context"
+	"fmt"
+
+	"cloud.google.com/go/storage"
+	"google.golang.org/api/option"
+)
+
+type IGCSClient interface {
+	Bucket(name string) *storage.BucketHandle
+}
+
+type GCSClient struct {
+	*storage.Client
+}
+
+func NewGCSClient(ctx context.Context, userAgent string) (IGCSClient, error) {
+	c, err := storage.NewClient(ctx, option.WithUserAgent(userAgent))
+	if err != nil {
+		return nil, fmt.Errorf("GCS Client init error: %w", err)
+	}
+	return &GCSClient{Client: c}, err
 }

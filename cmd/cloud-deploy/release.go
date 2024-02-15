@@ -16,6 +16,8 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"github.com/GoogleCloudBuild/cicd-images/cmd/cloud-deploy/pkg/client"
 	"github.com/GoogleCloudBuild/cicd-images/cmd/cloud-deploy/pkg/config"
@@ -23,7 +25,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var flags config.Config
+var flags config.ReleaseConfiguration
 
 const userAgent = "google-gitlab-components:create-cloud-deploy-release"
 
@@ -31,6 +33,13 @@ var releaseCmd = &cobra.Command{
 	Use:   "release",
 	Short: "Create a Cloud Deploy Release",
 	Long:  ``,
+	PreRunE: func(cmd *cobra.Command, args []string) error {
+		if strings.Contains(flags.DeliveryPipeline, "/") {
+			return fmt.Errorf("invalid delivery-pipeline value: %s, only lower-case letters, numbers, and hyphens are allowed", flags.DeliveryPipeline)
+		}
+
+		return nil
+	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var err error
 		ctx := context.Background()
@@ -38,7 +47,12 @@ var releaseCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		if err = release.CreateCloudDeployRelease(ctx, cdClient, &flags); err != nil {
+		gcsClient, err := client.NewGCSClient(ctx, userAgent)
+		if err != nil {
+			return err
+		}
+
+		if err = release.CreateCloudDeployRelease(ctx, cdClient, gcsClient, &flags); err != nil {
 			return err
 		}
 		return nil
@@ -47,7 +61,13 @@ var releaseCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(releaseCmd)
+	// TODO: consider extracing fields from delivery-pipeline
 	releaseCmd.PersistentFlags().StringVar(&flags.DeliveryPipeline, "delivery-pipeline", "", "The delivery pipeline associated with the release")
 	releaseCmd.PersistentFlags().StringVar(&flags.Region, "region", "", "The cloud region for the release")
 	releaseCmd.PersistentFlags().StringVar(&flags.ProjectId, "project-id", "", "The GCP project id")
+	releaseCmd.PersistentFlags().StringVar(&flags.Source, "source", ".", "The source location containing skaffold.yaml")
+
+	releaseCmd.MarkPersistentFlagRequired("delivery-pipeline")
+	releaseCmd.MarkPersistentFlagRequired("region")
+	releaseCmd.MarkPersistentFlagRequired("project-id")
 }

@@ -29,7 +29,7 @@ const getDeliveryPipelineRequest = "projects/%s/locations/%s/deliveryPipelines/%
 
 func TestFetchReleasePipeline_Success(t *testing.T) {
 	// setup
-	flags := &config.Config{
+	flags := &config.ReleaseConfiguration{
 		ProjectId:        "id",
 		Region:           "global",
 		DeliveryPipeline: "test-pipeline",
@@ -61,7 +61,7 @@ func TestFetchReleasePipeline_Success(t *testing.T) {
 
 func TestFetchReleasePipeline_Failure(t *testing.T) {
 	// setup
-	flags := &config.Config{
+	flags := &config.ReleaseConfiguration{
 		ProjectId:        "id",
 		Region:           "global",
 		DeliveryPipeline: "test-pipeline",

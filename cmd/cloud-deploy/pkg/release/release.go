@@ -21,18 +21,24 @@ import (
 	"cloud.google.com/go/deploy/apiv1/deploypb"
 	"github.com/GoogleCloudBuild/cicd-images/cmd/cloud-deploy/pkg/client"
 	"github.com/GoogleCloudBuild/cicd-images/cmd/cloud-deploy/pkg/config"
+	"github.com/GoogleCloudBuild/cicd-images/cmd/cloud-deploy/pkg/gcs"
 )
 
 // CreateCloudDeployRelease is the main entry to create a Release
-func CreateCloudDeployRelease(ctx context.Context, cdClient client.ICloudDeployClient, flags *config.Config) error {
+func CreateCloudDeployRelease(ctx context.Context, cdClient client.ICloudDeployClient, gcsClient client.IGCSClient, flags *config.ReleaseConfiguration) error {
 	// TODO: Add implementation
-	_, err := FetchReleasePipeline(ctx, cdClient, flags)
+	uuid, err := FetchReleasePipeline(ctx, cdClient, flags)
+
+	//TODO: add more release config fields
+	release := &deploypb.Release{}
+
+	gcs.SetSource(ctx, uuid, flags, gcsClient, release)
 	return err
 }
 
 // FetchReleasePipeline calls Cloud Deploy API to get the target Delivery Pipeline.
 // It returns the ID of the Delivery Pipeline is found, return error otherwise.
-func FetchReleasePipeline(ctx context.Context, cdClient client.ICloudDeployClient, flags *config.Config) (string, error) {
+func FetchReleasePipeline(ctx context.Context, cdClient client.ICloudDeployClient, flags *config.ReleaseConfiguration) (string, error) {
 	req := &deploypb.GetDeliveryPipelineRequest{
 		Name: fmt.Sprintf("projects/%s/locations/%s/deliveryPipelines/%s", flags.ProjectId, flags.Region, flags.DeliveryPipeline),
 	}
