@@ -15,15 +15,16 @@
 package main
 
 import (
-	"bytes"
-	"flag"
+	"context"
 	"fmt"
 	"log"
 	"os"
-	"os/exec"
 	"regexp"
 	"strings"
+	"time"
 
+	"github.com/GoogleCloudPlatform/artifact-registry-go-tools/pkg/auth"
+	"github.com/GoogleCloudPlatform/artifact-registry-go-tools/pkg/netrc"
 	"github.com/pkg/errors"
 )
 
@@ -33,18 +34,7 @@ const (
 	repositoryPattern = `([^/,]+)-go\.pkg\.dev`
 )
 
-var (
-	args string
-)
-
-func init() {
-	flag.StringVar(&args, "args", "", "Arguments to execute with Go command")
-}
-
 func main() {
-	flag.Parse()
-	argsArray := strings.Fields(args)
-
 	// Authenticate with Artifact Registry.
 	goproxy := os.Getenv("GOPROXY")
 	if strings.Contains(goproxy, "go.pkg.dev") {
@@ -53,47 +43,27 @@ func main() {
 			log.Println(err)
 		}
 	}
-
-	// Execute input command.
-	result, err := run(argsArray)
-	if err != nil {
-		log.Fatalf("Error: %s\n%s", err, result)
-	} else {
-		fmt.Print(result)
-	}
 }
 
 // authenticateArtifactRegistry authenticates to Artifact Registry by running an auth tool binary
 func authenticateArtifactRegistry(goproxy string) error {
-	// Set default proxy to authenticate to AR.
-	// GOPROXY needs to be set to default to retrieve first artifact-registry-go-tools
-	// directly from source first and dependencies from https://proxy.golang.org.
-	os.Setenv("GOPROXY", defaultProxy)
-
-	// Set repository location in .netrc file
 	location, err := extractLocation(goproxy)
 	if err != nil {
 		log.Fatalf("Error: %s", err)
 	}
 
-	command := fmt.Sprintf("%v add-locations --locations=%s", arToolsCommand, location)
-	result, err := run(strings.Fields(command))
+	// Add location to .netrcfile
+	err = addLocations(location)
 	if err != nil {
-		return fmt.Errorf("error: Could not authenticate to Artifact Registry: %s", result)
-	} else {
-		log.Println(result)
+		return fmt.Errorf("error: Could not authenticate to Artifact Registry: %s", err)
 	}
 
 	// Refresh token
-	command = fmt.Sprintf("%v refresh", arToolsCommand)
-	result, err = run(strings.Fields(command))
+	err = refreshToken()
 	if err != nil {
-		return fmt.Errorf("error: Could not refresh Artifact Registry token: %s", result)
-	} else {
-		log.Println(result)
+		return fmt.Errorf("error: Could not refresh Artifact Registry token: %s", err)
 	}
 
-	os.Setenv("GOPROXY", goproxy)
 	return nil
 }
 
@@ -108,13 +78,43 @@ func extractLocation(str string) (string, error) {
 	}
 }
 
-// run executes a go command followed by the given suffix and returns the output and error.
-func run(args []string) (string, error) {
-	c := exec.Command("go", args...)
-	var output bytes.Buffer
-	c.Stderr = &output
-	c.Stdout = &output
+func refreshToken() error {
+	ctx := context.Background()
+	ctx, cf := context.WithTimeout(ctx, 30*time.Second)
+	defer cf()
 
-	err := c.Run()
-	return output.String(), err
+	p, config, err := netrc.Load()
+	if err != nil {
+		return err
+	}
+
+	token, err := auth.Token(ctx)
+	if err != nil {
+		return err
+	}
+
+	config = netrc.Refresh(config, token)
+	if err := netrc.Save(config, p); err != nil {
+		return err
+	}
+	return nil
+}
+
+func addLocations(locations string) error {
+	if locations == "" {
+		return fmt.Errorf("-locations is required")
+	}
+	ll := strings.Split(locations, ",")
+	p, config, err := netrc.Load()
+	if err != nil {
+		return err
+	}
+	newCfg, err := netrc.AddConfigs(ll, config, "%s-go.pkg.dev", "")
+	if err != nil {
+		return err
+	}
+	if err := netrc.Save(newCfg, p); err != nil {
+		return err
+	}
+	return nil
 }

@@ -16,60 +16,8 @@ package main
 
 import (
 	"reflect"
-	"regexp"
-	"strings"
 	"testing"
 )
-
-func TestRun(t *testing.T) {
-	type test struct {
-		name          string
-		command       string
-		want          string
-		expectedError string
-	}
-
-	tests := []test{
-		{
-			name:    "execute help command",
-			command: "help",
-			want:    "^Go is a tool for managing Go source code.*",
-		},
-		{
-			name:    "execute build help command",
-			command: "help build",
-			want:    "^usage: go build.*",
-		},
-		{
-			name:          "execute invalid command",
-			command:       "invalid",
-			want:          "unknown command.*",
-			expectedError: "exit status 2",
-		},
-		{
-			name:    "execute build project",
-			command: "build -o ./test/hello ./test",
-		},
-		{
-			name:    "execute install module",
-			command: "install ./test",
-		},
-	}
-
-	for _, tc := range tests {
-		command := strings.Fields(tc.command)
-		got, err := run(command)
-		match, _ := regexp.MatchString(tc.want, got)
-
-		if err != nil && tc.expectedError != err.Error() {
-			t.Fatalf("Test %v, returned error: %v, %v", tc.name, err, got)
-		}
-		if !match {
-			t.Fatalf("Test %v, expected: %v, got: %v", tc.name, tc.want, got)
-		}
-	}
-
-}
 
 func TestExtractLocation(t *testing.T) {
 	type test struct {
