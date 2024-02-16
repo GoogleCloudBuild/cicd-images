@@ -22,6 +22,7 @@ group "tool-images" {
     targets = [
       "docker-cli",
       "docker-dind",
+      "gar-upload",
       "gcloud",
       "git",
       "syft",
@@ -134,6 +135,19 @@ target "cloud-deploy" {
   ]
 }
 
+target "gar-upload" {
+  dockerfile = "Dockerfile"
+  context = "gar-upload"
+  contexts = {
+    base = "target:base"
+    src = "../"
+  }
+  tags = [
+    "${REGISTRY}/gar-upload:${TAG}",
+    "${REGISTRY}/gar-upload:latest"
+  ]
+}
+
 target "nodejs-base" {
   dockerfile = "Dockerfile.base"
   context = "nodejs"
@@ -183,7 +197,7 @@ target "python-base" {
   context = "python"
   contexts = {
     base = "target:base"
-  } 
+  }
   output = ["type=cacheonly"]
 }
 

@@ -61,6 +61,7 @@ steps:
       # Tool Images
       - "--image=${_IMAGE_REGISTRY}/docker/dind:${_IMAGE_TAG}"
       - "--image=${_IMAGE_REGISTRY}/docker/cli:${_IMAGE_TAG}"
+      - "--image=${_IMAGE_REGISTRY}/gar-upload:${_IMAGE_TAG}"
       - "--image=${_IMAGE_REGISTRY}/gcloud:${_IMAGE_TAG}"
       - "--image=${_IMAGE_REGISTRY}/git:${_IMAGE_TAG}"
       - "--image=${_IMAGE_REGISTRY}/syft:${_IMAGE_TAG}"
@@ -81,6 +82,8 @@ images:
   - ${_IMAGE_REGISTRY}/docker/dind:${_IMAGE_TAG}
   - ${_IMAGE_REGISTRY}/docker/cli:latest
   - ${_IMAGE_REGISTRY}/docker/cli:${_IMAGE_TAG}
+  - ${_IMAGE_REGISTRY}/gar-upload:latest
+  - ${_IMAGE_REGISTRY}/gar-upload:${_IMAGE_TAG}
   - ${_IMAGE_REGISTRY}/gcloud:latest
   - ${_IMAGE_REGISTRY}/gcloud:${_IMAGE_TAG}
   - ${_IMAGE_REGISTRY}/git:latest
