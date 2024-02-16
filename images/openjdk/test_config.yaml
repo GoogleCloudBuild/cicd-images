@@ -18,7 +18,7 @@ schemaVersion: "2.0.0"
 commandTests:
   - name: openjdk 11 installed
     envVars:
-      - key: GOOGLE_RUNTIME_VERSION
+      - key: GOOGLE_OPENJDK_VERSION
         value: "11"
     command: "entrypoint.sh"
     args: ["java", "--version"]
@@ -27,7 +27,7 @@ commandTests:
 
   - name: openjdk 17 installed
     envVars:
-      - key: GOOGLE_RUNTIME_VERSION
+      - key: GOOGLE_OPENJDK_VERSION
         value: "17"
     command: "entrypoint.sh"
     args: ["java", "--version"]
@@ -42,7 +42,7 @@ commandTests:
 
   - name: openjdk 8 not installed
     envVars:
-      - key: GOOGLE_RUNTIME_VERSION
+      - key: GOOGLE_OPENJDK_VERSION
         value: "8"
     command: "entrypoint.sh"
     args: ["java", "--version"]
@@ -62,15 +62,14 @@ commandTests:
     expectedOutput:
       - "Gradle 8.5"
 
-  # TODO: Add this back when the openjdk-steps binary is ready
-  # - name: "openjdk-steps is installed"
-  #   command: "openjdk-steps"
-  #   args: ["--help"]
-  #   exitCode: 0
+  - name: "openjdk-steps is installed"
+    command: "openjdk-steps"
+    args: ["--help"]
+    exitCode: 0
 
 metadataTest:
   envVars:
-    - key: GOOGLE_RUNTIME_VERSION
+    - key: GOOGLE_OPENJDK_VERSION
       value: 21
     - key: MAVEN_VERSION
       value: 3.9.6
