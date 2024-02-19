@@ -15,16 +15,9 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 )
 
-func CreateGCSClient(t *testing.T, content []byte, bucketName, objName string) *storage.Client {
+func CreateGCSClient(t *testing.T, objects []fakestorage.Object) *storage.Client {
 	t.Helper()
-	server := fakestorage.NewServer([]fakestorage.Object{{
-		Content: content,
-		ObjectAttrs: fakestorage.ObjectAttrs{
-			BucketName: bucketName,
-			Name:       objName,
-		},
-	},
-	})
+	server := fakestorage.NewServer(objects)
 	t.Cleanup(server.Stop)
 	return server.Client()
 }
@@ -104,6 +97,7 @@ func (f *FakeCloudDeployServer) GetRelease(ctx context.Context, req *deploypb.Ge
 		},
 	}, nil
 }
+
 func (f *FakeCloudDeployServer) GetDeliveryPipeline(ctx context.Context, req *deploypb.GetDeliveryPipelineRequest) (*deploypb.DeliveryPipeline, error) {
 	return &deploypb.DeliveryPipeline{
 		Uid: "test-uid",

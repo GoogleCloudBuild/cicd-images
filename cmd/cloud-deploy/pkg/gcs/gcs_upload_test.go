@@ -21,27 +21,13 @@ import (
 	"time"
 
 	"cloud.google.com/go/deploy/apiv1/deploypb"
-	"cloud.google.com/go/storage"
 	"github.com/GoogleCloudBuild/cicd-images/cmd/cloud-deploy/pkg/config"
+	"github.com/GoogleCloudBuild/cicd-images/cmd/cloud-deploy/test"
 	"github.com/fsouza/fake-gcs-server/fakestorage"
 	"github.com/google/uuid"
 )
 
-func CreateGCSClient(t *testing.T, content []byte, bucketName, objName string) *storage.Client {
-	t.Helper()
-	server := fakestorage.NewServer([]fakestorage.Object{{
-		Content: content,
-		ObjectAttrs: fakestorage.ObjectAttrs{
-			BucketName: bucketName,
-			Name:       objName,
-		},
-	},
-	})
-	t.Cleanup(server.Stop)
-	return server.Client()
-}
-
-func TestSetSource_TarFile(t *testing.T) {
+func TestSetSource_LocalTarFile(t *testing.T) {
 	// setup
 	ctx := context.Background()
 	flags := &config.ReleaseConfiguration{
@@ -51,12 +37,83 @@ func TestSetSource_TarFile(t *testing.T) {
 	pipelineUUID := "test-pipeline-uid"
 	release := &deploypb.Release{}
 
-	bucketName, err := getDefaultbucket(pipelineUUID)
+	bucket, err := getDefaultbucket(pipelineUUID)
 	if err != nil {
 		t.Fatalf("unexpected error getting bucket name: %s", err)
 	}
-	stagedObj := fmt.Sprintf("source/%v-%s.tgz", time.Now().UnixMicro(), uuid.New())
-	client := CreateGCSClient(t, []byte{}, bucketName, stagedObj)
+	object := fmt.Sprintf("source/%v-%s.tgz", time.Now().UnixMicro(), uuid.New())
+	mockObjs := []fakestorage.Object{{
+		ObjectAttrs: fakestorage.ObjectAttrs{
+			BucketName: bucket,
+			Name:       object,
+		},
+	}}
+	client := test.CreateGCSClient(t, mockObjs)
+
+	// test
+	err = SetSource(ctx, pipelineUUID, flags, client, release)
+	if err != nil {
+		t.Fatalf("unexpected error calling FetchReleasePipeline: %v", err.Error())
+	}
+}
+
+func TestSetSource_LocalDirectory(t *testing.T) {
+	// setup
+	ctx := context.Background()
+	flags := &config.ReleaseConfiguration{
+		ProjectId: "id",
+		Source:    "../../test/test_dir/",
+	}
+	pipelineUUID := "test-pipeline-uid"
+	release := &deploypb.Release{}
+
+	bucket, err := getDefaultbucket(pipelineUUID)
+	if err != nil {
+		t.Fatalf("unexpected error getting bucket name: %s", err)
+	}
+	object := fmt.Sprintf("source/%v-%s.tgz", time.Now().UnixMicro(), uuid.New())
+	mockObjs := []fakestorage.Object{{
+		ObjectAttrs: fakestorage.ObjectAttrs{
+			BucketName: bucket,
+			Name:       object,
+		},
+	}}
+	client := test.CreateGCSClient(t, mockObjs)
+
+	// test
+	err = SetSource(ctx, pipelineUUID, flags, client, release)
+	if err != nil {
+		t.Fatalf("unexpected error calling FetchReleasePipeline: %v", err.Error())
+	}
+}
+
+func TestSetSource_RemoteGCS(t *testing.T) {
+	// setup
+	ctx := context.Background()
+	flags := &config.ReleaseConfiguration{
+		ProjectId: "id",
+		Source:    "gs://src_bucket/src_obj.zip",
+	}
+	pipelineUUID := "test-pipeline-uid"
+	release := &deploypb.Release{}
+	dstBucket, err := getDefaultbucket(pipelineUUID)
+	if err != nil {
+		t.Fatalf("unexpected error getting bucket name: %s", err)
+	}
+	destObject := fmt.Sprintf("source/%v-%s.tgz", time.Now().UnixMicro(), uuid.New())
+
+	mockObjs := []fakestorage.Object{{
+		ObjectAttrs: fakestorage.ObjectAttrs{
+			BucketName: dstBucket,
+			Name:       destObject,
+		},
+	}, {
+		ObjectAttrs: fakestorage.ObjectAttrs{
+			BucketName: "src_bucket",
+			Name:       "src_obj.zip",
+		},
+	}}
+	client := test.CreateGCSClient(t, mockObjs)
 
 	// test
 	err = SetSource(ctx, pipelineUUID, flags, client, release)

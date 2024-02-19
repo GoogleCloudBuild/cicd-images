@@ -15,6 +15,8 @@
 package gcs
 
 import (
+	"archive/tar"
+	"compress/gzip"
 	"context"
 	"fmt"
 	"os"
@@ -28,51 +30,181 @@ import (
 	"github.com/google/uuid"
 )
 
-// SetSource the source for the release config and creates a default Cloud Storage bucket for staging
+const (
+	tmpTarPath = "/tmp/cloud-deploy-tmp-tar.tgz"
+)
+
+// SetSource sets the source for the release config and creates a default Cloud Storage bucket for staging
 func SetSource(ctx context.Context, pipelineUUID string, flags *config.ReleaseConfiguration, client *storage.Client, release *deploypb.Release) error {
 	source := flags.Source
-	if err := validateSource(source); err != nil {
-		return err
-	}
-
+	object := fmt.Sprintf("source/%v-%s", time.Now().UnixMicro(), uuid.New())
+	skaffoldConfigUri := ""
 	bucket, err := getDefaultbucket(pipelineUUID)
 	if err != nil {
 		return err
 	}
-	if err := createBucketIfNotExist(ctx, bucket, flags.ProjectId, client); err != nil {
-		return err
+
+	if strings.HasPrefix(source, "gs://") {
+		// remote gcs source
+		object += filepath.Ext(source)
+		skaffoldConfigUri, err = copyRemoteGCS(ctx, source, bucket, object, flags.ProjectId, client)
+		if err != nil {
+			return err
+		}
+	} else {
+		// local source
+		info, err := os.Stat(source)
+		if err != nil {
+			return fmt.Errorf("local source: %s does not exist", source)
+		}
+		if !info.Mode().IsDir() && !strings.HasSuffix(source, ".zip") && !strings.HasSuffix(source, ".tgz") && strings.HasSuffix(source, ".gz") {
+			return fmt.Errorf("local source: %s is none of local .zip, .tgz, .gz, or directory", source)
+		}
+
+		// upload
+		if info.Mode().IsDir() {
+			// create a tarball if source is a local directory
+			if err := createTarball(source, tmpTarPath); err != nil {
+				return fmt.Errorf("failed to create local tar: %s", err)
+			}
+			object += ".tgz"
+			source = tmpTarPath
+		} else {
+			object += filepath.Ext(source)
+		}
+
+		skaffoldConfigUri, err = uploadLocalArchiveToGCS(ctx, source, bucket, object, flags.ProjectId, client)
+		if err != nil {
+			return err
+		}
 	}
 
-	// write to GCS
-	// TODO: support other source type upload
-	object := fmt.Sprintf("source/%v-%s%s", time.Now().UnixMicro(), uuid.New(), filepath.Ext(source))
-	if err := uploadLocalArchiveToGCS(ctx, source, bucket, object, client, release); err != nil {
-		return err
-	}
-
-	// TODO: add skaffold_version
+	release.SkaffoldConfigUri = skaffoldConfigUri
 	return nil
 }
 
-func uploadLocalArchiveToGCS(ctx context.Context, source, bucket, object string, client *storage.Client, release *deploypb.Release) error {
+func uploadLocalArchiveToGCS(ctx context.Context, source, bucket, object, projectId string, client *storage.Client) (string, error) {
+	if err := createBucketIfNotExist(ctx, bucket, projectId, client); err != nil {
+		return "", err
+	}
+
 	fmt.Printf("Uploading local archive file %s to gs://%s/%s \n", source, bucket, object)
 	if err := uploadTarball(ctx, client, object, bucket, source); err != nil {
-		return err
+		return "", err
 	}
-	release.SkaffoldConfigUri = fmt.Sprintf("gs://%s/%s", bucket, object)
 
-	return nil
+	return fmt.Sprintf("gs://%s/%s", bucket, object), nil
 }
 
-func getDefaultbucket(pipelineUUID string) (string, error) {
-	bucketName := pipelineUUID + "_clouddeploy"
-
-	// Bucket name length constraint
-	if len(bucketName) > 63 {
-		return "", fmt.Errorf("the length of the bucket id: %s must not exceed 63 characters", bucketName)
+func uploadTarball(ctx context.Context, gcsClient *storage.Client, object, bucket, fileToUpload string) error {
+	data, err := os.ReadFile(fileToUpload)
+	if err != nil {
+		return fmt.Errorf("unable to read file to upload: %w", err)
 	}
 
-	return bucketName, nil
+	o := gcsClient.Bucket(bucket).Object(object)
+	wc := o.NewWriter(ctx)
+	wc.ContentType = "application/x-tar"
+
+	if _, err := wc.Write(data); err != nil {
+		return fmt.Errorf("unable to write data to bucket %w", err)
+	}
+	if err := wc.Close(); err != nil {
+		return fmt.Errorf("unable to close bucket writer %w", err)
+	}
+
+	return err
+}
+
+func createTarball(folderToTarball, tarballPath string) error {
+	// Create a temp tarball file
+	tarballFile, err := os.Create(tarballPath)
+	if err != nil {
+		return err
+	}
+	defer tarballFile.Close()
+
+	// Create a tar writer
+	gzipWriter := gzip.NewWriter(tarballFile)
+	defer gzipWriter.Close()
+
+	tarWriter := tar.NewWriter(gzipWriter)
+	defer tarWriter.Close()
+
+	err = filepath.Walk(folderToTarball, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		header, err := tar.FileInfoHeader(info, "")
+		if err != nil {
+			return err
+		}
+		relPath, err := filepath.Rel(folderToTarball, path)
+		if err != nil {
+			return err
+		}
+		header.Name = relPath
+		// Write the header to the tarball
+		if err := tarWriter.WriteHeader(header); err != nil {
+			return err
+		}
+		if info.IsDir() {
+			header.Mode |= 0755 // Set directory permission
+		} else {
+			data, err := os.ReadFile(path)
+			if err != nil {
+				return err
+			}
+			header.Size = int64(len(data))
+			tarWriter.WriteHeader(header)
+			_, err = tarWriter.Write(data)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+
+	return err
+}
+
+func copyRemoteGCS(ctx context.Context, source, destBucket, destObj, projectId string, client *storage.Client) (string, error) {
+	// parse source
+	srcBucket, srcObj, err := parseRemoteGCSSource(source)
+	if err != nil {
+		return "", err
+	}
+
+	if err := createBucketIfNotExist(ctx, destBucket, projectId, client); err != nil {
+		return "", err
+	}
+
+	// Copy content
+	dstUri := fmt.Sprintf("gs://%s/%s", destBucket, destObj)
+	fmt.Printf("copying remote storage %s to %s \n", source, dstUri)
+
+	src := client.Bucket(srcBucket).Object(srcObj)
+	dst := client.Bucket(destBucket).Object(destObj)
+	_, err = dst.CopierFrom(src).Run(ctx)
+	if err != nil {
+		return "", fmt.Errorf("error running gcs copier: %v", err)
+	}
+
+	return dstUri, nil
+}
+
+// parseRemoteGCSSource parse an input remote source to bucket name and object name, or error.
+// e.g. input: gs://bucket_name/object_name.xyz
+// output: bucket_name, object_name.xyz, nil
+func parseRemoteGCSSource(source string) (string, string, error) {
+	source = strings.TrimPrefix(source, "gs://")
+	parts := strings.SplitN(source, "/", 2)
+	if len(parts) != 2 {
+		return "", "", fmt.Errorf("invalid remote GCS source format: %s", source)
+	}
+
+	return parts[0], parts[1], nil
 }
 
 func createBucketIfNotExist(ctx context.Context, bucketName, projectId string, client *storage.Client) error {
@@ -95,41 +227,13 @@ func createBucketIfNotExist(ctx context.Context, bucketName, projectId string, c
 	return nil
 }
 
-func uploadTarball(ctx context.Context, gcsClient *storage.Client, stagedObj, bucketName, fileToUpload string) error {
-	data, err := os.ReadFile(fileToUpload)
-	if err != nil {
-		return fmt.Errorf("unable to read file to upload: %w", err)
+func getDefaultbucket(pipelineUUID string) (string, error) {
+	bucketName := pipelineUUID + "_clouddeploy"
+
+	// Bucket name length constraint
+	if len(bucketName) > 63 {
+		return "", fmt.Errorf("the length of the bucket id: %s must not exceed 63 characters", bucketName)
 	}
 
-	o := gcsClient.Bucket(bucketName).Object(stagedObj)
-	wc := o.NewWriter(ctx)
-	wc.ContentType = "application/x-tar"
-
-	if _, err := wc.Write(data); err != nil {
-		return fmt.Errorf("unable to write data to bucket %w", err)
-	}
-	if err := wc.Close(); err != nil {
-		return fmt.Errorf("unable to close bucket writer %w", err)
-	}
-
-	return err
-}
-
-// TODO: allow cloud storage and directory source input
-func validateSource(source string) error {
-	if strings.HasPrefix(source, "gs://") {
-		return fmt.Errorf("google cloud storage source is not supported")
-	}
-
-	info, err := os.Stat(source)
-	if os.IsNotExist(err) {
-		return fmt.Errorf("source: %s does not exist", source)
-	}
-
-	// TODO: check if the souce is an Archive in addition to checking the suffix
-	if !info.Mode().IsRegular() || (!strings.HasSuffix(source, ".zip") && !strings.HasSuffix(source, ".tgz") && strings.HasSuffix(source, ".gz")) {
-		return fmt.Errorf("source: %s is none of .zip, .tgz, .gz (directory source is not implemented yet)", source)
-	}
-
-	return nil
+	return bucketName, nil
 }

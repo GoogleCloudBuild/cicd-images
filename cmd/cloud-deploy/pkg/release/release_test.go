@@ -21,6 +21,7 @@ import (
 	"cloud.google.com/go/deploy/apiv1/deploypb"
 	"github.com/GoogleCloudBuild/cicd-images/cmd/cloud-deploy/pkg/config"
 	"github.com/GoogleCloudBuild/cicd-images/cmd/cloud-deploy/test"
+	"github.com/fsouza/fake-gcs-server/fakestorage"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 )
@@ -35,13 +36,20 @@ func TestCreateCloudDeployRelease(t *testing.T) {
 		Images:           "tag1=image1,tag2=image2",
 	}
 
-	bckName := "test-pipeline-uid_clouddeploy"
-	stagedObj := "/source/1701112633.689433-75c0b8929cb04d7a8a008a38368ac250.tgz"
+	bucket := "test-pipeline-uid_clouddeploy"
+	object := "/source/1701112633.689433-75c0b8929cb04d7a8a008a38368ac250.tgz"
+
+	mockObjs := []fakestorage.Object{{
+		ObjectAttrs: fakestorage.ObjectAttrs{
+			BucketName: bucket,
+			Name:       object,
+		},
+	}}
 
 	// Setup the fake server.
 	ctx := context.Background()
 	cdClient := test.CreateCloudDeployClient(t, ctx)
-	gcsClient := test.CreateGCSClient(t, []byte{}, bckName, stagedObj)
+	gcsClient := test.CreateGCSClient(t, mockObjs)
 
 	if err := CreateCloudDeployRelease(ctx, cdClient, gcsClient, flags); err != nil {
 		t.Fatalf("unexpected error when creating release: %s", err.Error())
