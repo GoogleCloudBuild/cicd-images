@@ -27,6 +27,8 @@ import (
 	"github.com/google/uuid"
 )
 
+// TODO (@zhangquan): Refactor tests to tests public-facing methods
+// TODO (@zhangquan): Improve tests coverage
 func TestSetSource_LocalTarFile(t *testing.T) {
 	// setup
 	ctx := context.Background()

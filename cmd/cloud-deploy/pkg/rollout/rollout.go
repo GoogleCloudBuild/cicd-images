@@ -27,25 +27,25 @@ func CreateRollout(ctx context.Context, cdClient *deploy.CloudDeployClient, flag
 		return fmt.Errorf("err getting release: %w", err)
 	}
 
-	// promote to the first target
-	stages := release.DeliveryPipelineSnapshot.GetSerialPipeline().Stages
-	if len(stages) == 0 {
-		return fmt.Errorf("no pipeline stages in the release %s", flags.Release)
+	toTargetId, err := getToTargetId(ctx, release, flags)
+	if err != nil {
+		return err
 	}
-
-	toTargetId := stages[0].TargetId
 	finalRollOutId, err := generateRolloutId(ctx, cdClient, toTargetId, release, flags)
 	if err != nil {
 		return err
 	}
 
 	req := &deploypb.CreateRolloutRequest{
-		Parent:    fmt.Sprintf("projects/%s/locations/%s/deliveryPipelines/%s/releases/%s", flags.ProjectId, flags.Region, flags.DeliveryPipeline, flags.Release),
-		RolloutId: finalRollOutId,
-		RequestId: uuid.NewString(),
+		Parent:          fmt.Sprintf("projects/%s/locations/%s/deliveryPipelines/%s/releases/%s", flags.ProjectId, flags.Region, flags.DeliveryPipeline, flags.Release),
+		RolloutId:       finalRollOutId,
+		RequestId:       uuid.NewString(),
+		StartingPhaseId: flags.InitialRolloutPhaseId,
 		Rollout: &deploypb.Rollout{
-			Name:     fmt.Sprintf("projects/%s/locations/%s/deliveryPipelines/%s/releases/%s/rollouts/%s", flags.ProjectId, flags.Region, flags.DeliveryPipeline, flags.Release, finalRollOutId),
-			TargetId: toTargetId,
+			Name:        fmt.Sprintf("projects/%s/locations/%s/deliveryPipelines/%s/releases/%s/rollouts/%s", flags.ProjectId, flags.Region, flags.DeliveryPipeline, flags.Release, finalRollOutId),
+			TargetId:    toTargetId,
+			Annotations: flags.InitialRolloutAnotations,
+			Labels:      flags.InitialRolloutLabels,
 		},
 	}
 
@@ -73,6 +73,23 @@ func CreateRollout(ctx context.Context, cdClient *deploy.CloudDeployClient, flag
 	}
 
 	return nil
+}
+
+func getToTargetId(ctx context.Context, release *deploypb.Release, flags *config.ReleaseConfiguration) (string, error) {
+	var toTargetId string
+	if flags.ToTarget != "" {
+		toTargetId = flags.ToTarget
+	} else {
+		// promote to the first target by default
+		stages := release.DeliveryPipelineSnapshot.GetSerialPipeline().Stages
+		if len(stages) == 0 {
+			return "", fmt.Errorf("no pipeline stages in the release %s", flags.Release)
+		}
+
+		toTargetId = stages[0].TargetId
+	}
+
+	return toTargetId, nil
 }
 
 func generateRolloutId(ctx context.Context, cdClient *deploy.CloudDeployClient, toTargetId string, release *deploypb.Release, flags *config.ReleaseConfiguration) (string, error) {

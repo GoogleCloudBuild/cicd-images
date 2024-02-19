@@ -16,6 +16,8 @@ package release
 
 import (
 	"context"
+	"fmt"
+	"path/filepath"
 	"testing"
 
 	"cloud.google.com/go/deploy/apiv1/deploypb"
@@ -26,6 +28,8 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
+// TODO (@zhangquan): Refactor tests to tests public-facing methods
+// TODO (@zhangquan): Improve tests coverage
 func TestCreateCloudDeployRelease(t *testing.T) {
 	// setup
 	flags := &config.ReleaseConfiguration{
@@ -33,7 +37,10 @@ func TestCreateCloudDeployRelease(t *testing.T) {
 		Region:           "global",
 		DeliveryPipeline: "test-pipeline",
 		Source:           "../../test/testdata/testdata.tgz",
-		Images:           "tag1=image1,tag2=image2",
+		Images: map[string]string{
+			"tag1": "image1",
+			"tag2": "image2",
+		},
 	}
 
 	bucket := "test-pipeline-uid_clouddeploy"
@@ -59,18 +66,23 @@ func TestCreateCloudDeployRelease(t *testing.T) {
 func TestSetImages_Success(t *testing.T) {
 	tcs := []struct {
 		name            string
-		images          string
+		images          map[string]string
 		Release         *deploypb.Release
 		ExpectedRelease *deploypb.Release
 	}{
 		{
-			name:            "no image",
-			Release:         &deploypb.Release{},
-			ExpectedRelease: &deploypb.Release{},
+			name:    "no image",
+			Release: &deploypb.Release{},
+			ExpectedRelease: &deploypb.Release{
+				BuildArtifacts: []*deploypb.BuildArtifact{},
+			},
 		},
 		{
-			name:    "2 images",
-			images:  "image1=tag1,image2=tag2",
+			name: "2 images",
+			images: map[string]string{
+				"image1": "tag1",
+				"image2": "tag2",
+			},
 			Release: &deploypb.Release{},
 			ExpectedRelease: &deploypb.Release{
 				BuildArtifacts: []*deploypb.BuildArtifact{
@@ -94,6 +106,199 @@ func TestSetImages_Success(t *testing.T) {
 
 		if diff := cmp.Diff(tc.ExpectedRelease.BuildArtifacts, tc.Release.BuildArtifacts, cmpopts.IgnoreUnexported(deploypb.BuildArtifact{})); diff != "" {
 			t.Errorf("unexpected release config calling setImages(): %s", diff)
+		}
+	}
+}
+
+func TestParseDictString_Success(t *testing.T) {
+	tcs := []struct {
+		name         string
+		input        string
+		expectedDict map[string]string
+	}{
+		{
+			name:  "annotations",
+			input: "annotation1=val1,annotation2=val2",
+			expectedDict: map[string]string{
+				"annotation1": "val1",
+				"annotation2": "val2",
+			},
+		},
+		{
+			name:  "labels",
+			input: "label1=val1,label2=val2",
+			expectedDict: map[string]string{
+				"label1": "val1",
+				"label2": "val2",
+			},
+		},
+	}
+	for _, tc := range tcs {
+		res, err := ParseDictString(tc.input)
+		if err != nil {
+			t.Fatalf("unexpected error calling ParseDictString(); %s", err)
+		}
+		if diff := cmp.Diff(tc.expectedDict, res); diff != "" {
+			t.Errorf("unexpected dict calling ParseDictString(): %s", diff)
+		}
+	}
+}
+
+func TestValidateSupportedSkaffoldVersion_Success(t *testing.T) {
+	ctx := context.Background()
+	flags := &config.ReleaseConfiguration{
+		ProjectId:       "test-project",
+		Region:          "us-central1",
+		SkaffoldVersion: "2.8",
+	}
+	cdClient := test.CreateCloudDeployClient(t, ctx)
+
+	if err := validateSupportedSkaffoldVersion(ctx, flags, cdClient); err != nil {
+		t.Errorf("unexpected error calling validateSupportedSkaffoldVersion(): %s", err)
+	}
+}
+
+func TestValidateSupportedSkaffoldVersion_Failed(t *testing.T) {
+	ctx := context.Background()
+	tcs := []struct {
+		name            string
+		skaffoldVersion string
+		expectedErr     error
+	}{
+		{
+			name:            "invalid skaffold version",
+			skaffoldVersion: "2.invalid",
+			expectedErr:     fmt.Errorf("invalid --skaffold-version: 2.invalid. \nPlease check: https://cloud.google.com/deploy/docs/using-skaffold/select-skaffold#skaffold_version_deprecation_and_maintenance_policy"),
+		}, {
+			name:            "maintenance period",
+			skaffoldVersion: "2.0",
+			expectedErr: fmt.Errorf("you can't create a new release using a Skaffold version that is in maintenance mode.\n" +
+				"https://cloud.google.com/deploy/docs/using-skaffold/select-skaffold#skaffold_version_deprecation_and_maintenance_policy"),
+		},
+	}
+
+	flags := &config.ReleaseConfiguration{
+		ProjectId: "test-project",
+		Region:    "us-central1",
+	}
+	cdClient := test.CreateCloudDeployClient(t, ctx)
+
+	for _, tc := range tcs {
+		flags.SkaffoldVersion = tc.skaffoldVersion
+		err := validateSupportedSkaffoldVersion(ctx, flags, cdClient)
+		if diff := cmp.Diff(tc.expectedErr.Error(), err.Error()); diff != "" {
+			t.Errorf("mismatched error: %s", diff)
+		}
+	}
+}
+
+func TestSetSkaffoldFile_RelativePath_Success(t *testing.T) {
+	ctx := context.Background()
+	tcs := []struct {
+		name                       string
+		flags                      *config.ReleaseConfiguration
+		expectedSkaffoldConfigPath string
+	}{
+		{
+			name: "directory source with relative skaffold file",
+			flags: &config.ReleaseConfiguration{
+				Source:       "../../test/test_dir",
+				SkaffoldFile: "skaffold-custom.yaml",
+			},
+			expectedSkaffoldConfigPath: "skaffold-custom.yaml",
+		}, {
+			name: "directory source with default skaffold file",
+			flags: &config.ReleaseConfiguration{
+				Source: "../../test/test_dir",
+			},
+			expectedSkaffoldConfigPath: "",
+		}, {
+			name: "tar source with relative skaffold file",
+			flags: &config.ReleaseConfiguration{
+				Source:       "../../test/testdata/testdata.tgz",
+				SkaffoldFile: "skaffold.yaml",
+			},
+			expectedSkaffoldConfigPath: "skaffold.yaml",
+		}, {
+			name: "tar source with default skaffold file",
+			flags: &config.ReleaseConfiguration{
+				Source: "../../test/testdata/testdata.tgz",
+			},
+			expectedSkaffoldConfigPath: "",
+		}, {
+			name: "remote gcs source with relative skaffold file",
+			flags: &config.ReleaseConfiguration{
+				Source:       "gs://remote-bucket/obj.tgz",
+				SkaffoldFile: "skaffold-custom.yaml",
+			},
+			expectedSkaffoldConfigPath: "skaffold-custom.yaml",
+		}, {
+			name: "remote gcs source with reldefaultative skaffold file",
+			flags: &config.ReleaseConfiguration{
+				Source: "gs://remote-bucket/obj.tgz",
+			},
+			expectedSkaffoldConfigPath: "",
+		},
+	}
+
+	for _, tc := range tcs {
+		release := &deploypb.Release{}
+		if err := setSkaffoldFile(ctx, tc.flags, release); err != nil {
+			t.Fatalf("unexpected err calling setSkaffoldFile(): %s", err)
+		}
+		if diff := cmp.Diff(tc.expectedSkaffoldConfigPath, release.SkaffoldConfigPath); diff != "" {
+			t.Errorf("release.SkaffoldConfigPath does not match: %s", diff)
+		}
+	}
+}
+
+func TestSetSkaffoldFile_AbsolutePath_Success(t *testing.T) {
+	ctx := context.Background()
+	absSkaffoldPath, err := filepath.Abs("../../test/test_dir/skaffold-custom.yaml")
+	if err != nil {
+		t.Fatalf("unexpected err finding abs path of skaffold file")
+	}
+	absSourcePath, err := filepath.Abs("../../test/test_dir")
+	if err != nil {
+		t.Fatalf("unexpected err finding abs path of source dir")
+	}
+
+	tcs := []struct {
+		name                       string
+		flags                      *config.ReleaseConfiguration
+		expectedSkaffoldConfigPath string
+	}{
+		{
+			name: "abs source and abs skaffold file",
+			flags: &config.ReleaseConfiguration{
+				Source:       absSourcePath,
+				SkaffoldFile: absSkaffoldPath,
+			},
+			expectedSkaffoldConfigPath: "skaffold-custom.yaml",
+		}, {
+			name: "abs source and relative skaffold file",
+			flags: &config.ReleaseConfiguration{
+				Source:       absSourcePath,
+				SkaffoldFile: "../../test/test_dir/skaffold-custom.yaml",
+			},
+			expectedSkaffoldConfigPath: "../../test/test_dir/skaffold-custom.yaml",
+		}, {
+			name: "relative source and abs skaffold file",
+			flags: &config.ReleaseConfiguration{
+				Source:       "../../test/test_dir",
+				SkaffoldFile: absSkaffoldPath,
+			},
+			expectedSkaffoldConfigPath: "skaffold-custom.yaml",
+		},
+	}
+
+	for _, tc := range tcs {
+		release := &deploypb.Release{}
+		if err := setSkaffoldFile(ctx, tc.flags, release); err != nil {
+			t.Fatalf("unexpected err calling setSkaffoldFile(): %s", err)
+		}
+		if diff := cmp.Diff(tc.expectedSkaffoldConfigPath, release.SkaffoldConfigPath); diff != "" {
+			t.Errorf("release.SkaffoldConfigPath does not match: %s", diff)
 		}
 	}
 }
