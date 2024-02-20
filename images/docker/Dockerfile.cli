@@ -58,7 +58,7 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # set versions
-ARG DOCKER_VERSION='24' \
+ARG DOCKER_VERSION='25' \
     DOCKER_BUILDX_VERSION='0' \
     DOCKER_COMPOSE_VERSION='2'
 
