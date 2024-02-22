@@ -13,6 +13,7 @@ import (
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/anypb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func CreateGCSClient(t *testing.T, objects []fakestorage.Object) *storage.Client {
@@ -101,5 +102,21 @@ func (f *FakeCloudDeployServer) GetRelease(ctx context.Context, req *deploypb.Ge
 func (f *FakeCloudDeployServer) GetDeliveryPipeline(ctx context.Context, req *deploypb.GetDeliveryPipelineRequest) (*deploypb.DeliveryPipeline, error) {
 	return &deploypb.DeliveryPipeline{
 		Uid: "test-uid",
+	}, nil
+}
+
+func (f *FakeCloudDeployServer) GetConfig(ctx context.Context, req *deploypb.GetConfigRequest) (*deploypb.Config, error) {
+	return &deploypb.Config{
+		SupportedVersions: []*deploypb.SkaffoldVersion{
+			{
+				Version:               "2.0",
+				SupportExpirationTime: &timestamppb.Timestamp{Seconds: 1710072000}, // 2024-03-10 12:00:00 PM
+				MaintenanceModeTime:   &timestamppb.Timestamp{Seconds: 1704801600}, // 2024-01-01 12:00:00 PM
+			}, {
+				Version:               "2.8",
+				SupportExpirationTime: &timestamppb.Timestamp{Seconds: 1735128000}, // 2024-12-25 12:00:00 PM
+				MaintenanceModeTime:   &timestamppb.Timestamp{Seconds: 1729944000}, // 2024-12-26 12:00:00 PM
+			},
+		},
 	}, nil
 }

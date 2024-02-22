@@ -29,6 +29,16 @@ import (
 
 var flags config.ReleaseConfiguration
 
+var (
+	initialRolloutAnnotationStr string
+	initialRolloutLabelStr      string
+	imagesStr                   string
+)
+
+const (
+	defaultSource = "."
+)
+
 const userAgent = "google-gitlab-components:create-cloud-deploy-release"
 
 var releaseCmd = &cobra.Command{
@@ -36,13 +46,26 @@ var releaseCmd = &cobra.Command{
 	Short: "Create a Cloud Deploy Release",
 	Long:  ``,
 	PreRunE: func(cmd *cobra.Command, args []string) error {
+		var err error
 		if strings.Contains(flags.DeliveryPipeline, "/") {
-			return fmt.Errorf("invalid delivery-pipeline value: %s, only lower-case letters, numbers, and hyphens are allowed", flags.DeliveryPipeline)
-		}
-		if flags.Images != "" && strings.Contains(flags.Images, " ") {
-			return fmt.Errorf("invalid images value: %s, the images string should not contain space", flags.Images)
+			return fmt.Errorf("invalid --delivery-pipeline value: %s, only lower-case letters, numbers, and hyphens are allowed", flags.DeliveryPipeline)
 		}
 
+		flags.InitialRolloutAnotations, err = release.ParseDictString(initialRolloutAnnotationStr)
+		if err != nil {
+			return fmt.Errorf("invalid --initial-rollout-annotations value: %s", err)
+		}
+		flags.InitialRolloutLabels, err = release.ParseDictString(initialRolloutLabelStr)
+		if err != nil {
+			return fmt.Errorf("invalid --initial-rollout-labels value: %s", err)
+		}
+		flags.Images, err = release.ParseDictString(imagesStr)
+		if err != nil {
+			return fmt.Errorf("invalid --images value: %s", err)
+		}
+		if flags.Source == "" {
+			flags.Source = defaultSource
+		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -72,7 +95,15 @@ func init() {
 	releaseCmd.PersistentFlags().StringVar(&flags.ProjectId, "project-id", "", "The GCP project id")
 	releaseCmd.PersistentFlags().StringVar(&flags.Release, "name", "", "The name of the release to create")
 	releaseCmd.PersistentFlags().StringVar(&flags.Source, "source", ".", "The source location containing skaffold.yaml")
-	releaseCmd.PersistentFlags().StringVar(&flags.Images, "images", "", "The images associated with the release")
+	releaseCmd.PersistentFlags().StringVar(&flags.Description, "description", "", "The description of the release")
+	releaseCmd.PersistentFlags().StringVar(&flags.InitialRolloutPhaseId, "initial-rollout-phase-id", "", "The phase to start the initial rollout at when creating the release")
+	releaseCmd.PersistentFlags().StringVar(&flags.ToTarget, "to-target", "", "The target to deliver into upon release creation")
+	releaseCmd.PersistentFlags().StringVar(&flags.SkaffoldVersion, "skaffold-version", "", "The version of the Skaffold binary")
+	releaseCmd.PersistentFlags().StringVar(&flags.SkaffoldFile, "skaffold-file", "", "The oath of the skaffold file absolute or relative to the source directory.")
+
+	releaseCmd.PersistentFlags().StringVar(&imagesStr, "images", "", "The images associated with the release")
+	releaseCmd.PersistentFlags().StringVar(&initialRolloutAnnotationStr, "initial-rollout-annotations", "", "Annotations to apply to the initial rollout when creating the release")
+	releaseCmd.PersistentFlags().StringVar(&initialRolloutLabelStr, "initial-rollout-labels", "", "Labels to apply to the initial rollout when creating the release")
 
 	releaseCmd.MarkPersistentFlagRequired("delivery-pipeline")
 	releaseCmd.MarkPersistentFlagRequired("region")
