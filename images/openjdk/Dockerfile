@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-# 
+#
 # Copyright 2023 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,7 +17,25 @@
 
 FROM google-go.pkg.dev/golang:1.21.5 as builder
 
-# TODO: Build needed step binary/binaries for java related tasks
+WORKDIR /src
+COPY --from=src . .
+
+WORKDIR /src/tools
+RUN go install github.com/google/go-licenses
+
+# Run binary tests, build and license scan.
+WORKDIR /src
+RUN go mod download && \
+    go test ./cmd/openjdk-steps/... -timeout 30s && \
+    go build ./cmd/openjdk-steps
+
+# Scan and save licenses.
+RUN go-licenses check ./cmd/openjdk-steps && \
+    go-licenses save ./cmd/openjdk-steps --save_path=/THIRD_PARTY_NOTICES/openjdk-steps && \
+    go-licenses report ./cmd/openjdk-steps > /THIRD_PARTY_NOTICES/openjdk-steps/licenses.csv
 
 # hadolint ignore=DL3006
 FROM base
+
+COPY --from=builder /src/openjdk-steps /usr/local/bin/openjdk-steps
+COPY --from=builder /THIRD_PARTY_NOTICES/openjdk-steps /THIRD_PARTY_NOTICES/openjdk-steps
