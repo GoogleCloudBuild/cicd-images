@@ -24,11 +24,11 @@ import (
 
 const INSTALLLOGPATH_ARG = "logPath"
 const INSTALLOUTPUTPATH_ARG = "outputPath"
-const defaultLogPath    = "/mavenconfigs/install-output.txt"
+const defaultLogPath = "/mavenconfigs/install-output.txt"
 const defaultOutputPath = "/mavenconfigs/artifact-directory-paths.txt"
 
 var installScanCmd = &cobra.Command{
-	Use: "install-scan",
+	Use:   "install-scan",
 	Short: "Scan the install logs to retrieve relative artifact output paths.",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		installScanCmdArgs, err := parseInstallScanArgs(cmd.Flags())
@@ -49,8 +49,8 @@ func init() {
 }
 
 type installScanArguments struct {
-	logPath 	string
-	outputPath 	string
+	logPath    string
+	outputPath string
 }
 
 func parseInstallScanArgs(f *pflag.FlagSet) (installScanArguments, error) {
@@ -65,7 +65,7 @@ func parseInstallScanArgs(f *pflag.FlagSet) (installScanArguments, error) {
 	}
 
 	return installScanArguments{
-		logPath: logPath,
+		logPath:    logPath,
 		outputPath: outputPath,
 	}, nil
 }

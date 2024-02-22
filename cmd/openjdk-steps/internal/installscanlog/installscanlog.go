@@ -23,8 +23,8 @@ import (
 )
 
 const (
-	buildPattern      = `Building [^\s]+: [^\s]+`
-	directoryPattern  = `(?:\/workspace\/source\/)(.+[/])` // relative path of artifact directories
+	buildPattern     = `Building [^\s]+: [^\s]+`
+	directoryPattern = `(?:\/workspace\/source\/)(.+[/])` // relative path of artifact directories
 )
 
 // Go through the install log and scan to retrieve artifact output paths.

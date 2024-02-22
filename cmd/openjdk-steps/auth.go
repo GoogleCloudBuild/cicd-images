@@ -119,7 +119,7 @@ func init() {
 
 type authArguments struct {
 	debug             bool
-	inputPomFile	  string
+	inputPomFile      string
 	effectivePomPath  string
 	settingPath       string
 	localRepository   string
@@ -171,7 +171,7 @@ func parseAuthArgs(f *pflag.FlagSet) (authArguments, error) {
 
 	return authArguments{
 		debug:             debug,
-		inputPomFile: 	   inputPomFile,
+		inputPomFile:      inputPomFile,
 		effectivePomPath:  effectivePomPath,
 		settingPath:       settingPath,
 		localRepository:   localRepository,

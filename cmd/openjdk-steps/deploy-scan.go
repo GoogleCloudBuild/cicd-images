@@ -22,17 +22,17 @@ import (
 	"github.com/spf13/pflag"
 )
 
-const DEPLOYLOGPATH_ARG 	= "logPath"
-const DEPLOYOUTPUTPATH_ARG 	= "outputPath"
-const logPathDefault        = "./deploy.txt"
-const outputPathDefault     = "/mavenconfigs/artifacts.list"
+const DEPLOYLOGPATH_ARG = "logPath"
+const DEPLOYOUTPUTPATH_ARG = "outputPath"
+const logPathDefault = "./deploy.txt"
+const outputPathDefault = "/mavenconfigs/artifacts.list"
 
-var deployScanCmd = &cobra.Command {
-	Use: "deploy-scan",
+var deployScanCmd = &cobra.Command{
+	Use:   "deploy-scan",
 	Short: "Scan the deploy logs to retrieve artifacts.",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		deployScanCmdArgs, err := parseDeployScanArgs(cmd.Flags())
-		if err != nil{
+		if err != nil {
 			return err
 		}
 		cmd.SilenceUsage = true
@@ -54,8 +54,8 @@ func init() {
 }
 
 type deployScanArguments struct {
-	logPath 	string
-	outputPath 	string
+	logPath    string
+	outputPath string
 }
 
 func parseDeployScanArgs(f *pflag.FlagSet) (deployScanArguments, error) {
@@ -70,7 +70,7 @@ func parseDeployScanArgs(f *pflag.FlagSet) (deployScanArguments, error) {
 	}
 
 	return deployScanArguments{
-		logPath: logPath,
+		logPath:    logPath,
 		outputPath: outputPath,
 	}, nil
 }

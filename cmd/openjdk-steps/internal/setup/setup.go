@@ -48,7 +48,7 @@ type response struct {
 
 // generate an effective-pom.xml file
 func GenerateEffectivePom(inputPomFile string, effectivePomPath string) error {
-	generateArgs := []string{"help:effective-pom", "--file="+inputPomFile, "-Doutput="+effectivePomPath}
+	generateArgs := []string{"help:effective-pom", "--file=" + inputPomFile, "-Doutput=" + effectivePomPath}
 	pomCmd := exec.Command("mvn", generateArgs...)
 	pomCmd.Stdout = os.Stdout
 	pomCmd.Stderr = os.Stderr
