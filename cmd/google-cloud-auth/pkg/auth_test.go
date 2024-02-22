@@ -22,8 +22,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-func TestSetupApplicationDefaultCredential(t *testing.T) {
-	defaltOutputPath := "/tmp/oidc-jwt.json"
+func TestSetupApplicationDefaultCredential_WIF(t *testing.T) {
+	defaltOutputPath := "/tmp/gcp-credentials.json"
 	tcs := []struct {
 		name                    string
 		ouptutPath              string
@@ -35,7 +35,7 @@ func TestSetupApplicationDefaultCredential(t *testing.T) {
 	}{
 		{
 			name:                    "direct WIF",
-			ouptutPath:              "/tmp/custom",
+			ouptutPath:              "/tmp/custom.json",
 			jwtEnvVar:               "JWT_ENV_VAR",
 			audience:                "test-audience",
 			expectedCredentialsPath: "/tmp/custom.json",
@@ -79,7 +79,7 @@ func TestSetupApplicationDefaultCredential(t *testing.T) {
 			t.Fatalf("unexpected err setting JWT_ENV_VAR: %v", err.Error())
 		}
 
-		if err := SetupApplicationDefaultCredential(tc.expectedCredentialsPath, tc.jwtEnvVar, tc.serviceAccount, tc.audience); err != nil {
+		if err := SetupApplicationDefaultCredential("", tc.ouptutPath, tc.jwtEnvVar, tc.serviceAccount, tc.audience); err != nil {
 			t.Fatalf("unexpected err calling SetupApplicationDefaultCredential: %v", err.Error())
 		}
 
@@ -101,4 +101,33 @@ func TestSetupApplicationDefaultCredential(t *testing.T) {
 			t.Fatalf("Error deleting file: %v", err)
 		}
 	}
+}
+
+func TestSetupApplicationDefaultCredential_UserProvidedJson(t *testing.T) {
+	content := "my credentials"
+	outputPath := "/tmp/gcp-credentials.json"
+
+	if err := os.Setenv("CREDENTIALS_ENV_VAR", content); err != nil {
+		t.Fatalf("unexpected err setting JWT_ENV_VAR: %v", err.Error())
+	}
+
+	if err := SetupApplicationDefaultCredential("CREDENTIALS_ENV_VAR", outputPath, "", "", ""); err != nil {
+		t.Fatalf("unexpected err calling SetupApplicationDefaultCredential: %v", err.Error())
+	}
+
+	cont, err := os.ReadFile(outputPath)
+	if err != nil {
+		t.Fatalf("Error reading file: %v", err)
+	}
+	credentials := string(cont)
+	if d := cmp.Diff(content, credentials); d != "" {
+		t.Errorf("credentials does not match: %s", d)
+	}
+
+	// clean up
+	err = os.Remove(outputPath)
+	if err != nil {
+		t.Fatalf("Error deleting file: %v", err)
+	}
+
 }

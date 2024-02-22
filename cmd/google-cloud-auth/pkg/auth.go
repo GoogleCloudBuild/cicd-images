@@ -21,13 +21,25 @@ import (
 )
 
 // SetupApplicationDefaultCredential builds the credential json and stores it at jwtJsonOutputPath.
-// Tthe file content is built on full oidcJwt and workloadIdentityProvider and audience.
+// It directly writes user-provided credentials(credentialsJsonEnvVar) to credentialsOutputPath if provided.
+// The file content is built on full oidcJwt and workloadIdentityProvider and audience.
 // If serviceAccount is provided, the service Account impersonation is applied during authentication.
-func SetupApplicationDefaultCredential(credentialsOutputPath, oidcJwtEnvVar, serviceAccount, workloadIdentityProvider string) error {
+func SetupApplicationDefaultCredential(credentialsJsonEnvVar, credentialsOutputPath, oidcJwtEnvVar, serviceAccount, workloadIdentityProvider string) error {
+	if credentialsJsonEnvVar != "" {
+		// directly write user-provided credentials to file
+		credentials := os.Getenv(credentialsJsonEnvVar)
+		if err := writeFile(credentialsOutputPath, credentials); err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	// generate WIF credentials file
 	// write oidcJwt to jwtFilePath
 	jwtFilePath := "/tmp/oidc-jwt.txt"
 	jwtContent := os.Getenv(oidcJwtEnvVar)
-	err := createJWTFile(jwtFilePath, jwtContent)
+	err := writeFile(jwtFilePath, jwtContent)
 	if err != nil {
 		return err
 	}
@@ -42,8 +54,8 @@ func SetupApplicationDefaultCredential(credentialsOutputPath, oidcJwtEnvVar, ser
 	return nil
 }
 
-func createJWTFile(outputPath, oidcJwt string) error {
-	file, err := os.Create(outputPath)
+func writeFile(path, content string) error {
+	file, err := os.Create(path)
 	if err != nil {
 		return err
 	}
@@ -53,7 +65,7 @@ func createJWTFile(outputPath, oidcJwt string) error {
 		}
 	}()
 
-	data := []byte(oidcJwt)
+	data := []byte(content)
 	_, err = file.Write(data)
 	if err != nil {
 		return err

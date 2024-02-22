@@ -24,6 +24,7 @@ var (
 	serviceAccount           string
 	workloadIdentityProvider string
 	credentialsOutputPath    string
+	credentialsJsonEnvVar    string
 )
 
 // authCmd represents the auth command
@@ -41,7 +42,7 @@ var generateCredentialsCmd = &cobra.Command{
 
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if err := auth.SetupApplicationDefaultCredential(credentialsOutputPath, oidcJwtEnvVar, serviceAccount, workloadIdentityProvider); err != nil {
+		if err := auth.SetupApplicationDefaultCredential(credentialsJsonEnvVar, credentialsOutputPath, oidcJwtEnvVar, serviceAccount, workloadIdentityProvider); err != nil {
 			return err
 		}
 		return nil
@@ -54,8 +55,6 @@ func init() {
 	generateCredentialsCmd.PersistentFlags().StringVar(&oidcJwtEnvVar, "oidc-jwt-env-var", "", "The env var containing full OIDC JWT")
 	generateCredentialsCmd.PersistentFlags().StringVar(&workloadIdentityProvider, "workload-identity-provider", "", "The value of the audience(aud) param in the generated credentials file")
 	generateCredentialsCmd.PersistentFlags().StringVar(&serviceAccount, "service-account", "", "The Service Account to be impersonated")
-	generateCredentialsCmd.PersistentFlags().StringVar(&credentialsOutputPath, "credentials-json-output-path", "/tmp/oidc-jwt.json", "The full file path of the output credentials json")
-
-	generateCredentialsCmd.MarkPersistentFlagRequired("workload-identity-provider")
-	generateCredentialsCmd.MarkPersistentFlagRequired("oidc-jwt-env-var")
+	generateCredentialsCmd.PersistentFlags().StringVar(&credentialsOutputPath, "credentials-json-output-path", "/tmp/gcp-credentials.json", "The full file path of the output credentials json")
+	generateCredentialsCmd.PersistentFlags().StringVar(&credentialsJsonEnvVar, "credentials-json-env-var", "", "The env var containing user-provided credentials")
 }

@@ -11,7 +11,7 @@ To authenticate with [gcloud][gcloud], you need to set `GCLOUDSDK_AUTH_CREDENTIA
 To authenticate with [Google Client Library][cloud-client-lib], you need to set [`GOOGLE_APPLICATION_CREDENTIALS`][lib-auth] to the generated credential file path.
 
 ## Inputs
--   `oidc-jwt_env_var`: (Required) The Env Var (without "$") containing full OIDC JWT provided by Gitlab, can be found as `id_tokens.GCP_OIDC_JWT` in the
+-   `oidc-jwt_env_var`: (Optional) The Env Var (without "$") containing full OIDC JWT provided by Gitlab, can be found as `id_tokens.GCP_OIDC_JWT` in the
      Gitlab CI/CD config.
 
     ```text
@@ -19,7 +19,7 @@ To authenticate with [Google Client Library][cloud-client-lib], you need to set 
         GCP_OIDC_JWT:
         aud: ...
     ```
--   `workload-identity-provider`: (Required) The full identifier of the Workload
+-   `workload-identity-provider`: (Optional) The full identifier of the Workload
     Identity Provider, including the project number, pool name, and provider
     name. If provided, this must be the full identifier which includes all
     parts:
@@ -40,7 +40,10 @@ To authenticate with [Google Client Library][cloud-client-lib], you need to set 
     Federation. If this input is provided, the Gitlab Components will use
     Workload Identity Federation through a Service Account.
 
--   `credentials-json-output-path`: (Optional) The full file path of the output credentials json, default to `/tmp/oidc-jwt.json`.
+-   `credentials-json-output-path`: (Optional) The full file path of the output credentials json, default to `/tmp/gcp-credentials.json`.
+
+-   `credentials-json-env-var`: (Optional) The env var containing user-provided crednetials. 
+    The credentials will be write to `credentials-json-output-path` if provided.
 
 
 [secure-file]: https://docs.gitlab.com/ee/ci/secure_files/
