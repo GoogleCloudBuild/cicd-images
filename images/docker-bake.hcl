@@ -25,6 +25,7 @@ group "tool-images" {
       "gar-upload",
       "gcloud",
       "git",
+      "gke-deploy",
       "syft",
       "cloud-deploy",
     ]
@@ -75,6 +76,19 @@ target "git" {
     tags = [
       "${REGISTRY}/git:${TAG}",
       "${REGISTRY}/git:latest",
+    ]
+}
+
+target "gke-deploy" {
+    dockerfile = "Dockerfile"
+    context = "gke-deploy"
+    contexts = {
+      base = "target:base"
+      src = "../"
+    }
+    tags = [
+      "${REGISTRY}/gke-deploy:${TAG}",
+      "${REGISTRY}/gke-deploy:latest"
     ]
 }
 
