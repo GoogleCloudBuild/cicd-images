@@ -28,7 +28,6 @@ RUN go-licenses check github.com/GoogleCloudPlatform/cloud-builders/gke-deploy &
     go-licenses save github.com/GoogleCloudPlatform/cloud-builders/gke-deploy --save_path=/THIRD_PARTY_NOTICES/gke-deploy && \
     go-licenses report github.com/GoogleCloudPlatform/cloud-builders/gke-deploy > /THIRD_PARTY_NOTICES/gke-deploy/licenses.csv
 
-
 WORKDIR /src
 COPY --from=src . .
 RUN go mod download && \
@@ -38,20 +37,20 @@ RUN go-licenses check ./cmd/google-cloud-auth && \
     go-licenses save ./cmd/google-cloud-auth --save_path=/THIRD_PARTY_NOTICES/google-cloud-auth && \
     go-licenses report ./cmd/google-cloud-auth > /THIRD_PARTY_NOTICES/google-cloud-auth/licenses.csv
 
-FROM gcr.io/google.com/cloudsdktool/cloud-sdk:alpine AS auth-plugin
-RUN gcloud components install -q gke-gcloud-auth-plugin
-
 # hadolint ignore=DL3006
 FROM base
-
-# Copu gke-google-auth-plugin
-COPY --from=auth-plugin /google-cloud-sdk/bin/gke-gcloud-auth-plugin /usr/local/bin/gke-gcloud-auth-plugin
-
-# Install kubectl
-RUN curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl"
-RUN chmod +x kubectl
+## Install kubectl and gke-gcloud-auth-plugin
 USER root:root
-RUN mv kubectl /usr/local/bin/
+SHELL [ "/bin/bash", "-exo", "pipefail", "-c" ]
+# hadolint ignore=DL3008
+RUN apt-get install --no-install-recommends -y apt-transport-https
+RUN curl -fsSL "https://pkgs.k8s.io/core:/stable:/v1.29/deb/Release.key" | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+RUN echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.29/deb/ /' | tee /etc/apt/sources.list.d/kubernetes.list
+RUN curl "https://packages.cloud.google.com/apt/doc/apt-key.gpg" | gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg
+RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" |  tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+RUN apt-get update && \
+clean-install kubectl google-cloud-cli-gke-gcloud-auth-plugin
+
 ARG USER=nonroot
 USER $USER:$USER
 
