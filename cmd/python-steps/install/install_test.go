@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package run
+package install
 
 import (
 	"bytes"
@@ -19,7 +19,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/GoogleCloudBuild/cicd-images/cmd/python-steps/internal/auth"
@@ -194,7 +193,6 @@ func TestParseArgs(t *testing.T) {
 
 		args, err := ParseArgs(f)
 		assert.NoError(t, err)
-		assert.Equal(t, "test_command", args.Command)
 		assert.ElementsMatch(t, []string{"dep1", "dep2"}, args.Dependencies)
 		assert.Equal(t, "req.txt", args.RequirementsPath)
 		assert.Equal(t, "https://test-url", args.ArtifactRegistryUrl)
@@ -207,7 +205,6 @@ func TestParseArgs(t *testing.T) {
 
 		args, err := ParseArgs(f)
 		assert.NoError(t, err)
-		assert.Equal(t, "test_command", args.Command)
 		assert.ElementsMatch(t, []string{"dep1", "dep2"}, args.Dependencies)
 		assert.Equal(t, "", args.RequirementsPath)
 		assert.Equal(t, "", args.ArtifactRegistryUrl)
@@ -229,7 +226,6 @@ func TestExecute(t *testing.T) {
 	t.Run("successful execution", func(t *testing.T) {
 		mockRunner, mockClient := setupMocks()
 		args := Arguments{
-			Command:          "python test.py",
 			Dependencies:     []string{"foo", "bar"},
 			RequirementsPath: "requirements.txt",
 		}
@@ -239,7 +235,6 @@ func TestExecute(t *testing.T) {
 			mockRunner.On("Run", command.VirtualEnvPip, append([]string{"install", dep}, indexFlags...)).Return(nil)
 		}
 		mockRunner.On("Run", command.VirtualEnvPip, append([]string{"install", "-r", args.RequirementsPath}, indexFlags...)).Return(nil)
-		mockRunner.On("Run", command.VirtualEnvPython3, []string{"python", "test.py"}).Return(nil)
 
 		err := Execute(mockRunner, args, mockClient)
 
@@ -250,7 +245,6 @@ func TestExecute(t *testing.T) {
 	t.Run("failed to create virtual environment", func(t *testing.T) {
 		mockRunner, mockClient := setupMocks()
 		args := Arguments{
-			Command:      "python test.py",
 			Dependencies: []string{"foo", "bar"},
 		}
 		mockRunner.On("Run", "python3", []string{"-m", "venv", "venv"}).Return(fmt.Errorf("mock virtual environment creating error"))
@@ -265,7 +259,6 @@ func TestExecute(t *testing.T) {
 	t.Run("failed to install dependencies", func(t *testing.T) {
 		mockRunner, mockClient := setupMocks()
 		args := Arguments{
-			Command:      "python test.py",
 			Dependencies: []string{"foo"},
 		}
 		mockRunner.On("Run", "python3", []string{"-m", "venv", "venv"}).Return(nil)
@@ -280,77 +273,4 @@ func TestExecute(t *testing.T) {
 		assert.Contains(t, err.Error(), "mock installation error")
 		mockRunner.AssertExpectations(t)
 	})
-
-	t.Run("failed to run command", func(t *testing.T) {
-		mockRunner, mockClient := setupMocks()
-		args := Arguments{
-			Command:      "python test.py",
-			Dependencies: []string{"foo"},
-		}
-		mockRunner.On("Run", "python3", []string{"-m", "venv", "venv"}).Return(nil)
-		indexFlags := []string{"--index-url=" + IndexURL}
-		for _, dep := range args.Dependencies {
-			mockRunner.On("Run", command.VirtualEnvPip, append([]string{"install", dep}, indexFlags...)).Return(nil)
-		}
-		mockRunner.On("Run", command.VirtualEnvPython3, []string{"python", "test.py"}).Return(fmt.Errorf("mock command running error"))
-
-		err := Execute(mockRunner, args, mockClient)
-
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "mock command running error")
-		mockRunner.AssertExpectations(t)
-	})
-}
-
-func TestRunPythonCommand(t *testing.T) {
-	testCases := []struct {
-		name          string
-		command       string
-		expectedError string
-	}{
-		{"Valid Command", "-m foo", ""},
-		{"Empty Command", "", "command is required"},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			mockRunner := new(command.MockCommandRunner)
-			mockRunner.On("Run", command.VirtualEnvPython3, strings.Fields(tc.command)).Return(nil)
-			err := runPythonCommand(mockRunner, tc.command, mockLogger)
-
-			if tc.expectedError != "" {
-				assert.Error(t, err)
-				assert.Contains(t, err.Error(), tc.expectedError)
-			} else {
-				assert.NoError(t, err)
-			}
-		})
-	}
-}
-
-func TestRunPythonScript(t *testing.T) {
-	testCases := []struct {
-		name          string
-		script        string
-		expectedError string
-	}{
-		{"Valid Inline Script", "print('hello world')", ""},
-		{"Empty Inline Script", "", "script is required"},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			mockRunner := new(command.MockCommandRunner)
-			commands := []string{"-c", tc.script}
-			mockRunner.On("Run", command.VirtualEnvPython3, commands).Return(nil)
-			err := runPythonScript(mockRunner, tc.script, mockLogger)
-
-			if tc.expectedError != "" {
-				assert.Error(t, err)
-				assert.Contains(t, err.Error(), tc.expectedError)
-			} else {
-				assert.NoError(t, err)
-			}
-		})
-	}
 }

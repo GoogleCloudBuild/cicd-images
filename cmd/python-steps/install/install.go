@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package run
+package install
 
 import (
 	"fmt"
@@ -30,20 +30,14 @@ const (
 
 // Arguments represents the arguments passed to the run command.
 type Arguments struct {
-	Command             string
 	Dependencies        []string
 	RequirementsPath    string
 	ArtifactRegistryUrl string
 	Verbose             bool
-	Script              string
 }
 
 // ParseArgs parses the arguments passed to the run command.
 func ParseArgs(f *pflag.FlagSet) (Arguments, error) {
-	command, err := f.GetString("command")
-	if err != nil {
-		return Arguments{}, fmt.Errorf("failed to get command: %v", err)
-	}
 	dependencies, err := f.GetString("dependencies")
 	if err != nil {
 		return Arguments{}, fmt.Errorf("failed to get dependencies: %v", err)
@@ -64,18 +58,12 @@ func ParseArgs(f *pflag.FlagSet) (Arguments, error) {
 	if err != nil {
 		return Arguments{}, fmt.Errorf("failed to get verbose: %v", err)
 	}
-	script, err := f.GetString("script")
-	if err != nil {
-		return Arguments{}, fmt.Errorf("failed to get script: %v", err)
-	}
 
 	return Arguments{
-		Command:             command,
 		Dependencies:        strings.Fields(dependencies),
 		RequirementsPath:    requirementsPath,
 		ArtifactRegistryUrl: artifactRegistryUrl,
 		Verbose:             verbose,
-		Script:              script,
 	}, nil
 }
 
@@ -94,16 +82,6 @@ func Execute(runner command.CommandRunner, args Arguments, client auth.HTTPClien
 
 	if err := installDependencies(runner, args, client, logger); err != nil {
 		return fmt.Errorf("failed to install dependencies: %v", err)
-	}
-
-	if script := args.Script; script != "" {
-		if err := runPythonScript(runner, script, logger); err != nil {
-			return fmt.Errorf("failed to run inline script: %v", err)
-		}
-	} else if command := args.Command; command != "" {
-		if err := runPythonCommand(runner, command, logger); err != nil {
-			return fmt.Errorf("failed to run command: %v", err)
-		}
 	}
 
 	logger.Info("Successfully executed run command")
@@ -162,30 +140,4 @@ func installDependency(logger *zap.Logger, runner command.CommandRunner, dep str
 	args := append([]string{"install", dep}, flags...)
 	logger.Info("Successfully installed dependency")
 	return runner.Run(logger, command.VirtualEnvPip, args...)
-}
-
-func runPythonCommand(runner command.CommandRunner, cmd string, logger *zap.Logger) error {
-	logger.Info("Running python command", zap.String("command", cmd))
-	if cmd == "" {
-		return fmt.Errorf("command is required")
-	}
-	commands := strings.Fields(cmd)
-	if err := runner.Run(logger, command.VirtualEnvPython3, commands...); err != nil {
-		return fmt.Errorf("failed to run command: %v", err)
-	}
-	logger.Info("Successfully ran python command")
-	return nil
-}
-
-func runPythonScript(runner command.CommandRunner, script string, logger *zap.Logger) error {
-	logger.Info("Running supplied python script")
-	if script == "" {
-		return fmt.Errorf("script is required")
-	}
-	commands := []string{"-c", script}
-	if err := runner.Run(logger, command.VirtualEnvPython3, commands...); err != nil {
-		return fmt.Errorf("failed to run the supplied python script: %v", err)
-	}
-	logger.Info("Successfully ran the python script")
-	return nil
 }
