@@ -99,7 +99,7 @@ func init() {
 	releaseCmd.PersistentFlags().StringVar(&flags.InitialRolloutPhaseId, "initial-rollout-phase-id", "", "The phase to start the initial rollout at when creating the release")
 	releaseCmd.PersistentFlags().StringVar(&flags.ToTarget, "to-target", "", "The target to deliver into upon release creation")
 	releaseCmd.PersistentFlags().StringVar(&flags.SkaffoldVersion, "skaffold-version", "", "The version of the Skaffold binary")
-	releaseCmd.PersistentFlags().StringVar(&flags.SkaffoldFile, "skaffold-file", "", "The oath of the skaffold file absolute or relative to the source directory.")
+	releaseCmd.PersistentFlags().StringVar(&flags.SkaffoldFile, "skaffold-file", "", "The path of the skaffold file absolute or relative to the source directory.")
 
 	releaseCmd.PersistentFlags().StringVar(&imagesStr, "images", "", "The images associated with the release")
 	releaseCmd.PersistentFlags().StringVar(&initialRolloutAnnotationStr, "initial-rollout-annotations", "", "Annotations to apply to the initial rollout when creating the release")

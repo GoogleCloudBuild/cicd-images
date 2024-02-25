@@ -61,7 +61,7 @@ func writeFile(path, content string) error {
 	}
 	defer func() {
 		if err := file.Close(); err != nil {
-			fmt.Println("Error closing file:", err)
+			fmt.Println("error closing file:", err)
 		}
 	}()
 

@@ -57,7 +57,7 @@ func SetSource(ctx context.Context, pipelineUUID string, flags *config.ReleaseCo
 		if err != nil {
 			return fmt.Errorf("local source: %s does not exist", source)
 		}
-		if !info.Mode().IsDir() && !strings.HasSuffix(source, ".zip") && !strings.HasSuffix(source, ".tgz") && strings.HasSuffix(source, ".gz") {
+		if !info.Mode().IsDir() && !strings.HasSuffix(source, ".zip") && !strings.HasSuffix(source, ".tgz") && !strings.HasSuffix(source, ".gz") {
 			return fmt.Errorf("local source: %s is none of local .zip, .tgz, .gz, or directory", source)
 		}
 
@@ -88,7 +88,7 @@ func uploadLocalArchiveToGCS(ctx context.Context, source, bucket, object, projec
 		return "", err
 	}
 
-	fmt.Printf("Uploading local archive file %s to gs://%s/%s \n", source, bucket, object)
+	fmt.Printf("uploading local archive file %s to gs://%s/%s \n", source, bucket, object)
 	if err := uploadTarball(ctx, client, object, bucket, source); err != nil {
 		return "", err
 	}
@@ -221,7 +221,7 @@ func createBucketIfNotExist(ctx context.Context, bucketName, projectId string, c
 		},
 	}
 	if _, err := bktHandler.Update(ctx, enableUniformBucketLevelAccess); err != nil {
-		return fmt.Errorf("Bucket(%q).Update: %w", bucketName, err)
+		return fmt.Errorf("bucket(%q).Update: %w", bucketName, err)
 	}
 
 	return nil

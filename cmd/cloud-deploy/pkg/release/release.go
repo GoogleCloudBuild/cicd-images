@@ -198,7 +198,7 @@ func skaffoldFileAbsolutePath(ctx context.Context, flags *config.ReleaseConfigur
 
 func validateSkaffoldFileExist(source, skaffoldFile string) error {
 	if strings.HasPrefix(source, "gs://") {
-		fmt.Printf("skipping skaffold file check: source is not a local archive or directory")
+		fmt.Println("skipping skaffold file check: source is not a local archive or directory")
 		return nil
 	}
 
@@ -282,7 +282,7 @@ func validateSupportedSkaffoldVersion(ctx context.Context, flags *config.Release
 
 	if maintenanceDt.Sub(time.Now()) <= 28*24*time.Hour { // 28 days
 		fmt.Printf(
-			"WARNING: This release's Skaffold version will be in maintenance mode beginning on %s. "+
+			"WARNING: this release's Skaffold version will be in maintenance mode beginning on %s. "+
 				"After that you won't be able to create releases using this version of Skaffold.\n"+
 				"https://cloud.google.com/deploy/docs/using-skaffold/select-skaffold#skaffold_version_deprecation_and_maintenance_policy",
 			maintenanceDt.Format("2006-01-02"),
