@@ -54,13 +54,7 @@ if [ -z "${DOCKER_HOST:-}" ] && [ -S /var/run/docker.sock ]; then
     export DOCKER_HOST=unix:///var/run/docker.sock
 fi
 
-# Only allow TLS connection over TCP
-if [ "${DOCKER_HOST#tcp:}" != "$DOCKER_HOST" ]; then
-    if valid_certs_exist ; then
-        export DOCKER_TLS_VERIFY=1
-    else
-        >&2 echo "Attempt to connect to [${DOCKER_HOST:-}] no valid TLS certs [${DOCKER_CERT_PATH:-}]"
-    fi
-fi
+# Configure Artifact Registry auth via GCP's ADC
+docker-credential-gcr  configure-docker -include-artifact-registry;
 
 exec "$@"
