@@ -14,8 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-FROM us-docker.pkg.dev/gae-runtimes/runtimes-ubuntu2204/nodejs:18.19.0 as node-18
-FROM us-docker.pkg.dev/gae-runtimes/runtimes-ubuntu2204/nodejs:20.10.0 as node-20
+FROM us-docker.pkg.dev/gae-runtimes/runtimes-ubuntu2204/nodejs:18.19.1 as node-18
+FROM us-docker.pkg.dev/gae-runtimes/runtimes-ubuntu2204/nodejs:20.11.1 as node-20
 
 # hadolint ignore=DL3006
 FROM base
