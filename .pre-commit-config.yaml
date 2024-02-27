@@ -34,3 +34,25 @@ repos:
     rev: v3.13.0
     hooks:
       - id: commitizen
+  - repo: local
+    hooks:
+      - id: gofmt
+        name: "gofmt"
+        entry: make
+        args: ["fmt"]
+        language: system
+        types: [go]
+        pass_filenames: false
+      - id: go-lint
+        name: "golangci-lint"
+        entry: make
+        args: ["golangci-lint"]
+        language: system
+        types: [go]
+        pass_filenames: false
+      - id: go-unit-tests
+        name: go unit tests
+        entry: go test -p=1 ./...
+        pass_filenames: false
+        types: [go]
+        language: system
