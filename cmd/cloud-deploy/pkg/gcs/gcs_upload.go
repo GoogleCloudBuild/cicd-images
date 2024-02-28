@@ -88,7 +88,7 @@ func uploadLocalArchiveToGCS(ctx context.Context, source, bucket, object, projec
 		return "", err
 	}
 
-	fmt.Printf("uploading local archive file %s to gs://%s/%s \n", source, bucket, object)
+	fmt.Printf("Uploading local archive file %s to gs://%s/%s \n", source, bucket, object)
 	if err := uploadTarball(ctx, client, object, bucket, source); err != nil {
 		return "", err
 	}
@@ -182,7 +182,7 @@ func copyRemoteGCS(ctx context.Context, source, destBucket, destObj, projectId s
 
 	// Copy content
 	dstUri := fmt.Sprintf("gs://%s/%s", destBucket, destObj)
-	fmt.Printf("copying remote storage %s to %s \n", source, dstUri)
+	fmt.Printf("Copying remote storage %s to %s \n", source, dstUri)
 
 	src := client.Bucket(srcBucket).Object(srcObj)
 	dst := client.Bucket(destBucket).Object(destObj)

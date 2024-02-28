@@ -147,15 +147,32 @@ func TestParseDictString_Success(t *testing.T) {
 func TestValidateSupportedSkaffoldVersion_Success(t *testing.T) {
 	ctx := context.Background()
 	flags := &config.ReleaseConfiguration{
-		ProjectId:       "test-project",
-		Region:          "us-central1",
-		SkaffoldVersion: "2.8",
+		ProjectId: "test-project",
+		Region:    "us-central1",
 	}
-	cdClient := test.CreateCloudDeployClient(t, ctx)
 
-	if err := validateSupportedSkaffoldVersion(ctx, flags, cdClient); err != nil {
-		t.Errorf("unexpected error calling validateSupportedSkaffoldVersion(): %s", err)
+	tcs := []struct {
+		name            string
+		skaffoldVersion string
+	}{
+		{
+			name:            "valid skaffold version",
+			skaffoldVersion: "2.8",
+		}, {
+			name:            "skaffold version not found",
+			skaffoldVersion: "skaffold_preview",
+		},
 	}
+
+	for _, tc := range tcs {
+		flags.SkaffoldVersion = tc.skaffoldVersion
+		cdClient := test.CreateCloudDeployClient(t, ctx)
+
+		if err := validateSupportedSkaffoldVersion(ctx, flags, cdClient); err != nil {
+			t.Errorf("unexpected error calling validateSupportedSkaffoldVersion(): %s", err)
+		}
+	}
+
 }
 
 func TestValidateSupportedSkaffoldVersion_Failed(t *testing.T) {
@@ -166,10 +183,6 @@ func TestValidateSupportedSkaffoldVersion_Failed(t *testing.T) {
 		expectedErr     error
 	}{
 		{
-			name:            "invalid skaffold version",
-			skaffoldVersion: "2.invalid",
-			expectedErr:     fmt.Errorf("invalid --skaffold-version: 2.invalid. \nPlease check: https://cloud.google.com/deploy/docs/using-skaffold/select-skaffold#skaffold_version_deprecation_and_maintenance_policy"),
-		}, {
 			name:            "maintenance period",
 			skaffoldVersion: "2.0",
 			expectedErr: fmt.Errorf("you can't create a new release using a Skaffold version that is in maintenance mode.\n" +
