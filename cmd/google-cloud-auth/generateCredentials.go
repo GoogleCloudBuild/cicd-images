@@ -15,6 +15,9 @@
 package main
 
 import (
+	"fmt"
+	"strings"
+
 	auth "github.com/GoogleCloudBuild/cicd-images/cmd/google-cloud-auth/pkg"
 	"github.com/spf13/cobra"
 )
@@ -41,6 +44,12 @@ var generateCredentialsCmd = &cobra.Command{
 	See more about how Application Default Credentials (ADC) works: https://cloud.google.com/docs/authentication/application-default-credentials
 
 `,
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		if workloadIdentityProvider != "" && !strings.HasPrefix(workloadIdentityProvider, "//") {
+			return fmt.Errorf("invalid --workload-identity-provider: %s, the value should start with //", workloadIdentityProvider)
+		}
+		return nil
+	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if err := auth.SetupApplicationDefaultCredential(credentialsJsonEnvVar, credentialsOutputPath, oidcJwtEnvVar, serviceAccount, workloadIdentityProvider); err != nil {
 			return err

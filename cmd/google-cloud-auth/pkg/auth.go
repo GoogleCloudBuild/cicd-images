@@ -50,7 +50,7 @@ func SetupApplicationDefaultCredential(credentialsJsonEnvVar, credentialsOutputP
 		return err
 	}
 
-	fmt.Printf("auth completed, file: %s\n", credentialsOutputPath)
+	fmt.Printf("Auth completed, file: %s\n", credentialsOutputPath)
 	return nil
 }
 
@@ -61,7 +61,7 @@ func writeFile(path, content string) error {
 	}
 	defer func() {
 		if err := file.Close(); err != nil {
-			fmt.Println("error closing file:", err)
+			fmt.Println("Error closing file:", err)
 		}
 	}()
 
@@ -88,7 +88,7 @@ func createCredentialFile(credentialJsonOutputPath, jwtFilePath, serviceAccount,
 		},
 	}
 	if serviceAccount != "" {
-		fmt.Println("service account provided, authenticating use Workload Identity Federation with Service Account impersonation...")
+		fmt.Println("Service Account provided, authenticating with Workload Identity Federation with Service Account impersonation...")
 		config.ServiceAccountImpersonationURL = fmt.Sprintf("https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/%s:generateAccessToken", serviceAccount)
 	}
 
