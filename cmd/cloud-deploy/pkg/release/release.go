@@ -102,7 +102,7 @@ func createRelease(ctx context.Context, cdClient *deploy.CloudDeployClient, gcsC
 		RequestId: uuid.NewString(),
 	}
 
-	fmt.Printf("creating Cloud Deploy release: %s... \n", flags.Release)
+	fmt.Printf("Creating Cloud Deploy release: %s... \n", flags.Release)
 	op, err := cdClient.CreateRelease(ctx, req)
 	if err != nil {
 		return err
@@ -112,7 +112,7 @@ func createRelease(ctx context.Context, cdClient *deploy.CloudDeployClient, gcsC
 	if err != nil {
 		return err
 	}
-	fmt.Printf("created Cloud Deploy release: %s... \n", flags.Release)
+	fmt.Printf("Created Cloud Deploy release: %s... \n", flags.Release)
 
 	return nil
 }
@@ -198,7 +198,7 @@ func skaffoldFileAbsolutePath(ctx context.Context, flags *config.ReleaseConfigur
 
 func validateSkaffoldFileExist(source, skaffoldFile string) error {
 	if strings.HasPrefix(source, "gs://") {
-		fmt.Println("skipping skaffold file check: source is not a local archive or directory")
+		fmt.Println("Skipping skaffold file check: source is not a local archive or directory")
 		return nil
 	}
 
@@ -267,7 +267,7 @@ func validateSupportedSkaffoldVersion(ctx context.Context, flags *config.Release
 		}
 	}
 	if versionObj == nil {
-		return fmt.Errorf("invalid --skaffold-version: %s. \nPlease check: https://cloud.google.com/deploy/docs/using-skaffold/select-skaffold#skaffold_version_deprecation_and_maintenance_policy", flags.SkaffoldVersion)
+		return nil
 	}
 
 	// validate skaffold version support window

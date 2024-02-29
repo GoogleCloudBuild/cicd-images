@@ -49,7 +49,7 @@ func CreateRollout(ctx context.Context, cdClient *deploy.CloudDeployClient, flag
 		},
 	}
 
-	fmt.Printf("creating Cloud Deploy rollout: %s in target %s... \n", finalRollOutId, toTargetId)
+	fmt.Printf("Creating Cloud Deploy rollout: %s in target %s... \n", finalRollOutId, toTargetId)
 	op, err := cdClient.CreateRollout(ctx, req)
 	if err != nil {
 		return err
@@ -58,7 +58,7 @@ func CreateRollout(ctx context.Context, cdClient *deploy.CloudDeployClient, flag
 	if err != nil {
 		return err
 	}
-	fmt.Printf("created Cloud Deploy rollout\n")
+	fmt.Printf("Created Cloud Deploy rollout\n")
 
 	// check if needs approval
 	var targetObj *deploypb.Target
@@ -69,7 +69,7 @@ func CreateRollout(ctx context.Context, cdClient *deploy.CloudDeployClient, flag
 		}
 	}
 	if targetObj != nil && targetObj.RequireApproval {
-		fmt.Println("the rollout is pending approval...")
+		fmt.Println("The rollout is pending approval...")
 	}
 
 	return nil
