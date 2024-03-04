@@ -29,12 +29,13 @@ import (
 )
 
 var (
-	source string
-	target string
+	source  string
+	target  string
+	version string
 )
 
 const (
-	userAgent      = "google-gitlab-components:artifact-registry-upload/1.0.0"
+	userAgent      = "google-gitlab-components:artifact-registry-upload/"
 	gitlabEndpoint = "https://gitlab.com/api/v4/projects/%s/registry/repositories?job_token=%s"
 )
 
@@ -53,7 +54,7 @@ var rootCmd = &cobra.Command{
 		}
 		client.Transport = &upload.UserAgentTransport{
 			Transport: client.Transport,
-			UserAgent: userAgent,
+			UserAgent: userAgent + version,
 		}
 
 		gitlabClient := &http.Client{}
@@ -102,5 +103,6 @@ func Execute() {
 
 func init() {
 	rootCmd.PersistentFlags().StringVarP(&source, "source", "", "", "Source Image Path, e.g. registry.gitlab.com/group/project/image:tag")
-	rootCmd.PersistentFlags().StringVarP(&target, "target", "", "", "Target Image Path, e.g. us-central1-docker.pkg.dev/projectID/repo/image:tag ")
+	rootCmd.PersistentFlags().StringVarP(&target, "target", "", "", "Target Image Path, e.g. us-central1-docker.pkg.dev/projectID/repo/image:tag")
+	rootCmd.PersistentFlags().StringVarP(&version, "version", "", "", "Version of the binary caller, e.g. 0.1.0")
 }
