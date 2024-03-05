@@ -102,7 +102,10 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVarP(&source, "source", "", "", "Source Image Path, e.g. registry.gitlab.com/group/project/image:tag")
-	rootCmd.PersistentFlags().StringVarP(&target, "target", "", "", "Target Image Path, e.g. us-central1-docker.pkg.dev/projectID/repo/image:tag")
-	rootCmd.PersistentFlags().StringVarP(&version, "version", "", "", "Version of the binary caller, e.g. 0.1.0")
+	rootCmd.PersistentFlags().
+		StringVarP(&source, "source", "", "", "Source Image Path, e.g. registry.gitlab.com/group/project/image:tag")
+	rootCmd.PersistentFlags().
+		StringVarP(&target, "target", "", "", "Target Image Path, e.g. us-central1-docker.pkg.dev/projectID/repo/image:tag")
+	rootCmd.PersistentFlags().
+		StringVarP(&version, "version", "", "", "Version of the binary caller, e.g. 0.1.0")
 }

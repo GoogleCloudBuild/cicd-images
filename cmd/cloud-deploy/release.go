@@ -33,13 +33,12 @@ var (
 	initialRolloutAnnotationStr string
 	initialRolloutLabelStr      string
 	imagesStr                   string
+	userAgent                   string
 )
 
 const (
 	defaultSource = "."
 )
-
-const userAgent = "google-gitlab-components:create-cloud-deploy-release"
 
 var releaseCmd = &cobra.Command{
 	Use:   "release",
@@ -104,6 +103,8 @@ func init() {
 	releaseCmd.PersistentFlags().StringVar(&imagesStr, "images", "", "The images associated with the release")
 	releaseCmd.PersistentFlags().StringVar(&initialRolloutAnnotationStr, "initial-rollout-annotations", "", "Annotations to apply to the initial rollout when creating the release")
 	releaseCmd.PersistentFlags().StringVar(&initialRolloutLabelStr, "initial-rollout-labels", "", "Labels to apply to the initial rollout when creating the release")
+
+	releaseCmd.PersistentFlags().StringVar(&userAgent, "google-apis-user-agent", "", "The user-agent to be applied when calling Google APIs")
 
 	releaseCmd.MarkPersistentFlagRequired("delivery-pipeline")
 	releaseCmd.MarkPersistentFlagRequired("region")
