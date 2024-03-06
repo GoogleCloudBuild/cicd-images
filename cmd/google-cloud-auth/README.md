@@ -1,9 +1,9 @@
 # google-cloud-auth
 
-A CLI command tool to generate authencitation files for gcloud or Cloud Client Library
+A CLI command tool to generate authentication files for gcloud or Cloud Client Library
 
 ## Get Credential File
-Embeded the `google-cloud-auth` image to your specific Gitlab Pipeline/Components and run `google-cloud-auth generate-credentials ...` commands 
+Embeded the `google-cloud-auth` image to your specific Gitlab Pipeline/Components and run `google-cloud-auth generate-credentials ...` commands
 to generate Workload Identity Federation credential file to authenticate requests to GCP via [gcloud][gcloud] or [Google Cloud Client Libraries][cloud-client-lib].
 
 To authenticate with [gcloud][gcloud], you need to set `GCLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE` to the generated credential file path.
@@ -42,7 +42,7 @@ To authenticate with [Google Client Library][cloud-client-lib], you need to set 
 
 -   `credentials-json-output-path`: (Optional) The full file path of the output credentials json, default to `/tmp/gcp-credentials.json`.
 
--   `credentials-json-env-var`: (Optional) The env var containing user-provided crednetials. 
+-   `credentials-json-env-var`: (Optional) The env var containing user-provided credentials.
     The credentials will be write to `credentials-json-output-path` if provided.
 
 
