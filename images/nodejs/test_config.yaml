@@ -39,7 +39,7 @@ commandTests:
     command: "entrypoint.sh"
     args: ["yarn", "--version"]
     expectedOutput:
-      - "1.22.21"
+      - "1.22.22"
   - name: npx installed
     envVars:
       - key: GOOGLE_NODEJS_VERSION
@@ -63,7 +63,7 @@ commandTests:
     command: "yarn"
     args: ["--version"]
     expectedOutput:
-      - "1.22.21"
+      - "1.22.22"
   - name: npx installed
     command: "npx"
     args: ["--version"]
