@@ -185,7 +185,7 @@ func TestValidateSupportedSkaffoldVersion_Failed(t *testing.T) {
 		{
 			name:            "maintenance period",
 			skaffoldVersion: "2.0",
-			expectedErr: fmt.Errorf("you can't create a new release using a Skaffold version that is in maintenance mode.\n" +
+			expectedErr: fmt.Errorf("the Skaffold version you've chosen is no longer supported.\n" +
 				"https://cloud.google.com/deploy/docs/using-skaffold/select-skaffold#skaffold_version_deprecation_and_maintenance_policy"),
 		},
 	}
