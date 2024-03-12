@@ -1,6 +1,6 @@
 REGISTRY ?= us-docker.pkg.dev/gcb-catalog-release/catalog
 TAG ?= ubuntu22
-SUBDIRS = base cloud-deploy docker gar-upload gcloud git gke-deploy go nodejs openjdk python syft
+SUBDIRS = base cloud-deploy cloud-storage docker gar-upload gcloud git gke-deploy go nodejs openjdk python syft
 
 build:
 	docker buildx bake
