@@ -29,6 +29,7 @@ group "tool-images" {
       "syft",
       "cloud-deploy",
       "cloud-storage",
+      "cloud-run"
     ]
 }
 
@@ -160,6 +161,19 @@ target "cloud-storage" {
   tags = [
     "${REGISTRY}/cloud-storage:${TAG}",
     "${REGISTRY}/cloud-storage:latest"
+  ]
+}
+
+target "cloud-run" {
+  dockerfile = "Dockerfile"
+  context = "cloud-run"
+  contexts = {
+    base = "target:base"
+    src = "../"
+  }
+  tags = [
+    "${REGISTRY}/cloud-run:${TAG}",
+    "${REGISTRY}/cloud-run:latest"
   ]
 }
 
