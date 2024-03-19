@@ -49,22 +49,22 @@ commandTests:
     args: ["python3", "--version"]
     expectedOutput:
       - "Python 3.10.13"
-  - name: pip 23.2.1 installed (for python 3.10)
+  - name: pip 24.0 installed (for python 3.10)
     envVars:
       - key: GOOGLE_PYTHON_VERSION
         value: "3.10"
     command: "entrypoint.sh"
     args: ["pip", "--version"]
     expectedOutput:
-      - "pip 23.2.1"
-  - name: wheel 0.41.2 installed (for python 3.10)
+      - "pip 24.0"
+  - name: wheel 0.43.0 installed (for python 3.10)
     envVars:
       - key: GOOGLE_PYTHON_VERSION
         value: "3.10"
     command: "entrypoint.sh"
     args: ["python3", "-m", "wheel", "version"]
     expectedOutput:
-      - "wheel 0.41.2"
+      - "wheel 0.43.0"
 
   - name: python 3.12 installed (default)
     command: "python3"
