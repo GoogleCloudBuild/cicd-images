@@ -108,7 +108,6 @@ linters:
     - misspell
     - nakedret
     - noctx
-    - nolintlint
     - revive
     - staticcheck
     - stylecheck

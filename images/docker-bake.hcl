@@ -28,6 +28,7 @@ group "tool-images" {
       "gke-deploy",
       "syft",
       "cloud-deploy",
+      "cloud-storage",
     ]
 }
 
@@ -146,6 +147,19 @@ target "cloud-deploy" {
   tags = [
     "${REGISTRY}/cloud-deploy:${TAG}",
     "${REGISTRY}/cloud-deploy:latest"
+  ]
+}
+
+target "cloud-storage" {
+  dockerfile = "Dockerfile"
+  context = "cloud-storage"
+  contexts = {
+    base = "target:base"
+    src = "../"
+  }
+  tags = [
+    "${REGISTRY}/cloud-storage:${TAG}",
+    "${REGISTRY}/cloud-storage:latest"
   ]
 }
 
