@@ -47,8 +47,8 @@ RUN set -eux && \
     rm apache-maven-${MAVEN_VERSION}-bin.tar.gz.asc apache-maven-${MAVEN_VERSION}-bin.tar.gz
 
 # Install gradle
-ENV GRADLE_VERSION=8.5
-ARG GRADLE_SHA=9d926787066a081739e8200858338b4a69e837c3a821a33aca9db09dd4a41026
+ENV GRADLE_VERSION=8.6
+ARG GRADLE_SHA=9631d53cf3e74bfa726893aee1f8994fee4e060c401335946dba2156f440f24c
 ARG GRADLE_BASE_URL=https://services.gradle.org/distributions
 # hadolint ignore=DL4006
 RUN set -eux && \

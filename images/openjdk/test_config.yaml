@@ -60,7 +60,7 @@ commandTests:
     command: "gradle"
     args: ["--version"]
     expectedOutput:
-      - "Gradle 8.5"
+      - "Gradle 8.6"
 
   - name: "openjdk-steps is installed"
     command: "openjdk-steps"
@@ -74,7 +74,7 @@ metadataTest:
     - key: MAVEN_VERSION
       value: 3.9.6
     - key: GRADLE_VERSION
-      value: 8.5
+      value: 8.6
   user: nonroot
   entrypoint: ["entrypoint.sh"]
   cmd: ["java"]
