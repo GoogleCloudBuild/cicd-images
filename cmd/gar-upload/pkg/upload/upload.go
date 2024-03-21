@@ -81,7 +81,7 @@ func (u *Uploader) UpdateAnnotation() error {
 	if err != nil {
 		return fmt.Errorf("updating metadata for image %s: %v", u.target, err)
 	}
-	log.Println("Annotations updated with", link)
+	log.Printf("Image %s from %s has been pushed to %s", u.source, link, fmt.Sprintf("https://%s", u.target))
 	return nil
 }
 
