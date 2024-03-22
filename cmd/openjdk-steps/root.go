@@ -24,9 +24,5 @@ var rootCmd = &cobra.Command{
 }
 
 func Execute(ctx context.Context) error {
-	err := rootCmd.ExecuteContext(ctx)
-	if err != nil {
-		return err
-	}
-	return nil
+	return rootCmd.ExecuteContext(ctx)
 }

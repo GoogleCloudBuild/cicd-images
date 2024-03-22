@@ -79,7 +79,7 @@ var authCmd = &cobra.Command{
 			}
 			err = os.WriteFile(customizedSettings, data, 0644)
 			if err != nil {
-				return fmt.Errorf("Failed to write payload to file: %w", err)
+				return fmt.Errorf("failed to write payload to file: %w", err)
 			}
 
 			fmt.Printf("Secret payload saved to %s\n", customizedSettings)
@@ -97,7 +97,7 @@ var authCmd = &cobra.Command{
 		if authCmdArgs.installFlags != "" {
 			unallowedFlag := setup.ValidateMavenInstallFlags(authCmdArgs.installFlags)
 			if unallowedFlag != "" {
-				return fmt.Errorf("Unallowed flags for maven-install Task %v", unallowedFlag)
+				return fmt.Errorf("flag %v not allowed for maven-install Task", unallowedFlag)
 			}
 		}
 		return nil
