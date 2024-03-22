@@ -22,10 +22,6 @@ commandTests:
     command: "which"
     args: ["curl"]
     expectedOutput: ["/usr/bin/curl"]
-  - name: "which jq"
-    command: "which"
-    args: ["jq"]
-    expectedOutput: ["/usr/bin/jq"]
   - name: "which ssh"
     command: "which"
     args: ["ssh"]

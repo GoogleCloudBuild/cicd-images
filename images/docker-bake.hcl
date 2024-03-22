@@ -74,6 +74,7 @@ target "git" {
     context = "git"
     contexts = {
       base = "target:base"
+      src = "../"
     }
     tags = [
       "${REGISTRY}/git:${TAG}",

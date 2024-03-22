@@ -23,6 +23,7 @@ require (
 	github.com/stretchr/testify v1.9.0
 	github.com/vifraa/gopom v1.0.0
 	github.com/yargevad/filepathx v1.0.0
+	github.com/whilp/git-urls v1.0.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/oauth2 v0.18.0
 	google.golang.org/api v0.171.0

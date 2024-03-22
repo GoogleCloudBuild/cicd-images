@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 #
-# Copyright 2023 Google LLC
+# Copyright 2024 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,15 +15,37 @@
 # limitations under the License.
 #
 
+FROM google-go.pkg.dev/golang:1.21.5 as builder
+
+WORKDIR /src
+COPY --from=src . .
+
+WORKDIR /src/tools
+RUN go install github.com/google/go-licenses
+
+# Run binary tests, build and license scan.
+WORKDIR /src
+RUN go mod download && \
+    go test ./cmd/git-steps/... -timeout 30s && \
+    go build ./cmd/git-steps
+
+# Scan and save licenses.
+RUN go-licenses check ./cmd/git-steps && \
+    go-licenses save ./cmd/git-steps --save_path=/THIRD_PARTY_NOTICES/git-steps && \
+    go-licenses report ./cmd/git-steps > /THIRD_PARTY_NOTICES/git-steps/licenses.csv
+
 # hadolint ignore=DL3006
 FROM base
+
+COPY --from=builder /src/git-steps /usr/local/bin/git-steps
+COPY --from=builder /THIRD_PARTY_NOTICES/git-steps /THIRD_PARTY_NOTICES/git-steps
 
 USER root
 
 # Install Git and required packages for git tasks
 RUN apt-get update && \
     apt-get -y upgrade && \
-    clean-install git jq openssh-client
+    clean-install git openssh-client
 
 # Change to the USER specified by the base image to be used at runtime.
 USER $USER:$USER
