@@ -79,7 +79,7 @@ var authCmd = &cobra.Command{
 			}
 			err = os.WriteFile(customizedSettings, data, 0644)
 			if err != nil {
-				return fmt.Errorf("Failed to write payload to file: %w", err)
+				return fmt.Errorf("failed to write payload to file: %w", err)
 			}
 
 			fmt.Printf("Secret payload saved to %s\n", customizedSettings)

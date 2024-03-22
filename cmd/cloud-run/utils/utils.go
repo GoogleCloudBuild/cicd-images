@@ -16,7 +16,6 @@ package utils
 
 import (
 	"context"
-	"fmt"
 	"time"
 )
 
@@ -25,10 +24,8 @@ func PollWithInterval(ctx context.Context, timeout, interval time.Duration, cond
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 
-	deadline, ok := ctx.Deadline()
-	if !ok {
-		deadline = time.Now().Add(timeout) // Use timeout if no context deadline
-	}
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
 
 	for {
 		select {
@@ -42,8 +39,6 @@ func PollWithInterval(ctx context.Context, timeout, interval time.Duration, cond
 			if done {
 				return nil
 			}
-		case <-time.After(time.Until(deadline)):
-			return fmt.Errorf("polling timed out after %v", timeout)
 		}
 	}
 }
