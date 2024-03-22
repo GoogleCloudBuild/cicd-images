@@ -28,25 +28,19 @@ func SetupApplicationDefaultCredential(credentialsJsonEnvVar, credentialsOutputP
 	if credentialsJsonEnvVar != "" {
 		// directly write user-provided credentials to file
 		credentials := os.Getenv(credentialsJsonEnvVar)
-		if err := writeFile(credentialsOutputPath, credentials); err != nil {
-			return err
-		}
-
-		return nil
+		return writeFile(credentialsOutputPath, credentials)
 	}
 
 	// generate WIF credentials file
 	// write oidcJwt to jwtFilePath
 	jwtFilePath := "/tmp/oidc-jwt.txt"
 	jwtContent := os.Getenv(oidcJwtEnvVar)
-	err := writeFile(jwtFilePath, jwtContent)
-	if err != nil {
+	if err := writeFile(jwtFilePath, jwtContent); err != nil {
 		return err
 	}
 
 	// compose the credential file using the JWT file
-	err = createCredentialFile(credentialsOutputPath, jwtFilePath, serviceAccount, workloadIdentityProvider)
-	if err != nil {
+	if err := createCredentialFile(credentialsOutputPath, jwtFilePath, serviceAccount, workloadIdentityProvider); err != nil {
 		return err
 	}
 
@@ -67,11 +61,7 @@ func writeFile(path, content string) error {
 
 	data := []byte(content)
 	_, err = file.Write(data)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 func createCredentialFile(credentialJsonOutputPath, jwtFilePath, serviceAccount, workloadIdentityProvider string) error {
@@ -97,10 +87,5 @@ func createCredentialFile(credentialJsonOutputPath, jwtFilePath, serviceAccount,
 	if err != nil {
 		return err
 	}
-	err = os.WriteFile(credentialJsonOutputPath, jsonBytes, 0644)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return os.WriteFile(credentialJsonOutputPath, jsonBytes, 0o644) // #nosec G306 -- allow 0644
 }
