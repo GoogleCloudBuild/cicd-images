@@ -59,27 +59,27 @@ type Arguments struct {
 func ParseArgs(f *pflag.FlagSet) (Arguments, error) {
 	command, err := f.GetString("command")
 	if err != nil {
-		return Arguments{}, fmt.Errorf("failed to get command: %v", err)
+		return Arguments{}, fmt.Errorf("failed to get command: %w", err)
 	}
 	artifactRegistryUrl, err := f.GetString("artifactRegistryUrl")
 	if err != nil {
-		return Arguments{}, fmt.Errorf("failed to get artifactRegistryUrl: %v", err)
+		return Arguments{}, fmt.Errorf("failed to get artifactRegistryUrl: %w", err)
 	}
 	artifactRegistryUrl, err = auth.EnsureHTTPSByDefault(artifactRegistryUrl)
 	if err != nil {
-		return Arguments{}, fmt.Errorf("failed to ensure artifactRegistryUrl is https: %v", err)
+		return Arguments{}, fmt.Errorf("failed to ensure artifactRegistryUrl is https: %w", err)
 	}
 	sourceDistributionResultsPath, err := f.GetString("sourceDistributionResultsPath")
 	if err != nil {
-		return Arguments{}, fmt.Errorf("failed to get sourceDistributionResultsPath: %v", err)
+		return Arguments{}, fmt.Errorf("failed to get sourceDistributionResultsPath: %w", err)
 	}
 	wheelDistributionResultsPath, err := f.GetString("wheelDistributionResultsPath")
 	if err != nil {
-		return Arguments{}, fmt.Errorf("failed to get wheelDistributionResultsPath: %v", err)
+		return Arguments{}, fmt.Errorf("failed to get wheelDistributionResultsPath: %w", err)
 	}
 	verbose, err := f.GetBool("verbose")
 	if err != nil {
-		return Arguments{}, fmt.Errorf("failed to get verbose: %v", err)
+		return Arguments{}, fmt.Errorf("failed to get verbose: %w", err)
 	}
 
 	return Arguments{
@@ -95,29 +95,29 @@ func ParseArgs(f *pflag.FlagSet) (Arguments, error) {
 func Execute(runner command.CommandRunner, args Arguments, client auth.HTTPClient) error {
 	logger, err := logger.SetupLogger(args.Verbose)
 	if err != nil {
-		return fmt.Errorf("failed to setup logger: %v", err)
+		return fmt.Errorf("failed to setup logger: %w", err)
 	}
 	defer logger.Sync()
 	logger.Info("Executing pack command", zap.Any("args", args))
 
 	if err := command.CreateVirtualEnv(runner, logger); err != nil {
-		return fmt.Errorf("failed to create virtual environment: %v", err)
+		return fmt.Errorf("failed to create virtual environment: %w", err)
 	}
 
 	if err := installDependenciesForPackage(runner, logger); err != nil {
-		return fmt.Errorf("failed to install dependencies for package command: %v", err)
+		return fmt.Errorf("failed to install dependencies for package command: %w", err)
 	}
 
 	if err := packagePythonArtifact(runner, args, logger); err != nil {
-		return fmt.Errorf("failed to package python artifact: %v", err)
+		return fmt.Errorf("failed to package python artifact: %w", err)
 	}
 
 	if err := pushPythonArtifact(runner, args, client, logger); err != nil {
-		return fmt.Errorf("failed to push python artifact: %v", err)
+		return fmt.Errorf("failed to push python artifact: %w", err)
 	}
 
 	if err := generateProvenance(PYTHON_DIST_DIR, args, logger); err != nil {
-		return fmt.Errorf("failed to generate provenance: %v", err)
+		return fmt.Errorf("failed to generate provenance: %w", err)
 	}
 
 	logger.Info("Successfully executed pack command")
@@ -146,7 +146,7 @@ func packagePythonArtifact(runner command.CommandRunner, args Arguments, logger 
 	}
 
 	if err := runner.Run(logger, command.VirtualEnvPython3, args.Command...); err != nil {
-		return fmt.Errorf("failed to package python artifacts: %v", err)
+		return fmt.Errorf("failed to package python artifacts: %w", err)
 	}
 
 	logger.Info("Successfully packaged python artifact")
@@ -173,7 +173,7 @@ func pushPythonArtifact(runner command.CommandRunner, args Arguments, client aut
 		"dist/*",
 	}
 	if err := runner.Run(logger, command.VirtualEnvPython3, commands...); err != nil {
-		return fmt.Errorf("failed to push python artifacts: %v", err)
+		return fmt.Errorf("failed to push python artifacts: %w", err)
 	}
 
 	logger.Info("Successfully pushed python artifact")
@@ -185,7 +185,7 @@ func generateProvenance(distDir string, args Arguments, logger *zap.Logger) erro
 
 	files, err := os.ReadDir(distDir)
 	if err != nil {
-		return fmt.Errorf("error reading dist directory: %v", err)
+		return fmt.Errorf("error reading dist directory: %w", err)
 	}
 
 	if len(files) == 0 {
@@ -199,11 +199,11 @@ func generateProvenance(distDir string, args Arguments, logger *zap.Logger) erro
 
 		uri, err := generateUri(args.ArtifactRegistryUrl, file.Name())
 		if err != nil {
-			return fmt.Errorf("error generating URI for %s: %v", file.Name(), err)
+			return fmt.Errorf("error generating URI for %s: %w", file.Name(), err)
 		}
 		digest, err := computeDigest(filepath.Join(distDir, file.Name()))
 		if err != nil {
-			return fmt.Errorf("error computing digest for %s: %v", file.Name(), err)
+			return fmt.Errorf("error computing digest for %s: %w", file.Name(), err)
 		}
 
 		outputData := ProvenanceOutput{
@@ -212,7 +212,7 @@ func generateProvenance(distDir string, args Arguments, logger *zap.Logger) erro
 		}
 		output, err := json.Marshal(outputData)
 		if err != nil {
-			return fmt.Errorf("error marshalling output data: %v", err)
+			return fmt.Errorf("error marshalling output data: %w", err)
 		}
 		logger.Debug("Generated provenance", zap.String("output", string(output)))
 
@@ -233,7 +233,7 @@ func generateProvenance(distDir string, args Arguments, logger *zap.Logger) erro
 		logger.Debug("Writing provenance", zap.String("outputPath", outputPath))
 		err = os.WriteFile(outputPath, output, 0444)
 		if err != nil {
-			return fmt.Errorf("error writing to %s: %v", outputPath, err)
+			return fmt.Errorf("error writing to %s: %w", outputPath, err)
 		}
 	}
 
@@ -252,7 +252,7 @@ func generateUri(artifactRegistryUrl string, fileName string) (string, error) {
 
 	parsedUrl, err := url.Parse(artifactRegistryUrl)
 	if err != nil {
-		return "", fmt.Errorf("error parsing ArtifactRegistryUrl: %v", err)
+		return "", fmt.Errorf("error parsing ArtifactRegistryUrl: %w", err)
 	}
 
 	purl := packageurl.NewPackageURL(parsedUrl.Host, parsedUrl.Path, packageName, packageVersion, packageurl.Qualifiers{}, "")
@@ -262,7 +262,7 @@ func generateUri(artifactRegistryUrl string, fileName string) (string, error) {
 func computeDigest(filePath string) (string, error) {
 	data, err := os.ReadFile(filePath)
 	if err != nil {
-		return "", fmt.Errorf("error reading %s: %v", filePath, err)
+		return "", fmt.Errorf("error reading %s: %w", filePath, err)
 	}
 	if len(data) == 0 {
 		return "", fmt.Errorf("empty file: %s", filePath)

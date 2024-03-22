@@ -43,7 +43,7 @@ func ScanDeployLog(logPath string, outputPath string) error {
 	// Read the file contents
 	content, err := os.ReadFile(logPath)
 	if err != nil {
-		return fmt.Errorf("Error reading log file %v", err)
+		return fmt.Errorf("reading log file %w", err)
 	}
 
 	// Convert the file content to a string
@@ -53,13 +53,13 @@ func ScanDeployLog(logPath string, outputPath string) error {
 	// Create or open the file for writing
 	file, err := os.Create(outputPath)
 	if err != nil {
-		return fmt.Errorf("Error opening file: %v", err)
+		return fmt.Errorf("opening file: %w", err)
 	}
 	defer file.Close() // Ensure the file is closed when we're done with it
 
 	checksums, err := generateCheckSum(artifacts)
 	if err != nil {
-		return fmt.Errorf("Error generateCheckSum: %v", err)
+		return fmt.Errorf("generateCheckSum: %w", err)
 	}
 	// Write each string to the file
 
@@ -68,7 +68,7 @@ func ScanDeployLog(logPath string, outputPath string) error {
 		fmt.Printf("Write: %s\n", str)
 		_, err := fmt.Fprintf(file, fmt.Sprintf("%s %s\n", uri, digest))
 		if err != nil {
-			return fmt.Errorf("Error writing to file: %v", err)
+			return fmt.Errorf("writing to file: %w", err)
 		}
 	}
 
@@ -82,7 +82,7 @@ func generateCheckSum(artifacts map[string]string) (map[string]string, error) {
 	c := metadata.NewClient(&http.Client{})
 	token, err := getAuthenticationToken(c)
 	if err != nil {
-		return checksums, fmt.Errorf("getAuthenticationToken errors: %v", err)
+		return checksums, fmt.Errorf("getAuthenticationToken errors: %w", err)
 	}
 	fmt.Println("Token retrieval success!")
 
@@ -92,14 +92,14 @@ func generateCheckSum(artifacts map[string]string) (map[string]string, error) {
 
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
-			return nil, fmt.Errorf("error: Could not download checksum: %s", err)
+			return nil, fmt.Errorf("downloading checksum: %w", err)
 		}
 		defer resp.Body.Close()
 
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			fmt.Println("Error reading response body:", err)
-			return nil, fmt.Errorf("error: Could not read checksum: %s", err)
+			return nil, fmt.Errorf("reading checksum: %w", err)
 		}
 
 		fmt.Printf("SHA-256 Checksum: %s\n", string(body))
@@ -156,12 +156,12 @@ func getAuthenticationToken(c *metadata.Client) (string, error) {
 	// get access token to call gcp api's with, can pass scopes as an query param
 	accessTokenJSON, err := c.Get(tokenPathSuffix)
 	if err != nil {
-		return "", fmt.Errorf("Error requesting token: %v", err)
+		return "", fmt.Errorf("requesting token: %w", err)
 	}
 	var jsonRes response
 	err = json.NewDecoder(strings.NewReader(accessTokenJSON)).Decode(&jsonRes)
 	if err != nil {
-		return "", fmt.Errorf("Error: retrieving auth token: %v", err)
+		return "", fmt.Errorf("retrieving auth token: %w", err)
 	}
 	return string(jsonRes.AccessToken), nil
 }

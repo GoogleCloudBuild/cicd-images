@@ -61,12 +61,12 @@ type deployScanArguments struct {
 func parseDeployScanArgs(f *pflag.FlagSet) (deployScanArguments, error) {
 	logPath, err := f.GetString(DEPLOYLOGPATH_ARG)
 	if err != nil {
-		return deployScanArguments{}, fmt.Errorf("failed to get logPath argument: %v", err)
+		return deployScanArguments{}, fmt.Errorf("failed to get logPath argument: %w", err)
 	}
 
 	outputPath, err := f.GetString(DEPLOYOUTPUTPATH_ARG)
 	if err != nil {
-		return deployScanArguments{}, fmt.Errorf("failed to get outputPath argument: %v", err)
+		return deployScanArguments{}, fmt.Errorf("failed to get outputPath argument: %w", err)
 	}
 
 	return deployScanArguments{

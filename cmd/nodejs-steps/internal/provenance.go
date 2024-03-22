@@ -29,7 +29,7 @@ type Provenance struct {
 func GenerateProvenance(provenancePath string, packageFileName string, uri string) error {
 	digest, err := computeDigest(packageFileName)
 	if err != nil {
-		return fmt.Errorf("error computing digest for %s: %v", packageFileName, err)
+		return fmt.Errorf("error computing digest for %s: %w", packageFileName, err)
 	}
 	fmt.Printf("digest: %s uri: %s", digest, uri)
 
@@ -41,13 +41,13 @@ func GenerateProvenance(provenancePath string, packageFileName string, uri strin
 	file, err := json.Marshal(provenance)
 	fmt.Printf("provenance: %s", string(file[:]))
 	if err != nil {
-		return fmt.Errorf("error marshaling json %v: %v", provenance, err)
+		return fmt.Errorf("error marshaling json %v: %w", provenance, err)
 	}
 
 	// Write provenance as json file in path
 	err = os.WriteFile(provenancePath, file, 0444)
 	if err != nil {
-		return fmt.Errorf("error writing file into %s: %v", provenancePath, err)
+		return fmt.Errorf("error writing file into %s: %w", provenancePath, err)
 	}
 
 	return nil
@@ -56,7 +56,7 @@ func GenerateProvenance(provenancePath string, packageFileName string, uri strin
 func computeDigest(filePath string) (string, error) {
 	data, err := os.ReadFile(filePath)
 	if err != nil {
-		return "", fmt.Errorf("error reading %s: %v", filePath, err)
+		return "", fmt.Errorf("error reading %s: %w", filePath, err)
 	}
 	if len(data) == 0 {
 		return "", fmt.Errorf("empty file: %s", filePath)

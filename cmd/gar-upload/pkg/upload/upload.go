@@ -39,10 +39,10 @@ const (
 func (u *Uploader) CopyImage(ctx context.Context) error {
 	img, err := crane.Pull(u.source, crane.WithAuth(u.auth))
 	if err != nil {
-		return fmt.Errorf("pulling image %s: %v", u.source, err)
+		return fmt.Errorf("pulling image %s: %w", u.source, err)
 	}
 	if err := crane.Push(img, u.target, crane.WithTransport(u.client.Transport)); err != nil {
-		return fmt.Errorf("pushing image %s: %v", u.target, err)
+		return fmt.Errorf("pushing image %s: %w", u.target, err)
 	}
 	return nil
 }
@@ -54,32 +54,32 @@ func (u *Uploader) UpdateAnnotation() error {
 	// TODO(@yongxuanzhang): investigate why cannot use Uploader.Client to make the request to GitLab
 	link, err := u.getGitLabLink()
 	if err != nil {
-		return fmt.Errorf("getting GitLab link for image %s: %v", u.source, err)
+		return fmt.Errorf("getting GitLab link for image %s: %w", u.source, err)
 	}
 
 	// fetch annotations
 	path, err := imgPath(u.target)
 	if err != nil {
-		return fmt.Errorf("getting path for image %s: %v", u.target, err)
+		return fmt.Errorf("getting path for image %s: %w", u.target, err)
 	}
 
 	getReq, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/%s", arEndpoint, path), nil)
 	if err != nil {
-		return fmt.Errorf("creating get request: %v", err)
+		return fmt.Errorf("creating get request: %w", err)
 	}
 	metadata, err := u.packageMetaData(getReq)
 	if err != nil {
-		return fmt.Errorf("getting metadata for image %s: %v", u.target, err)
+		return fmt.Errorf("getting metadata for image %s: %w", u.target, err)
 	}
 
 	// only update annotations's AnnotationKey
 	updateReq, err := updateRequest(link, path, fmt.Sprintf("%s/%s?update_mask=annotations", arEndpoint, path), metadata.Annotations)
 	if err != nil {
-		return fmt.Errorf("creating update request: %v", err)
+		return fmt.Errorf("creating update request: %w", err)
 	}
 	_, err = u.packageMetaData(updateReq)
 	if err != nil {
-		return fmt.Errorf("updating metadata for image %s: %v", u.target, err)
+		return fmt.Errorf("updating metadata for image %s: %w", u.target, err)
 	}
 	log.Printf("Image %s from %s has been pushed to %s", u.source, link, fmt.Sprintf("https://%s", u.target))
 	return nil

@@ -27,14 +27,14 @@ func Load(npmrcPath string) (string, error) {
 	if npmrcPath == "" {
 		h, err := os.UserHomeDir()
 		if err != nil {
-			return "", fmt.Errorf("cannot load .npmrc file: %v", err)
+			return "", fmt.Errorf("cannot load .npmrc file: %w", err)
 		}
 		npmrcPath = h
 	}
 
 	data, err := ioutil.ReadFile(npmrcPath)
 	if err != nil {
-		return "", fmt.Errorf("cannot load .npmrc file: %v", err)
+		return "", fmt.Errorf("cannot load .npmrc file: %w", err)
 	}
 	return string(data), nil
 }
@@ -43,12 +43,12 @@ func Load(npmrcPath string) (string, error) {
 func Save(npmrc, path string) error {
 	f, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0777)
 	if err != nil {
-		return fmt.Errorf("Save: %v", err)
+		return fmt.Errorf("save: %w", err)
 	}
 	defer f.Close()
 
 	if _, err := f.WriteString(npmrc); err != nil {
-		return fmt.Errorf("Save: %v", err)
+		return fmt.Errorf("save: %w", err)
 	}
 	return nil
 }

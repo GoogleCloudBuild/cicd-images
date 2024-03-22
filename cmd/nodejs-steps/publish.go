@@ -50,13 +50,13 @@ var publishCmd = &cobra.Command{
 		// fetch Artifact Registry Token.
 		token, err := internal.GetToken(cmd.Context())
 		if err != nil {
-			return fmt.Errorf("failed to fetch Artifact Registry token: %v", err)
+			return fmt.Errorf("failed to fetch Artifact Registry token: %w", err)
 		}
 
 		// check if npmrc exists to try to authenticate with AR
 		if _, err := os.Stat(".npmrc"); err == nil {
 			if err := internal.AuthenticateNpmrcFile(token); err != nil {
-				return fmt.Errorf("failed to install dependencies: %v", err)
+				return fmt.Errorf("failed to install dependencies: %w", err)
 			}
 		} else {
 			fmt.Println("Warning: No .netrc file detected, skipping Artifact Registry Authentication.")
@@ -71,7 +71,7 @@ var publishCmd = &cobra.Command{
 		err = c.Run()
 		packageName := strings.TrimSpace(stdout.String())
 		if err != nil {
-			return fmt.Errorf("error executing 'npm %s': %s\n%s", strings.Join(packCommand, " "), stderr.String(), err)
+			return fmt.Errorf("error executing 'npm %s': %s\n%w", strings.Join(packCommand, " "), stderr.String(), err)
 		}
 
 		// publish the tar file.
@@ -82,7 +82,7 @@ var publishCmd = &cobra.Command{
 		err = c.Run()
 		uri := strings.TrimSpace(stdout.String())
 		if err != nil {
-			return fmt.Errorf("error executing 'npm %s': %s\n%s", strings.Join(publishArgs, " "), stderr.String(), err)
+			return fmt.Errorf("error executing 'npm %s': %s\n%w", strings.Join(publishArgs, " "), stderr.String(), err)
 		}
 		// remove first two characters of npm publish (e.g. "+  @SCOPE/package@0.0.0" ->  "@SCOPE/package@0.0.0")
 		// Define regular expression to match leading whitespace characters
@@ -93,7 +93,7 @@ var publishCmd = &cobra.Command{
 		// generate provenance and write ir into provenance json path
 		if publishCmdArgs.resultsPath != "" {
 			if err := internal.GenerateProvenance(publishCmdArgs.resultsPath, packageName, uri); err != nil {
-				return fmt.Errorf("failed to generate provenance: %v", err)
+				return fmt.Errorf("failed to generate provenance: %w", err)
 			}
 		}
 
@@ -119,17 +119,17 @@ type publishArguments struct {
 func parsePublishArgs(f *pflag.FlagSet) (publishArguments, error) {
 	resultsPath, err := f.GetString(RESULTS_ARG)
 	if err != nil {
-		return publishArguments{}, fmt.Errorf("failed to get results path: %v", err)
+		return publishArguments{}, fmt.Errorf("failed to get results path: %w", err)
 	}
 
 	packArgs, err := f.GetString(PACK_ARG)
 	if err != nil {
-		return publishArguments{}, fmt.Errorf("failed to get `npm pack` extra arguments: %v", err)
+		return publishArguments{}, fmt.Errorf("failed to get `npm pack` extra arguments: %w", err)
 	}
 
 	publishArgs, err := f.GetString(PUBLISH_ARG)
 	if err != nil {
-		return publishArguments{}, fmt.Errorf("failed to get `npm publish` extra arguments: %v", err)
+		return publishArguments{}, fmt.Errorf("failed to get `npm publish` extra arguments: %w", err)
 	}
 
 	return publishArguments{

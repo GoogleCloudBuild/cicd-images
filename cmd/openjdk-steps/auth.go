@@ -56,18 +56,18 @@ var authCmd = &cobra.Command{
 
 		err = setup.GenerateEffectivePom(authCmdArgs.inputPomFile, authCmdArgs.effectivePomPath)
 		if err != nil {
-			return fmt.Errorf("error generating effective pom file: %v", err)
+			return fmt.Errorf("error generating effective pom file: %w", err)
 		}
 
 		token, err := setup.GetAuthenticationToken(c)
 		if err != nil {
-			return fmt.Errorf("getAuthenticationToken errors: %v", err)
+			return fmt.Errorf("getAuthenticationToken errors: %w", err)
 		}
 		fmt.Println("Token retrieval success!")
 
 		sc, err := secretmanager.NewClient(ctx)
 		if err != nil {
-			return fmt.Errorf("error getting secret manager client %v", err)
+			return fmt.Errorf("error getting secret manager client %w", err)
 		}
 		defer sc.Close()
 
@@ -75,23 +75,23 @@ var authCmd = &cobra.Command{
 			fmt.Printf("Downloading custom settings from Secret Manager...")
 			data, err := setup.RetrieveSettingSecret(authCmdArgs.settingSecretName, sc, ctx)
 			if err != nil {
-				return fmt.Errorf("retrieveSettingSecret error: %v", err)
+				return fmt.Errorf("retrieveSettingSecret error: %w", err)
 			}
 			err = os.WriteFile(customizedSettings, data, 0644)
 			if err != nil {
-				return fmt.Errorf("Failed to write payload to file: %v\n", err)
+				return fmt.Errorf("Failed to write payload to file: %w", err)
 			}
 
 			fmt.Printf("Secret payload saved to %s\n", customizedSettings)
 		} else {
 			repos, err := setup.RetrieveRepos(authCmdArgs.effectivePomPath, authCmdArgs.artifactDirectory)
 			if err != nil {
-				return fmt.Errorf("retrieveRepos errors: %v", err)
+				return fmt.Errorf("retrieveRepos errors: %w", err)
 			}
 			fmt.Printf("Main repos:\n%v\n", repos)
 			err = setup.WriteSettingXML(authCmdArgs.debug, authCmdArgs.settingPath, authCmdArgs.localRepository, repos, token)
 			if err != nil {
-				return fmt.Errorf("writeSettingXML errors: %v", err)
+				return fmt.Errorf("writeSettingXML errors: %w", err)
 			}
 		}
 		if authCmdArgs.installFlags != "" {
@@ -131,42 +131,42 @@ type authArguments struct {
 func parseAuthArgs(f *pflag.FlagSet) (authArguments, error) {
 	debug, err := f.GetBool(DEBUG_ARG)
 	if err != nil {
-		return authArguments{}, fmt.Errorf("failed to get debug argument: %v", err)
+		return authArguments{}, fmt.Errorf("failed to get debug argument: %w", err)
 	}
 
 	inputPomFile, err := f.GetString(INPUTPOMFILE_ARG)
 	if err != nil {
-		return authArguments{}, fmt.Errorf("failed to get input pom file: %v", err)
+		return authArguments{}, fmt.Errorf("failed to get input pom file: %w", err)
 	}
 
 	effectivePomPath, err := f.GetString(EFFECTIVEPOMPATH_ARG)
 	if err != nil {
-		return authArguments{}, fmt.Errorf("failed to get pom path: %v", err)
+		return authArguments{}, fmt.Errorf("failed to get pom path: %w", err)
 	}
 
 	settingPath, err := f.GetString(SETTINGPATH_ARG)
 	if err != nil {
-		return authArguments{}, fmt.Errorf("failed to get setting path: %v", err)
+		return authArguments{}, fmt.Errorf("failed to get setting path: %w", err)
 	}
 
 	localRepository, err := f.GetString(LOCALREPOSITORY_ARG)
 	if err != nil {
-		return authArguments{}, fmt.Errorf("failed to get local repository: %v", err)
+		return authArguments{}, fmt.Errorf("failed to get local repository: %w", err)
 	}
 
 	installFlags, err := f.GetString(INSTALLFLAGS_ARG)
 	if err != nil {
-		return authArguments{}, fmt.Errorf("failed to get install flags: %v", err)
+		return authArguments{}, fmt.Errorf("failed to get install flags: %w", err)
 	}
 
 	settingSecretName, err := f.GetString(SETTINGSECRETNAME_ARG)
 	if err != nil {
-		return authArguments{}, fmt.Errorf("failed to get setting secret name: %v", err)
+		return authArguments{}, fmt.Errorf("failed to get setting secret name: %w", err)
 	}
 
 	artifactDirectory, err := f.GetString(ARTIFACTDIRECTORY_ARG)
 	if err != nil {
-		return authArguments{}, fmt.Errorf("failed to get artifact directory: %v", err)
+		return authArguments{}, fmt.Errorf("failed to get artifact directory: %w", err)
 	}
 
 	return authArguments{

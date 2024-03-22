@@ -32,7 +32,7 @@ func ScanInstallLog(logPath string, outputPath string) error {
 	// Read the file contents
 	content, err := os.ReadFile(logPath)
 	if err != nil {
-		return fmt.Errorf("Error reading log file: %v\n", err)
+		return fmt.Errorf("reading log file: %w", err)
 	}
 
 	// Convert file content to a string
@@ -40,7 +40,7 @@ func ScanInstallLog(logPath string, outputPath string) error {
 
 	artifactPaths, err := retrieveArtifactPaths(logs)
 	if err != nil {
-		return fmt.Errorf("Failed to retrieve artifact paths: %v\n", err)
+		return fmt.Errorf("failed to retrieve artifact paths: %w", err)
 	}
 
 	// Create list string of all the paths
@@ -51,14 +51,14 @@ func ScanInstallLog(logPath string, outputPath string) error {
 
 	data, err := json.Marshal(paths) // to preserve quotes
 	if err != nil {
-		return fmt.Errorf("Failed to write marshal data: %v\n", err)
+		return fmt.Errorf("failed to write marshal data: %w", err)
 	}
 	log.Printf("Write: %s\n", string(data))
 
 	// Write string to output file
 	err = os.WriteFile(outputPath, data, 0444)
 	if err != nil {
-		return fmt.Errorf("Failed to write payload to file: %v\n", err)
+		return fmt.Errorf("failed to write payload to file: %w", err)
 	}
 
 	return nil
@@ -77,7 +77,7 @@ func retrieveArtifactPaths(logs string) (map[string]bool, error) {
 		// Extract the directory paths
 		directoryMatch := directoryRE.FindStringSubmatch(match[0])
 		if len(directoryMatch) == 0 {
-			return results, fmt.Errorf("Failed to retrieve a directory match")
+			return results, fmt.Errorf("failed to retrieve a directory match")
 		}
 		log.Printf("Retrieved artifact path: %v\n", directoryMatch[1])
 		results[directoryMatch[1]] = true
