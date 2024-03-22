@@ -22,9 +22,5 @@ func RunCmd(runtime string, command ...string) error {
 	c := exec.Command(runtime, command...)
 	c.Stdout = os.Stdout
 	c.Stderr = os.Stderr
-	err := c.Run()
-	if err != nil {
-		return err
-	}
-	return nil
+	return c.Run()
 }

@@ -97,7 +97,7 @@ var authCmd = &cobra.Command{
 		if authCmdArgs.installFlags != "" {
 			unallowedFlag := setup.ValidateMavenInstallFlags(authCmdArgs.installFlags)
 			if unallowedFlag != "" {
-				return fmt.Errorf("Unallowed flags for maven-install Task %v", unallowedFlag)
+				return fmt.Errorf("flag %v not allowed for maven-install Task", unallowedFlag)
 			}
 		}
 		return nil

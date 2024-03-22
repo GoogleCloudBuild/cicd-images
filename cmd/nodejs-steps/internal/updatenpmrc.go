@@ -24,11 +24,7 @@ import (
 
 // GetToken receives a context and returns the Token from Artifact Registry.
 func GetToken(ctx context.Context) (string, error) {
-	token, err := auth.Token(ctx)
-	if err != nil {
-		return "", err
-	}
-	return token, nil
+	return auth.Token(ctx)
 }
 
 // AuthenticateNpmrcFile receives a token to write into the user's .npmrc file
@@ -49,9 +45,5 @@ func AuthenticateNpmrcFile(token string) error {
 	}
 
 	// Save updated npmrc file to per-user config file.
-	if err := npmrc.Save(config, path.Join(h, ".npmrc")); err != nil {
-		return err
-	}
-
-	return nil
+	return npmrc.Save(config, path.Join(h, ".npmrc"))
 }
