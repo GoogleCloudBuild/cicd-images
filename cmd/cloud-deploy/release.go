@@ -52,15 +52,15 @@ var releaseCmd = &cobra.Command{
 
 		flags.InitialRolloutAnotations, err = release.ParseDictString(initialRolloutAnnotationStr)
 		if err != nil {
-			return fmt.Errorf("invalid --initial-rollout-annotations value: %s", err)
+			return fmt.Errorf("invalid --initial-rollout-annotations value: %w", err)
 		}
 		flags.InitialRolloutLabels, err = release.ParseDictString(initialRolloutLabelStr)
 		if err != nil {
-			return fmt.Errorf("invalid --initial-rollout-labels value: %s", err)
+			return fmt.Errorf("invalid --initial-rollout-labels value: %w", err)
 		}
 		flags.Images, err = release.ParseDictString(imagesStr)
 		if err != nil {
-			return fmt.Errorf("invalid --images value: %s", err)
+			return fmt.Errorf("invalid --images value: %w", err)
 		}
 		if flags.Source == "" {
 			flags.Source = defaultSource

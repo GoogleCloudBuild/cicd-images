@@ -55,13 +55,13 @@ func authenticateArtifactRegistry(goproxy string) error {
 	// Add location to .netrcfile
 	err = addLocations(location)
 	if err != nil {
-		return fmt.Errorf("error: Could not authenticate to Artifact Registry: %s", err)
+		return fmt.Errorf("error: Could not authenticate to Artifact Registry: %w", err)
 	}
 
 	// Refresh token
 	err = refreshToken()
 	if err != nil {
-		return fmt.Errorf("error: Could not refresh Artifact Registry token: %s", err)
+		return fmt.Errorf("error: Could not refresh Artifact Registry token: %w", err)
 	}
 
 	return nil

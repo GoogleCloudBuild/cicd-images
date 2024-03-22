@@ -35,20 +35,20 @@ or gcloud CLI and writes it into the users npmrc file`,
 		// fetch Artifact Registry Token.
 		token, err := internal.GetToken(cmd.Context())
 		if err != nil {
-			return fmt.Errorf("failed to fetch Artifact Registry token: %v", err)
+			return fmt.Errorf("failed to fetch Artifact Registry token: %w", err)
 		}
 
 		// check if npmrc exists to try to authenticate with AR
 		if _, err := os.Stat(".npmrc"); err == nil {
 			if err := internal.AuthenticateNpmrcFile(token); err != nil {
-				return fmt.Errorf("failed to authenticate npmrc file: %v", err)
+				return fmt.Errorf("failed to authenticate npmrc file: %w", err)
 			}
 		} else {
 			fmt.Println("Warning: No .npmrc file detected, creating a new one with Artifact Registry authentication.")
 			f, err := os.OpenFile(".npmrc", os.O_CREATE|os.O_WRONLY, 0644)
 			if err != nil {
 				// Handle error opening the file
-				return fmt.Errorf("error creating .npmrc file: %v", err)
+				return fmt.Errorf("error creating .npmrc file: %w", err)
 			}
 
 			// Write configuration lines to the file
@@ -58,7 +58,7 @@ or gcloud CLI and writes it into the users npmrc file`,
 			`)
 			if err != nil {
 				// Handle error writing to the file
-				return fmt.Errorf("error writing to .npmrc file: %v", err)
+				return fmt.Errorf("error writing to .npmrc file: %w", err)
 			}
 		}
 		return nil

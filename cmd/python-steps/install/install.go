@@ -40,23 +40,23 @@ type Arguments struct {
 func ParseArgs(f *pflag.FlagSet) (Arguments, error) {
 	dependencies, err := f.GetString("dependencies")
 	if err != nil {
-		return Arguments{}, fmt.Errorf("failed to get dependencies: %v", err)
+		return Arguments{}, fmt.Errorf("failed to get dependencies: %w", err)
 	}
 	requirementsPath, err := f.GetString("requirementsPath")
 	if err != nil {
-		return Arguments{}, fmt.Errorf("failed to get requirementsPath: %v", err)
+		return Arguments{}, fmt.Errorf("failed to get requirementsPath: %w", err)
 	}
 	artifactRegistryUrl, err := f.GetString("artifactRegistryUrl")
 	if err != nil {
-		return Arguments{}, fmt.Errorf("failed to get artifactRegistryUrl: %v", err)
+		return Arguments{}, fmt.Errorf("failed to get artifactRegistryUrl: %w", err)
 	}
 	artifactRegistryUrl, err = auth.EnsureHTTPSByDefault(artifactRegistryUrl)
 	if err != nil {
-		return Arguments{}, fmt.Errorf("failed to ensure artifactRegistryUrl is https: %v", err)
+		return Arguments{}, fmt.Errorf("failed to ensure artifactRegistryUrl is https: %w", err)
 	}
 	verbose, err := f.GetBool("verbose")
 	if err != nil {
-		return Arguments{}, fmt.Errorf("failed to get verbose: %v", err)
+		return Arguments{}, fmt.Errorf("failed to get verbose: %w", err)
 	}
 
 	return Arguments{
@@ -71,17 +71,17 @@ func ParseArgs(f *pflag.FlagSet) (Arguments, error) {
 func Execute(runner command.CommandRunner, args Arguments, client auth.HTTPClient) error {
 	logger, err := logger.SetupLogger(args.Verbose)
 	if err != nil {
-		return fmt.Errorf("failed to setup logger: %v", err)
+		return fmt.Errorf("failed to setup logger: %w", err)
 	}
 	defer logger.Sync()
 	logger.Info("Executing run command", zap.Any("args", args))
 
 	if err := command.CreateVirtualEnv(runner, logger); err != nil {
-		return fmt.Errorf("failed to create virtual environment: %v", err)
+		return fmt.Errorf("failed to create virtual environment: %w", err)
 	}
 
 	if err := installDependencies(runner, args, client, logger); err != nil {
-		return fmt.Errorf("failed to install dependencies: %v", err)
+		return fmt.Errorf("failed to install dependencies: %w", err)
 	}
 
 	logger.Info("Successfully executed run command")
@@ -121,7 +121,7 @@ func authenticateRegistryAndGetFlags(artifactRegistryUrl string, client auth.HTT
 
 	authenticatedArtifactRegistryURL, err := auth.GetArtifactRegistryURL(client, artifactRegistryUrl, logger)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get authenticated Artifact Registry URL: %v", err)
+		return nil, fmt.Errorf("failed to get authenticated Artifact Registry URL: %w", err)
 	}
 
 	logger.Info("Successfully authenticated registry")

@@ -63,12 +63,12 @@ func GenerateEffectivePom(inputPomFile string, effectivePomPath string) error {
 func GetAuthenticationToken(c *metadata.Client) (string, error) {
 	accessTokenJSON, err := c.Get(tokenPathSuffix)
 	if err != nil {
-		return "", fmt.Errorf("Error requesting token: %v", err)
+		return "", fmt.Errorf("requesting token: %w", err)
 	}
 	var jsonRes response
 	err = json.NewDecoder(strings.NewReader(accessTokenJSON)).Decode(&jsonRes)
 	if err != nil {
-		return "", fmt.Errorf("Error: retrieving auth token: %v", err)
+		return "", fmt.Errorf("retrieving auth token: %w", err)
 	}
 	return string(jsonRes.AccessToken), nil
 }
@@ -108,7 +108,7 @@ func RetrieveRepos(pomPath string, artifactDirectory string) (map[string]string,
 	if err != nil {
 		projects, err := pomParse(pomPath)
 		if err != nil {
-			return nil, fmt.Errorf("Error: retrieving pom.xml: %v\n", err)
+			return nil, fmt.Errorf("retrieving pom.xml: %w", err)
 		}
 		for i, project := range projects.Projects {
 			retrieveProjectRepos(&project, repos)
@@ -116,14 +116,14 @@ func RetrieveRepos(pomPath string, artifactDirectory string) (map[string]string,
 		}
 		updatePom(pomPath, projects)
 		if err != nil {
-			return nil, fmt.Errorf("Error: updating pom.xml: %v\n", err)
+			return nil, fmt.Errorf("updating pom.xml: %w", err)
 		}
 	} else {
 		retrieveProjectRepos(pom, repos)
 		pom.Build.Directory = &artifactDirectory
 		updatePom(pomPath, pom)
 		if err != nil {
-			return nil, fmt.Errorf("Error: updating pom.xml: %v\n", err)
+			return nil, fmt.Errorf("updating pom.xml: %w", err)
 		}
 	}
 
@@ -206,7 +206,7 @@ func WriteSettingXML(debug bool, settingXMLPath string, localRepository string, 
 	file.Close()
 	file, err = os.OpenFile(settingXMLPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
-		return fmt.Errorf("Error openning settings.xml: %v", err)
+		return fmt.Errorf("openning settings.xml: %w", err)
 	}
 	defer file.Close()
 	// Write the XML data to a file
@@ -214,7 +214,7 @@ func WriteSettingXML(debug bool, settingXMLPath string, localRepository string, 
 	encoder.Indent("", "  ")
 	err = encoder.Encode(settings)
 	if err != nil {
-		return fmt.Errorf(fmt.Sprintf("Error writing SETTINGS.XML to file: %v", err))
+		return fmt.Errorf("writing SETTINGS.XML to file: %w", err)
 	}
 
 	if debug {
@@ -264,7 +264,7 @@ func RetrieveSettingSecret(secretName string, c *secretmanager.Client, ctx conte
 	// Access the secret version.
 	result, err := c.AccessSecretVersion(ctx, &req)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to access secret version: %v\n", err)
+		return nil, fmt.Errorf("access secret version: %w", err)
 	}
 
 	return result.Payload.Data, nil
@@ -274,12 +274,12 @@ func RetrieveSettingSecret(secretName string, c *secretmanager.Client, ctx conte
 func updatePom[T *Projects | *gopom.Project](pomPath string, data T) error {
 	updatedXML, err := xml.MarshalIndent(data, "", "  ")
 	if err != nil {
-		return fmt.Errorf("Failed to encode in XML: %v\n", err)
+		return fmt.Errorf("encode in XML: %w", err)
 	}
 
 	err = os.WriteFile(pomPath, updatedXML, 0444)
 	if err != nil {
-		return fmt.Errorf("Failed to write payload to file: %v\n", err)
+		return fmt.Errorf("write payload to file: %w", err)
 	}
 	return nil
 }

@@ -103,14 +103,14 @@ func EnsureHTTPSByDefault(registryURL string) (string, error) {
 
 	parsedURL, err := url.Parse(registryURL)
 	if err != nil {
-		return "", fmt.Errorf("invalid URL: %v", err)
+		return "", fmt.Errorf("invalid URL: %w", err)
 	}
 
 	// If the scheme is missing, default to HTTPS
 	if parsedURL.Scheme == "" {
 		_, err := url.ParseRequestURI("https://" + registryURL)
 		if err != nil {
-			return "", fmt.Errorf("invalid URL after adding https scheme: %v", err)
+			return "", fmt.Errorf("invalid URL after adding https scheme: %w", err)
 		}
 		parsedURL.Scheme = "https"
 	}

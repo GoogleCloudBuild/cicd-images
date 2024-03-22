@@ -56,12 +56,12 @@ type installScanArguments struct {
 func parseInstallScanArgs(f *pflag.FlagSet) (installScanArguments, error) {
 	logPath, err := f.GetString(INSTALLLOGPATH_ARG)
 	if err != nil {
-		return installScanArguments{}, fmt.Errorf("failed to get logPath argument: %v", err)
+		return installScanArguments{}, fmt.Errorf("failed to get logPath argument: %w", err)
 	}
 
 	outputPath, err := f.GetString(INSTALLOUTPUTPATH_ARG)
 	if err != nil {
-		return installScanArguments{}, fmt.Errorf("failed to get outputPath argument: %v", err)
+		return installScanArguments{}, fmt.Errorf("failed to get outputPath argument: %w", err)
 	}
 
 	return installScanArguments{

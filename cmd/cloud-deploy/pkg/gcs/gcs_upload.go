@@ -65,7 +65,7 @@ func SetSource(ctx context.Context, pipelineUUID string, flags *config.ReleaseCo
 		if info.Mode().IsDir() {
 			// create a tarball if source is a local directory
 			if err := createTarball(source, tmpTarPath); err != nil {
-				return fmt.Errorf("failed to create local tar: %s", err)
+				return fmt.Errorf("failed to create local tar: %w", err)
 			}
 			object += ".tgz"
 			source = tmpTarPath

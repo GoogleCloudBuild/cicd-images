@@ -172,14 +172,14 @@ func skaffoldFileAbsolutePath(ctx context.Context, flags *config.ReleaseConfigur
 
 	absSource, err := filepath.Abs(sourcePath)
 	if err != nil {
-		return "", fmt.Errorf("unexpected err when finding source abs path: %s", err)
+		return "", fmt.Errorf("unexpected err when finding source abs path: %w", err)
 	}
 	parent := filepath.Clean(absSource)
 	child := filepath.Clean(flags.SkaffoldFile)
 
 	info, err := os.Stat(parent)
 	if err != nil {
-		return "", fmt.Errorf("cannot open local source: %s, err: %s", parent, err)
+		return "", fmt.Errorf("cannot open local source: %s, err: %w", parent, err)
 	}
 	if !info.IsDir() {
 		return "", fmt.Errorf("local source: %s is not a directory", parent)
@@ -187,7 +187,7 @@ func skaffoldFileAbsolutePath(ctx context.Context, flags *config.ReleaseConfigur
 
 	relPath, err := filepath.Rel(parent, child)
 	if err != nil {
-		return "", fmt.Errorf("unexpected err when finding skaffold file relative path: %s", err)
+		return "", fmt.Errorf("unexpected err when finding skaffold file relative path: %w", err)
 	}
 	if strings.HasPrefix(relPath, "..") {
 		return "", fmt.Errorf("the skaffold file %s could not be found in the %s. Please enter a valid Skaffold file path", flags.SkaffoldFile, desc)
@@ -307,7 +307,7 @@ func getCloudDeployConfig(ctx context.Context, projectId, region string, client 
 	}
 	config, err := client.GetConfig(ctx, req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get Cloud Deploy Config: %v", err)
+		return nil, fmt.Errorf("failed to get Cloud Deploy Config: %w", err)
 	}
 
 	return config, nil
