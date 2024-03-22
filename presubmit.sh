@@ -1,3 +1,5 @@
+# TODO(kmonty): Move this to the Makefile so it's easier to know how to run locally too.
+
 #!/usr/bin/env bash
 set -eu
 

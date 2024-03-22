@@ -18,6 +18,8 @@ default_install_hook_types:
   - pre-commit
   - pre-push
   - commit-msg
+default_stages:
+  - pre-commit
 repos:
   - repo: https://github.com/hadolint/hadolint/
     rev: v2.12.1-beta
@@ -36,23 +38,25 @@ repos:
       - id: commitizen
   - repo: local
     hooks:
-      - id: gofmt
-        name: "gofmt"
+      - id: fmt
+        name: "Format go files"
         entry: make
         args: ["fmt"]
         language: system
         types: [go]
         pass_filenames: false
-      - id: go-lint
-        name: "golangci-lint"
+      - id: lint
+        name: "Lint go files"
         entry: make
-        args: ["golangci-lint"]
+        args: ["lint"]
         language: system
         types: [go]
         pass_filenames: false
-      - id: go-unit-tests
-        name: go unit tests
-        entry: go test -p=1 ./...
-        pass_filenames: false
-        types: [go]
+      - id: test
+        name: "Unit testing"
+        entry: make
+        args: ["test-unit"]
         language: system
+        types: [go]
+        pass_filenames: false
+        stages: [pre-push]
