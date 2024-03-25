@@ -2,10 +2,11 @@ module tools
 
 go 1.21.5
 
+require github.com/GoogleCloudPlatform/cloud-builders/gke-deploy v0.0.0-20240322190642-746f95b31b8c
+
 require (
 	cloud.google.com/go/compute v1.19.1 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
-	github.com/GoogleCloudPlatform/cloud-builders/gke-deploy v0.0.0-20240221180248-c33c9d855d0b // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/cli v0.0.0-20200128152735-774216439bae // indirect
 	github.com/docker/docker v20.10.27+incompatible // indirect

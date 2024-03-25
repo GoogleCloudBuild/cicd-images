@@ -18,5 +18,5 @@
 package tools
 
 import (
-	- "github.com/GoogleCloudPlatform/cloud-builders/gke-deploy"
+	_ "github.com/GoogleCloudPlatform/cloud-builders/gke-deploy"
 )

@@ -57,6 +57,7 @@ RUN apt-mark hold apt gpgv adduser passwd libsemanage-common libsemanage2 libcap
 
 # Install common packages needed by CICD processes.
 RUN clean-install \
+    apt-transport-https \
     bash \
     ca-certificates \
     curl \
