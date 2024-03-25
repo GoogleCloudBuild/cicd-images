@@ -26,9 +26,21 @@ COPY tools/ ./
 RUN go install github.com/anchore/syft/cmd/syft && \
     go install github.com/GoogleCloudPlatform/docker-credential-gcr/v2
 
-RUN go-licenses check --ignore github.com/xi2/xz --ignore modernc.org/mathutil github.com/anchore/syft/cmd/syft && \
-    go-licenses save --ignore github.com/xi2/xz --ignore modernc.org/mathutil github.com/anchore/syft/cmd/syft --save_path=/THIRD_PARTY_NOTICES/syft && \
-    go-licenses report --ignore github.com/xi2/xz --ignore modernc.org/mathutil github.com/anchore/syft/cmd/syft > /THIRD_PARTY_NOTICES/syft/licenses.csv
+RUN go-licenses check \
+    --ignore github.com/xi2/xz \
+    --ignore modernc.org/mathutil \
+    --ignore github.com/deitch/magic/pkg/magic \
+    github.com/anchore/syft/cmd/syft && \
+    go-licenses save \
+    --ignore github.com/xi2/xz \
+    --ignore modernc.org/mathutil \
+    --ignore github.com/deitch/magic/pkg/magic \
+    github.com/anchore/syft/cmd/syft --save_path=/THIRD_PARTY_NOTICES/syft && \
+    go-licenses report \
+    --ignore github.com/xi2/xz \
+    --ignore modernc.org/mathutil \
+    --ignore github.com/deitch/magic/pkg/magic \
+    github.com/anchore/syft/cmd/syft > /THIRD_PARTY_NOTICES/syft/licenses.csv
 
 RUN go-licenses check github.com/GoogleCloudPlatform/docker-credential-gcr/v2 && \
     go-licenses save github.com/GoogleCloudPlatform/docker-credential-gcr/v2 --save_path=/THIRD_PARTY_NOTICES/docker-credential-gcr && \
