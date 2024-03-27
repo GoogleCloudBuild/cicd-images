@@ -19,6 +19,7 @@ import (
 	"compress/gzip"
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -31,7 +32,9 @@ import (
 )
 
 const (
-	tmpTarPath = "/tmp/cloud-deploy-tmp-tar.tgz"
+	tmpTarPath    = "/tmp/cloud-deploy-tmp-tar.tgz"
+	gitIgnoreFile = ".gitignore"
+	gitFile       = ".git"
 )
 
 // SetSource sets the source for the release config and creates a default Cloud Storage bucket for staging
@@ -124,7 +127,7 @@ func createTarball(folderToTarball, tarballPath string) error {
 	}
 	defer tarballFile.Close()
 
-	// Create a tar writer
+	// create a tar writer
 	gzipWriter := gzip.NewWriter(tarballFile)
 	defer gzipWriter.Close()
 
@@ -144,25 +147,29 @@ func createTarball(folderToTarball, tarballPath string) error {
 		if err != nil {
 			return err
 		}
+
+		// skip uploading .git and .gitignore files by default
+		// this is the default behavior of `gcloud deploy release create ...`
+		if relPath == gitIgnoreFile || strings.HasPrefix(relPath, gitFile) {
+			return nil
+		}
 		header.Name = relPath
-		// Write the header to the tarball
+
+		// write the header to the tarball
 		if err := tarWriter.WriteHeader(header); err != nil {
 			return err
 		}
-		if info.IsDir() {
-			header.Mode |= 0755 // Set directory permission
-		} else {
-			data, err := os.ReadFile(path)
+
+		if !info.IsDir() {
+			data, err := os.Open(path)
 			if err != nil {
 				return err
 			}
-			header.Size = int64(len(data))
-			tarWriter.WriteHeader(header)
-			_, err = tarWriter.Write(data)
-			if err != nil {
+			if _, err := io.Copy(tarWriter, data); err != nil {
 				return err
 			}
 		}
+
 		return nil
 	})
 
