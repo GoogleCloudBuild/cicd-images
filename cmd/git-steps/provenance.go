@@ -56,7 +56,7 @@ var generateProvenanceCmd = &cobra.Command{
 
 		provenance := &Provenance{
 			Uri:    string(uri),
-			Digest: string(digest),
+			Digest: "sha1:" + string(digest),
 			Ref:    string(ref),
 		}
 
