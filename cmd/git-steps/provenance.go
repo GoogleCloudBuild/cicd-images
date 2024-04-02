@@ -55,9 +55,9 @@ var generateProvenanceCmd = &cobra.Command{
 		}
 
 		provenance := &Provenance{
-			Uri:    string(uri),
-			Digest: "sha1:" + string(digest),
-			Ref:    string(ref),
+			Uri:    strings.TrimSpace(string(uri)),
+			Digest: strings.TrimSpace("sha1:" + string(digest)),
+			Ref:    strings.TrimSpace(string(ref)),
 		}
 
 		file, err := json.Marshal(provenance)
