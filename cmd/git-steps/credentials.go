@@ -77,8 +77,6 @@ var generateCredentialsCmd = &cobra.Command{
 			if err := auth.AuthenticateWithSSHKeys(sf, sshPrivateKeySecretsResource, url, sshServerPublicKeys); err != nil {
 				return err
 			}
-		} else {
-			return fmt.Errorf("parameters for either SSH keys or Cloud Build Repositories must be provided for authentication")
 		}
 		return nil
 	},
