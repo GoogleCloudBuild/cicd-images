@@ -32,7 +32,6 @@ RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.
     apt-get update -y && \
     clean-install google-cloud-cli && \
     rm /usr/lib/google-cloud-sdk/bin/anthoscli && \
-    rm /usr/lib/google-cloud-sdk/data/cli/gcloud.json && \
     rm -rf /usr/lib/google-cloud-sdk/platform/bundledpythonunix && \
     rm -rf /usr/lib/google-cloud-sdk/.install && \
     find /usr/lib/google-cloud-sdk/ -name "*.pyc" -exec rm -rf '{}' + && \
