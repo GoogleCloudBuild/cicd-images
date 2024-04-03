@@ -63,6 +63,8 @@ RUN clean-install \
     curl \
     wget \
     gnupg \
+    jq    \
+    zip   \
     unzip
 
 # Cleanup cached and unnecessary files.
