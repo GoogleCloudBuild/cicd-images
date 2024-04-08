@@ -52,8 +52,16 @@ github.com ssh-rsa key2
 		},
 	}
 
+	tmpdir := t.TempDir()
+	// Create temporary file for testing
+	tmpfile, err := os.CreateTemp(tmpdir, "*")
+	if err != nil {
+		t.Errorf("Error creating temporary file: %v", err)
+	}
+	defer tmpfile.Close()
+
 	t.Run("ssh auth", func(t *testing.T) {
-		if err := AuthenticateWithSSHKeys(sf, sshPrivateKeySecretsResource, repoUrl, sshServerPublicKeys); err != nil {
+		if err := AuthenticateWithSSHKeys(sf, sshPrivateKeySecretsResource, repoUrl, sshServerPublicKeys, tmpfile.Name()); err != nil {
 			t.Fatalf("Expected no errors, but got %v", err)
 		}
 		defer os.RemoveAll(".ssh")
@@ -76,6 +84,14 @@ github.com ssh-rsa key2
 
 		if !bytes.Equal([]byte(publicKeyResult), knownHostFile) {
 			t.Errorf("Generated file does not match expected results. Expected:\n%v\n Got:\n%v\n", publicKeyResult, string(knownHostFile))
+		}
+
+		url, err := os.ReadFile(tmpfile.Name())
+		if err != nil {
+			t.Fatalf("Error reading .gitconfig file: %v", err)
+		}
+		if !bytes.Equal(url, []byte(repoUrl)) {
+			t.Errorf("Generated url file does not match expected results. Expected:\n%v\n Got:\n%v\n", repoUrl, string(url))
 		}
 	})
 }
@@ -104,8 +120,16 @@ func TestReposApiAuth(t *testing.T) {
 	configResult := "[credential \"https://fakeDomain\"]\n  helper = store\n"
 	credResult := "https://x-access-token:fakeToken@fakeDomain\n"
 
+	tmpdir := t.TempDir()
+	// Create temporary file for testing
+	tmpfile, err := os.CreateTemp(tmpdir, "*")
+	if err != nil {
+		t.Errorf("Error creating temporary file: %v", err)
+	}
+	defer tmpfile.Close()
+
 	t.Run("repos api auth", func(t *testing.T) {
-		if err := AuthenticateWithReposAPI(reposResource, rf); err != nil {
+		if err := AuthenticateWithReposAPI(reposResource, rf, tmpfile.Name()); err != nil {
 			t.Fatalf("Expected no errors, but got %v", err)
 		}
 		defer os.Remove(".gitconfig")
@@ -127,6 +151,14 @@ func TestReposApiAuth(t *testing.T) {
 
 		if !bytes.Equal([]byte(credResult), credFile) {
 			t.Errorf("Generated .git-credentials file does not match expected results. Expected:\n%v\n Got:\n%v\n", credResult, string(credFile))
+		}
+
+		url, err := os.ReadFile(tmpfile.Name())
+		if err != nil {
+			t.Fatalf("Error reading .gitconfig file: %v", err)
+		}
+		if !bytes.Equal(url, []byte(rf.fakeRepoUri)) {
+			t.Errorf("Generated url file does not match expected results. Expected:\n%v\n Got:\n%v\n", rf.fakeRepoUri, string(url))
 		}
 	})
 }

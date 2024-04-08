@@ -34,12 +34,12 @@ type CBRepoClient interface {
 }
 
 // Authenticate using ssh public and private keys.
-func AuthenticateWithSSHKeys(sf SMClient, sshPrivateKeySecretsResource string, repoUrl string, sshServerPublicKeys string) error {
+func AuthenticateWithSSHKeys(sf SMClient, sshPrivateKeySecretsResource string, repoUrl string, sshServerPublicKeys string, urlPath string) error {
 	if err := getPrivateKey(sf, sshPrivateKeySecretsResource); err != nil {
 		return err
 	}
 
-	if err := storePublicKeys(repoUrl, sshServerPublicKeys); err != nil {
+	if err := storePublicKeys(repoUrl, sshServerPublicKeys, urlPath); err != nil {
 		return err
 	}
 
@@ -80,13 +80,18 @@ func getPrivateKey(sf SMClient, sshPrivateKeySecretsResource string) error {
 }
 
 // Format and store the public keys in .ssh file.
-func storePublicKeys(repoUrl string, sshServerPublicKeys string) error {
+func storePublicKeys(repoUrl string, sshServerPublicKeys string, urlPath string) error {
 	// Parse host and port from URL param
 	u, err := url.Parse(repoUrl)
 	if err != nil {
 		return fmt.Errorf("error parsing host and port from URL: %v\n", err)
 	}
 	host := u.Host
+
+	// store host in urlPath
+	if err := StoreURL(repoUrl, urlPath); err != nil {
+		return fmt.Errorf("error storing url in path: %v", err)
+	}
 
 	// Convert the sshServerPublicKeys string to an array.
 	var publicKeys []string
@@ -111,8 +116,8 @@ func storePublicKeys(repoUrl string, sshServerPublicKeys string) error {
 }
 
 // Authenticate using Repos API.
-func AuthenticateWithReposAPI(reposResource string, rf CBRepoClient) error {
-	domain, err := getRemoteGitRepoUrl(rf, reposResource)
+func AuthenticateWithReposAPI(reposResource string, rf CBRepoClient, urlPath string) error {
+	domain, err := getRemoteGitRepoUrl(rf, reposResource, urlPath)
 	if err != nil {
 		return err
 	}
@@ -125,7 +130,7 @@ func AuthenticateWithReposAPI(reposResource string, rf CBRepoClient) error {
 }
 
 // Call the Cloud Build API service to get repository details and store in .gitconfig file.
-func getRemoteGitRepoUrl(rf CBRepoClient, reposResource string) (string, error) {
+func getRemoteGitRepoUrl(rf CBRepoClient, reposResource string, urlPath string) (string, error) {
 	// Get details of remote repo and extract url
 	remoteUri, err := rf.Get(reposResource)
 	if err != nil {
@@ -137,6 +142,11 @@ func getRemoteGitRepoUrl(rf CBRepoClient, reposResource string) (string, error) 
 		return "", fmt.Errorf("error parsing host and port from URL: %v\n", err)
 	}
 	domain := u.Host
+
+	// store domain in urlPath
+	if err := StoreURL(remoteUri, urlPath); err != nil {
+		return "", fmt.Errorf("error storing url in path: %v", err)
+	}
 
 	// Store the domain in the .gitconfig file
 	configFile, err := os.OpenFile(".gitconfig", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
@@ -173,5 +183,16 @@ func getReadWriteAccessToken(rf CBRepoClient, reposResource string, domain strin
 		return fmt.Errorf("error writing to .git-credentials file: %v\n", err)
 	}
 
+	return nil
+}
+
+func StoreURL(data string, urlPath string) error {
+	if urlPath == "" { // if urlPath is empty, then do not need to write URL
+		return nil
+	}
+	// Write provenance as json file in path
+	if err := os.WriteFile(urlPath, []byte(data), 0644); err != nil {
+		return fmt.Errorf("error writing results into %s: %v", urlPath, err)
+	}
 	return nil
 }

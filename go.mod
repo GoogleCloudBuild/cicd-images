@@ -22,8 +22,8 @@ require (
 	github.com/spf13/viper v1.18.2
 	github.com/stretchr/testify v1.9.0
 	github.com/vifraa/gopom v1.0.0
-	github.com/yargevad/filepathx v1.0.0
 	github.com/whilp/git-urls v1.0.0
+	github.com/yargevad/filepathx v1.0.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/oauth2 v0.18.0
 	google.golang.org/api v0.171.0
@@ -65,7 +65,7 @@ require (
 	github.com/pelletier/go-toml/v2 v2.2.0 // indirect
 	github.com/pkg/xattr v0.4.9 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
-	github.com/rogpeppe/go-internal v1.10.0 // indirect
+	github.com/rogpeppe/go-internal v1.11.0 // indirect
 	github.com/sagikazarmark/locafero v0.4.0 // indirect
 	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
