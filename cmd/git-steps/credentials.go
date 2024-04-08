@@ -29,6 +29,7 @@ import (
 
 var (
 	url                          string
+	urlPath                      string
 	sshServerPublicKeys          string
 	sshPrivateKeySecretsResource string
 	reposResource                string
@@ -61,7 +62,7 @@ var generateCredentialsCmd = &cobra.Command{
 
 			arf := &repositoryFetcher{cb: cloudbuildService}
 
-			if err := auth.AuthenticateWithReposAPI(reposResource, arf); err != nil {
+			if err := auth.AuthenticateWithReposAPI(reposResource, arf, urlPath); err != nil {
 				return err
 			}
 		} else if sshPrivateKeySecretsResource != "" {
@@ -74,8 +75,13 @@ var generateCredentialsCmd = &cobra.Command{
 
 			sf := &secretVersionFetcher{client: client, ctx: ctx}
 
-			if err := auth.AuthenticateWithSSHKeys(sf, sshPrivateKeySecretsResource, url, sshServerPublicKeys); err != nil {
+			if err := auth.AuthenticateWithSSHKeys(sf, sshPrivateKeySecretsResource, url, sshServerPublicKeys, urlPath); err != nil {
 				return err
+			}
+		} else {
+			// for public repositories, just store url without auth
+			if err := auth.StoreURL(url, urlPath); err != nil {
+				return fmt.Errorf("error storing url without auth: %v", err)
 			}
 		}
 		return nil
@@ -86,6 +92,7 @@ func init() {
 	rootCmd.AddCommand(generateCredentialsCmd)
 
 	generateCredentialsCmd.Flags().StringVar(&url, "url", "", "The URL of the repository.")
+	generateCredentialsCmd.Flags().StringVar(&urlPath, "urlPath", "", "The path to store the extracted URL of the repository.")
 	generateCredentialsCmd.Flags().StringVar(&sshServerPublicKeys, "sshServerPublicKeys", `[""]`, "The public keys of the SSH server in an array.")
 	generateCredentialsCmd.Flags().StringVar(&sshPrivateKeySecretsResource, "sshPrivateKeySecretsResource", "", "The URL of the SSH private key saved on Secret Manager.")
 	generateCredentialsCmd.Flags().StringVar(&reposResource, "reposResource", "", "The URL of the Cloud Build Repository resource.")

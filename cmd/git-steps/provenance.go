@@ -39,19 +39,22 @@ var generateProvenanceCmd = &cobra.Command{
 		uriCmd := exec.Command("git", strings.Fields("config --get remote.origin.url")...)
 		uri, err := uriCmd.Output()
 		if err != nil {
-			return fmt.Errorf("error running 'git config --get remote.origin.url': %v", err)
+			fmt.Printf("error running 'git config --get remote.origin.url': %v", err) // capture error, but continue with empty field
+			uri = []byte("")
 		}
 
 		digestCmd := exec.Command("git", strings.Fields("rev-parse HEAD")...)
 		digest, err := digestCmd.Output()
 		if err != nil {
-			return fmt.Errorf("error running 'git rev-parse HEAD': %v", err)
+			fmt.Printf("error running 'git rev-parse HEAD': %v", err) // capture error, but continue with empty field
+			digest = []byte("")
 		}
 
 		refCmd := exec.Command("git", strings.Fields("symbolic-ref HEAD")...)
 		ref, err := refCmd.Output()
 		if err != nil {
-			return fmt.Errorf("error running 'git symbolic-ref HEAD': %v", err)
+			fmt.Printf("error running 'git symbolic-ref HEAD': %v", err) // capture error, but continue with empty field
+			ref = []byte("")
 		}
 
 		provenance := &Provenance{
