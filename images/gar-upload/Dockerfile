@@ -27,25 +27,15 @@ RUN go install github.com/google/go-licenses
 WORKDIR /src
 RUN go mod download && \
     go test ./cmd/gar-upload/... -timeout 30s && \
-    go test ./cmd/google-cloud-auth/... -timeout 30s && \
-    go build ./cmd/gar-upload && \
-    go build ./cmd/google-cloud-auth
+    go build ./cmd/gar-upload
 
 # Scan and save licenses.
 RUN go-licenses check ./cmd/gar-upload && \
     go-licenses save ./cmd/gar-upload --save_path=/THIRD_PARTY_NOTICES/gar-upload && \
     go-licenses report ./cmd/gar-upload > /THIRD_PARTY_NOTICES/gar-upload/licenses.csv
 
-# Scan and save licenses.
-RUN go-licenses check ./cmd/google-cloud-auth && \
-    go-licenses save ./cmd/google-cloud-auth --save_path=/THIRD_PARTY_NOTICES/google-cloud-auth && \
-    go-licenses report ./cmd/google-cloud-auth > /THIRD_PARTY_NOTICES/google-cloud-auth/licenses.csv
-
 # hadolint ignore=DL3006
-FROM base
+FROM scratch
 
 COPY --from=builder /src/gar-upload /usr/local/bin/gar-upload
 COPY --from=builder /THIRD_PARTY_NOTICES/gar-upload /THIRD_PARTY_NOTICES/gar-upload
-
-COPY --from=builder /src/google-cloud-auth /usr/local/bin/google-cloud-auth
-COPY --from=builder /THIRD_PARTY_NOTICES/google-cloud-auth /THIRD_PARTY_NOTICES/google-cloud-auth
