@@ -38,7 +38,7 @@ privatekey
 -----END PRIVATE KEY-----`)
 	sshPrivateKeySecretsResource := ""
 	repoUrl := "git@github.com:test/test-repo.git"
-	sshServerPublicKeys := `["ssh-ed25519 key1", "ssh-rsa key2"]`
+	sshServerPublicKeys := []string{"ssh-ed25519 key1", "ssh-rsa key2"}
 	publicKeyResult := `github.com ssh-ed25519 key1
 github.com ssh-rsa key2
 `
