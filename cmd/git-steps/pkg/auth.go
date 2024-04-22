@@ -15,7 +15,6 @@
 package auth
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 
@@ -34,7 +33,7 @@ type CBRepoClient interface {
 }
 
 // Authenticate using ssh public and private keys.
-func AuthenticateWithSSHKeys(sf SMClient, sshPrivateKeySecretsResource string, repoUrl string, sshServerPublicKeys string, urlPath string) error {
+func AuthenticateWithSSHKeys(sf SMClient, sshPrivateKeySecretsResource string, repoUrl string, sshServerPublicKeys []string, urlPath string) error {
 	if err := getPrivateKey(sf, sshPrivateKeySecretsResource); err != nil {
 		return err
 	}
@@ -80,7 +79,7 @@ func getPrivateKey(sf SMClient, sshPrivateKeySecretsResource string) error {
 }
 
 // Format and store the public keys in .ssh file.
-func storePublicKeys(repoUrl string, sshServerPublicKeys string, urlPath string) error {
+func storePublicKeys(repoUrl string, sshServerPublicKeys []string, urlPath string) error {
 	// Parse host and port from URL param
 	u, err := url.Parse(repoUrl)
 	if err != nil {
@@ -93,12 +92,6 @@ func storePublicKeys(repoUrl string, sshServerPublicKeys string, urlPath string)
 		return fmt.Errorf("error storing url in path: %v", err)
 	}
 
-	// Convert the sshServerPublicKeys string to an array.
-	var publicKeys []string
-	if err := json.Unmarshal([]byte(sshServerPublicKeys), &publicKeys); err != nil {
-		return fmt.Errorf("error converting public keys string to array: %v", err)
-	}
-
 	// Add the ssh public keys to .ssh file
 	file, err := os.OpenFile(".ssh/known_hosts", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
@@ -106,7 +99,7 @@ func storePublicKeys(repoUrl string, sshServerPublicKeys string, urlPath string)
 	}
 	defer file.Close()
 
-	for _, key := range publicKeys {
+	for _, key := range sshServerPublicKeys {
 		if _, err := file.WriteString(host + " " + key + "\n"); err != nil {
 			return fmt.Errorf("error writing public keys to known_hosts file: %v\n", err)
 		}
