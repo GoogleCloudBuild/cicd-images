@@ -34,6 +34,7 @@ var (
 	sshPrivateKeySecretsResource string
 	reposResource                string
 )
+
 const gcpAccessTokenURL = "https://www.googleapis.com/auth/cloud-platform"
 
 var generateCredentialsCmd = &cobra.Command{

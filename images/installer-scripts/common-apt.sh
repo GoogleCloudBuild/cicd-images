@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Copyright 2023 Google LLC
 #
@@ -13,22 +13,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
 
-set -o errexit
+set -o errexit \
+    -o nounset \
+    -o xtrace \
+    -o pipefail
 
-if [ $# = 0 ]; then
-  echo >&2 "No packages specified"
-  exit 1
-fi
+ . "$(dirname "$(readlink $0 -f)")"/env.sh
 
-apt-get update
-apt-get install -y --no-install-suggests --no-install-recommends "$@"
-apt-get clean -y
-apt-get -y autoremove
-rm -rf \
-   /var/cache/debconf/* \
-   /var/lib/apt/lists/* \
-   /var/log/* \
-   /tmp/* \
-   /var/tmp/*
+# Only check var declaration after defaults are set
+set -o nounset
+
+apt_pkgs=$(yq '.common-packages.[]' < $PACKAGES)
+
+clean-install $apt_pkgs

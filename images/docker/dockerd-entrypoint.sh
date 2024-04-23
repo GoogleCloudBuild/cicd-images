@@ -35,7 +35,7 @@ fi
 if [ "$1" = 'dockerd' ]; then
 
     # Configure Artifact Registry auth via GCP's ADC
-    docker-credential-gcr  configure-docker -include-artifact-registry;
+    docker-credential-gcr configure-docker -include-artifact-registry;
 
     # set "dockerSocket" to the default *unix socket*
     dockerSocket='unix:///var/run/docker.sock'
@@ -59,6 +59,7 @@ if [ "$1" = 'dockerd' ]; then
     # We will not generate self-signed certs
     #
     TLS_OPTIONS=''
+    # shellcheck disable=SC2078
     if [ -n "${DOCKER_TLS_CERTDIR:-}" ] && [ valid_certs_exist ]; then
         HOSTS="$HOSTS --host=tcp://0.0.0.0:2376"
         TLS_OPTIONS=" --tlsverify"

@@ -1,0 +1,72 @@
+# Copyright 2023 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+schemaVersion: 2.0.0
+commandTests:
+  - name: "Java is installed"
+    command: "java"
+    args:
+    - --version
+    expectedOutput: [ ".*openjdk 17.0.11.*" ]
+    exitCode: 0
+  - name: "NodeJS is installed"
+    command: "node"
+    args:
+    - --version
+    expectedOutput: [ ".*v18.20.2.*" ]
+    exitCode: 0
+  - name: "Go is installed"
+    command: "go"
+    args:
+    - version
+    expectedOutput: [ ".*1.21.*" ]
+    exitCode: 0
+
+  - name: "Python is setup correctly"
+    command: "bash"
+    args:
+    - -c
+    - readlink -f $(which python)
+    expectedOutput: [ '/opt/python' ]
+    exitCode: 0
+  - name: "Python is installed"
+    command: "python"
+    args:
+    - --version
+    expectedOutput: [ ".*3.10.*" ]
+    exitCode: 0
+
+fileExistenceTests:
+  - name: "Docker APT source exists"
+    path: "/etc/apt/sources.list.d/google-cloud-sdk.list"
+    shouldExist: true
+  - name: "Git APT source exists"
+    path: "/etc/apt/sources.list.d/git-core-ubuntu-ppa-jammy.list"
+    shouldExist: true
+  - name: "Git-lfs APT source exists"
+    path: "/etc/apt/sources.list.d/github_git-lfs.list"
+    shouldExist: true
+  - name: "Cloud-SDK source exists"
+    path: "/etc/apt/sources.list.d/google-cloud-sdk.list"
+    shouldExist: true
+  - name: "Inventory of supported packages"
+    path: "/opt/installer-scripts/packages.yaml"
+metadataTest:
+  envVars:
+    - key: USER
+      value: root
+    - key: DEBIAN_FRONTEND
+      value: noninteractive
+  workdir: "/builder/home"
+  user: root
+  cmd: [ "/bin/bash" ]

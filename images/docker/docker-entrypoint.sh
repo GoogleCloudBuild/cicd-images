@@ -29,7 +29,7 @@ if docker help "$1" > /dev/null 2>&1; then
 fi
 
 # we only support docker or sh command "default run mode"
-if [ "$1" != 'docker' -a "$1" != 'sh' ]; then
+if [ "$1" != 'docker' ] && [ "$1" != 'sh' ]; then
 cat >&2 <<-'EOM'
     This image only supports "docker" command or a sub-command, \"$1\" is not supported.
 
@@ -55,6 +55,6 @@ if [ -z "${DOCKER_HOST:-}" ] && [ -S /var/run/docker.sock ]; then
 fi
 
 # Configure Artifact Registry auth via GCP's ADC
-docker-credential-gcr  configure-docker -include-artifact-registry;
+docker-credential-gcr configure-docker -include-artifact-registry;
 
 exec "$@"

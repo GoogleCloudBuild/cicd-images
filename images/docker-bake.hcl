@@ -257,3 +257,15 @@ target "python" {
   ]
 }
 
+target "builder" {
+  dockerfile = "Dockerfile"
+  context = "builder"
+  contexts = {
+    base = "target:base"
+    src = "../"
+  }
+  tags = [
+    "${REGISTRY}/builder:${TAG}",
+    "${REGISTRY}/builder:latest"
+  ]
+}

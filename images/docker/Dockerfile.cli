@@ -90,7 +90,7 @@ RUN set -eux; \
 COPY --from=downloader /usr/local/bin/docker-credential-gcr /usr/local/bin/docker-credential-gcr
 RUN set -eux; \
     docker-credential-gcr version \
-    docker-credential-gcr  configure-docker -include-artifact-registry;
+    docker-credential-gcr configure-docker -include-artifact-registry;
 
 COPY modprobe.sh /usr/local/bin/modprobe
 COPY docker-entrypoint.sh /usr/local/bin/
