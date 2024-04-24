@@ -24,7 +24,6 @@ import (
 )
 
 var (
-	workspaceOutputPath string
 	subDirectory        string
 	deleteExisting      string
 	depth               string
@@ -43,8 +42,8 @@ var cloneCmd = &cobra.Command{
 		}
 
 		checkoutDir := ""
-		if (len(workspaceOutputPath) != 0) && (deleteExisting == "true") {
-			checkoutDir = workspaceOutputPath + "/" + subDirectory
+		if (len(subDirectory) != 0) && (deleteExisting == "true") {
+			checkoutDir = subDirectory
 			// 	Delete any existing contents of the repo directory if it exists.
 			//  We don't just "rm -rf ${CHECKOUT_DIR}" because ${CHECKOUT_DIR} might be "/" or the root of a mounted volume.
 			if stat, err := os.Stat(checkoutDir); err == nil && stat.IsDir() {
@@ -122,7 +121,6 @@ var cloneCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(cloneCmd)
 
-	cloneCmd.Flags().StringVar(&workspaceOutputPath, "workspaceOutputPath", "", "The path of the output workspace.")
 	cloneCmd.Flags().StringVar(&subDirectory, "subDirectory", "", "The subdirectory to clone the git repo into.")
 	cloneCmd.Flags().StringVar(&deleteExisting, "deleteExisting", "", "Bool string to delete the existing repo or not.")
 	cloneCmd.Flags().StringVar(&urlPath, "urlPath", "", "The path to store the extracted URL of the repository.")
