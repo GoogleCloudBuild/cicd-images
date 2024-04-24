@@ -35,7 +35,7 @@ RUN go-licenses check ./cmd/cloud-deploy && \
     go-licenses report ./cmd/cloud-deploy > /THIRD_PARTY_NOTICES/cloud-deploy/licenses.csv
 
 # hadolint ignore=DL3006
-FROM scratch
+FROM base
 
 COPY --from=builder /src/cloud-deploy /usr/local/bin/cloud-deploy
 COPY --from=builder /THIRD_PARTY_NOTICES/cloud-deploy /THIRD_PARTY_NOTICES/cloud-deploy

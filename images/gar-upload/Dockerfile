@@ -35,7 +35,7 @@ RUN go-licenses check ./cmd/gar-upload && \
     go-licenses report ./cmd/gar-upload > /THIRD_PARTY_NOTICES/gar-upload/licenses.csv
 
 # hadolint ignore=DL3006
-FROM scratch
+FROM base
 
 COPY --from=builder /src/gar-upload /usr/local/bin/gar-upload
 COPY --from=builder /THIRD_PARTY_NOTICES/gar-upload /THIRD_PARTY_NOTICES/gar-upload
