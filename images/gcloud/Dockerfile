@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-# 
+#
 # Copyright 2023 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -31,7 +31,6 @@ RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.
     | gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg && \
     apt-get update -y && \
     clean-install google-cloud-cli && \
-    rm /usr/lib/google-cloud-sdk/bin/anthoscli && \
     rm -rf /usr/lib/google-cloud-sdk/platform/bundledpythonunix && \
     rm -rf /usr/lib/google-cloud-sdk/.install && \
     find /usr/lib/google-cloud-sdk/ -name "*.pyc" -exec rm -rf '{}' + && \
