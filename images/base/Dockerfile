@@ -17,7 +17,7 @@
 
 # Adopted from https://github.com/kubernetes/release/blob/master/images/build/debian-base/bullseye/Dockerfile.build
 # hadolint ignore=DL3007
-FROM marketplace.gcr.io/google/ubuntu2204:latest
+FROM gcr.io/cloud-marketplace/google/ubuntu2204:latest
 
 ENV DEBIAN_FRONTEND=noninteractive
 
