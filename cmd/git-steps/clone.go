@@ -75,10 +75,12 @@ var cloneCmd = &cobra.Command{
 			return fmt.Errorf("error running 'git %v': %v", initCommand, err)
 		}
 
-		// change to initialized git directory
-		err = os.Chdir(checkoutDir)
-		if err != nil {
-			return fmt.Errorf("error running 'cd %v': %v", checkoutDir, err)
+		if (checkoutDir != ""){
+			// change to initialized git directory
+			err = os.Chdir(checkoutDir)
+			if err != nil {
+				return fmt.Errorf("error running 'cd %v': %v", checkoutDir, err)
+			}
 		}
 
 		// git remote add origin "${URL}"
