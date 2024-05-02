@@ -114,6 +114,7 @@ group "toolchain-images" {
       "nodejs",
       "python",
       "openjdk",
+      "builder"
     ]
 }
 
