@@ -49,35 +49,6 @@ COMMON_COMPONENTS="
     google-cloud-cli-package-go-module \
     google-cloud-cli-pubsub-emulator \
     google-cloud-cli-skaffold \
-    google-cloud-cli-anthos-auth \
-    google-cloud-cli-app-engine-grpc \
-    google-cloud-cli-config-connector \
-    google-cloud-cli-istioctl \
-    google-cloud-cli-kubectl-oidc \
-    google-cloud-cli-minikube \
-    google-cloud-cli-nomos \
-    google-cloud-cli-spanner-migration-tool \
-    google-cloud-cli-terraform-tools \
-    google-cloud-sdk \
-    google-cloud-sdk-anthos-auth \
-    google-cloud-sdk-app-engine-go \
-    google-cloud-sdk-app-engine-grpc \
-    google-cloud-sdk-app-engine-java \
-    google-cloud-sdk-app-engine-python \
-    google-cloud-sdk-app-engine-python-extras \
-    google-cloud-sdk-cbt \
-    google-cloud-sdk-config-connector \
-    google-cloud-sdk-datalab \
-    google-cloud-sdk-gke-gcloud-auth-plugin \
-    google-cloud-sdk-istioctl \
-    google-cloud-sdk-kpt \
-    google-cloud-sdk-kubectl-oidc \
-    google-cloud-sdk-nomos \
-    google-cloud-sdk-package-go-module \
-    google-cloud-sdk-skaffold \
-    google-cloud-sdk-spanner-migration-tool \
-    google-cloud-sdk-terraform-tools \
-    google-cloud-sdk-terraform-validator \
     kubectl
 "
 if [[ $# -lt 1 ]]; then

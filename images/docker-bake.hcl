@@ -62,7 +62,6 @@ target "gcloud" {
     context = "gcloud"
     contexts = {
       base = "target:base"
-      src = "./installer-scripts"
     }
     tags = [
       "${REGISTRY}/gcloud:${TAG}",

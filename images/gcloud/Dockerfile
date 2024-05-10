@@ -20,15 +20,21 @@ FROM base
 
 USER root
 
-COPY --from=src --chmod=755 / /src
-
 RUN apt-get update -y \
     && clean-install apt-transport-https python3
 
 # Install gcloud CLI and prune unnecessary files
-#hadolint ignore=DL3059
-RUN --mount=type=bind,target=/src,from=src \
-    bash /src/gcloud.sh -full
+# hadolint ignore=DL4006
+RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" \
+    | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list && \
+    curl "https://packages.cloud.google.com/apt/doc/apt-key.gpg" \
+    | gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg && \
+    apt-get update -y && \
+    clean-install google-cloud-cli && \
+    rm -rf /usr/lib/google-cloud-sdk/platform/bundledpythonunix && \
+    rm -rf /usr/lib/google-cloud-sdk/.install && \
+    find /usr/lib/google-cloud-sdk/ -name "*.pyc" -exec rm -rf '{}' + && \
+    find /usr/lib/google-cloud-sdk -type d \( -name 'tests' -o -name 'test' \) -path '*/third_party/*' -exec rm -rf {} +
 
 ENV USER="nonroot"
 USER $USER
