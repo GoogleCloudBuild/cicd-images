@@ -23,7 +23,7 @@ commandTests:
     command: "node"
     args:
     - --version
-    expectedOutput: [ ".*v18.20.2.*" ]
+    expectedOutput: [ ".*v18.20.3.*" ]
     exitCode: 0
   - name: "Go is installed"
     command: "go"
