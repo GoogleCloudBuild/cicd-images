@@ -16,10 +16,9 @@ package auth
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/url"
-
-	"go.uber.org/zap"
 )
 
 const (
@@ -37,9 +36,9 @@ type TokenResponse struct {
 }
 
 // GetArtifactRegistryURL returns the authenticated URL for the given artifact registry URL.
-func GetArtifactRegistryURL(client HTTPClient, registryURL string, logger *zap.Logger) (string, error) {
-	logger.Info("Getting the artifact registry URL")
-	gcpToken, err := GetGCPToken(client, logger)
+func GetArtifactRegistryURL(client HTTPClient, registryURL string) (string, error) {
+	slog.Info("Getting the artifact registry URL")
+	gcpToken, err := GetGCPToken(client)
 	if err != nil {
 		return "", err
 	}
@@ -49,13 +48,13 @@ func GetArtifactRegistryURL(client HTTPClient, registryURL string, logger *zap.L
 		return "", err
 	}
 
-	logger.Info("Successfully got the artifact registry URL")
+	slog.Info("Successfully got the artifact registry URL")
 	return authenticatedURL, nil
 }
 
 // GetGCPToken retrieves a GCP token from the GKE metadata server.
-func GetGCPToken(client HTTPClient, logger *zap.Logger) (string, error) {
-	logger.Info("Getting the GCP token")
+func GetGCPToken(client HTTPClient) (string, error) {
+	slog.Info("Getting the GCP token")
 	// Create a HTTP request for the GKE metadata server endpoint.
 	req, err := http.NewRequest("GET", GKE_METADATA_SERVER_ENDPOINT, nil)
 	if err != nil {
@@ -80,7 +79,7 @@ func GetGCPToken(client HTTPClient, logger *zap.Logger) (string, error) {
 		return "", fmt.Errorf("no access token in the response from metadata server")
 	}
 
-	logger.Info("Successfully got the GCP token")
+	slog.Info("Successfully got the GCP token")
 	return tokenData.AccessToken, nil
 }
 

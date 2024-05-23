@@ -15,17 +15,16 @@ package auth
 
 import (
 	"net/http"
-
-	"github.com/stretchr/testify/mock"
 )
 
 // MockHTTPClient is a mock implementation of HTTPClient.
 type MockHTTPClient struct {
-	mock.Mock
+	DoFunc func(req *http.Request) (*http.Response, error)
 }
 
-// Do executes the given HTTP request for testing.
 func (m *MockHTTPClient) Do(req *http.Request) (*http.Response, error) {
-	args := m.Called(req)
-	return args.Get(0).(*http.Response), args.Error(1)
+	if m.DoFunc != nil {
+		return m.DoFunc(req)
+	}
+	return nil, nil
 }

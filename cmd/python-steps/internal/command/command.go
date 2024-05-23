@@ -14,10 +14,9 @@
 package command
 
 import (
+	"log/slog"
 	"os"
 	"os/exec"
-
-	"go.uber.org/zap"
 )
 
 const (
@@ -29,15 +28,15 @@ const (
 
 // CommandRunner is an interface for running commands.
 type CommandRunner interface {
-	Run(logger *zap.Logger, cmd string, args ...string) error
+	Run(cmd string, args ...string) error
 }
 
 // DefaultCommandRunner is the default implementation of CommandRunner.
 type DefaultCommandRunner struct{}
 
 // Run runs the given command with the given arguments.
-func (r *DefaultCommandRunner) Run(logger *zap.Logger, cmd string, args ...string) error {
-	logger.Debug("Running command", zap.String("cmd", cmd), zap.Strings("args", args))
+func (r *DefaultCommandRunner) Run(cmd string, args ...string) error {
+	slog.Debug("Running command", "cmd", cmd, "args", args)
 	command := exec.Command(cmd, args...)
 	command.Stdout = os.Stdout
 	command.Stderr = os.Stderr
@@ -45,7 +44,7 @@ func (r *DefaultCommandRunner) Run(logger *zap.Logger, cmd string, args ...strin
 }
 
 // CreateVirtualEnv creates a python virtual environment.
-func CreateVirtualEnv(runner CommandRunner, logger *zap.Logger) error {
-	logger.Info("Creating virtual environment", zap.String("virtualEnvName", VirtualEnvName))
-	return runner.Run(logger, Python3, "-m", "venv", VirtualEnvName)
+func CreateVirtualEnv(runner CommandRunner) error {
+	slog.Info("Creating virtual environment")
+	return runner.Run(Python3, "-m", "venv", VirtualEnvName)
 }

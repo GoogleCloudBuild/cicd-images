@@ -15,13 +15,13 @@ package install
 
 import (
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/GoogleCloudBuild/cicd-images/cmd/python-steps/internal/auth"
 	"github.com/GoogleCloudBuild/cicd-images/cmd/python-steps/internal/command"
-	"github.com/GoogleCloudBuild/cicd-images/cmd/python-steps/internal/logger"
+	"github.com/GoogleCloudBuild/cicd-images/internal/logger"
 	"github.com/spf13/pflag"
-	"go.uber.org/zap"
 )
 
 const (
@@ -69,75 +69,68 @@ func ParseArgs(f *pflag.FlagSet) (Arguments, error) {
 
 // Execute is the entrypoint for the run command execution.
 func Execute(runner command.CommandRunner, args Arguments, client auth.HTTPClient) error {
-	logger, err := logger.SetupLogger(args.Verbose)
-	if err != nil {
-		return fmt.Errorf("failed to setup logger: %w", err)
-	}
-	defer logger.Sync()
-	logger.Info("Executing run command", zap.Any("args", args))
+	logger.SetupLogger(args.Verbose)
+	slog.Info("Executing run command", "args", args)
 
-	if err := command.CreateVirtualEnv(runner, logger); err != nil {
+	if err := command.CreateVirtualEnv(runner); err != nil {
 		return fmt.Errorf("failed to create virtual environment: %w", err)
 	}
 
-	if err := installDependencies(runner, args, client, logger); err != nil {
+	if err := installDependencies(runner, args, client); err != nil {
 		return fmt.Errorf("failed to install dependencies: %w", err)
 	}
 
-	logger.Info("Successfully executed run command")
+	slog.Info("Successfully executed run command")
 	return nil
 }
 
-func installDependencies(runner command.CommandRunner, args Arguments, client auth.HTTPClient, logger *zap.Logger) error {
-	logger.Info("Installing dependencies", zap.Strings("dependencies", args.Dependencies))
-
-	indexFlags, err := authenticateRegistryAndGetFlags(args.ArtifactRegistryUrl, client, logger)
+func installDependencies(runner command.CommandRunner, args Arguments, client auth.HTTPClient) error {
+	indexFlags, err := authenticateRegistryAndGetFlags(args.ArtifactRegistryUrl, client)
 	if err != nil {
 		return err
 	}
 
 	if args.RequirementsPath != "" {
-		if err := installFromRequirementsFile(runner, args.RequirementsPath, indexFlags, logger); err != nil {
+		if err := installFromRequirementsFile(runner, args.RequirementsPath, indexFlags); err != nil {
 			return err
 		}
 	}
 
 	for _, dep := range args.Dependencies {
-		if err := installDependency(logger, runner, dep, indexFlags...); err != nil {
+		if err := installDependency(runner, dep, indexFlags...); err != nil {
 			return err
 		}
 	}
 
-	logger.Info("Successfully installed dependencies")
 	return nil
 }
 
-func authenticateRegistryAndGetFlags(artifactRegistryUrl string, client auth.HTTPClient, logger *zap.Logger) ([]string, error) {
-	logger.Info("Authenticating registry", zap.String("artifactRegistryUrl", artifactRegistryUrl))
+func authenticateRegistryAndGetFlags(artifactRegistryUrl string, client auth.HTTPClient) ([]string, error) {
+	slog.Info("Authenticating artifact registry", "artifactRegistryUrl", artifactRegistryUrl)
 
 	if artifactRegistryUrl == "" {
 		return []string{"--index-url=" + IndexURL}, nil
 	}
 
-	authenticatedArtifactRegistryURL, err := auth.GetArtifactRegistryURL(client, artifactRegistryUrl, logger)
+	authenticatedArtifactRegistryURL, err := auth.GetArtifactRegistryURL(client, artifactRegistryUrl)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get authenticated Artifact Registry URL: %w", err)
 	}
 
-	logger.Info("Successfully authenticated registry")
+	slog.Info("Successfully authenticated artifact registry")
 	return []string{"--index-url=" + IndexURL, "--extra-index-url=" + authenticatedArtifactRegistryURL}, nil
 }
 
-func installFromRequirementsFile(runner command.CommandRunner, requirementsPath string, flags []string, logger *zap.Logger) error {
-	logger.Info("Installing dependencies from requirements file", zap.String("requirementsPath", requirementsPath))
+func installFromRequirementsFile(runner command.CommandRunner, requirementsPath string, flags []string) error {
+	slog.Info("Installing dependencies from requirements file", "requirementsPath", requirementsPath)
 	args := append([]string{"install", "-r", requirementsPath}, flags...)
-	logger.Info("Successfully installed dependencies from requirements file")
-	return runner.Run(logger, command.VirtualEnvPip, args...)
+	slog.Info("Successfully installed dependencies from requirements file")
+	return runner.Run(command.VirtualEnvPip, args...)
 }
 
-func installDependency(logger *zap.Logger, runner command.CommandRunner, dep string, flags ...string) error {
-	logger.Info("Installing dependency", zap.String("dependency", dep))
+func installDependency(runner command.CommandRunner, dep string, flags ...string) error {
+	slog.Info("Installing a dependency", "dependency", dep)
 	args := append([]string{"install", dep}, flags...)
-	logger.Info("Successfully installed dependency")
-	return runner.Run(logger, command.VirtualEnvPip, args...)
+	slog.Info("Successfully installed the dependency")
+	return runner.Run(command.VirtualEnvPip, args...)
 }

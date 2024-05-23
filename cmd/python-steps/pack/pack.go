@@ -18,6 +18,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -26,10 +27,9 @@ import (
 
 	"github.com/GoogleCloudBuild/cicd-images/cmd/python-steps/internal/auth"
 	"github.com/GoogleCloudBuild/cicd-images/cmd/python-steps/internal/command"
-	"github.com/GoogleCloudBuild/cicd-images/cmd/python-steps/internal/logger"
+	"github.com/GoogleCloudBuild/cicd-images/internal/logger"
 	"github.com/package-url/packageurl-go"
 	"github.com/spf13/pflag"
-	"go.uber.org/zap"
 )
 
 const (
@@ -93,74 +93,64 @@ func ParseArgs(f *pflag.FlagSet) (Arguments, error) {
 
 // Execute is the entrypoint for the package command execution.
 func Execute(runner command.CommandRunner, args Arguments, client auth.HTTPClient) error {
-	logger, err := logger.SetupLogger(args.Verbose)
-	if err != nil {
-		return fmt.Errorf("failed to setup logger: %w", err)
-	}
-	defer logger.Sync()
-	logger.Info("Executing pack command", zap.Any("args", args))
+	logger.SetupLogger(args.Verbose)
+	slog.Info("Executing pack command", "args", args)
 
-	if err := command.CreateVirtualEnv(runner, logger); err != nil {
+	if err := command.CreateVirtualEnv(runner); err != nil {
 		return fmt.Errorf("failed to create virtual environment: %w", err)
 	}
 
-	if err := installDependenciesForPackage(runner, logger); err != nil {
+	if err := installDependenciesForPackage(runner); err != nil {
 		return fmt.Errorf("failed to install dependencies for package command: %w", err)
 	}
 
-	if err := packagePythonArtifact(runner, args, logger); err != nil {
+	if err := packagePythonArtifact(runner, args); err != nil {
 		return fmt.Errorf("failed to package python artifact: %w", err)
 	}
 
-	if err := pushPythonArtifact(runner, args, client, logger); err != nil {
+	if err := pushPythonArtifact(runner, args, client); err != nil {
 		return fmt.Errorf("failed to push python artifact: %w", err)
 	}
 
-	if err := generateProvenance(PYTHON_DIST_DIR, args, logger); err != nil {
+	if err := generateResults(PYTHON_DIST_DIR, args); err != nil {
 		return fmt.Errorf("failed to generate provenance: %w", err)
 	}
 
-	logger.Info("Successfully executed pack command")
+	slog.Info("Successfully executed pack command")
 	return nil
 }
 
-func installDependenciesForPackage(runner command.CommandRunner, logger *zap.Logger) error {
-	logger.Info("Installing dependencies for package command")
-
+func installDependenciesForPackage(runner command.CommandRunner) error {
+	slog.Info("Installing dependencies for package command")
 	commands := []string{
 		"install", "build", "wheel", "twine",
 	}
-	if err := runner.Run(logger, command.VirtualEnvPip, commands...); err != nil {
+	if err := runner.Run(command.VirtualEnvPip, commands...); err != nil {
 		return err
 	}
-
-	logger.Info("Successfully installed dependencies for package command")
+	slog.Info("Successfully installed dependencies for package command")
 	return nil
 }
 
-func packagePythonArtifact(runner command.CommandRunner, args Arguments, logger *zap.Logger) error {
-	logger.Info("Packaging python artifact")
-
+func packagePythonArtifact(runner command.CommandRunner, args Arguments) error {
+	slog.Info("Packaging python artifact")
 	if len(args.Command) == 0 {
 		return fmt.Errorf("command is required")
 	}
-
-	if err := runner.Run(logger, command.VirtualEnvPython3, args.Command...); err != nil {
+	if err := runner.Run(command.VirtualEnvPython3, args.Command...); err != nil {
 		return fmt.Errorf("failed to package python artifacts: %w", err)
 	}
-
-	logger.Info("Successfully packaged python artifact")
+	slog.Info("Successfully packaged python artifact")
 	return nil
 }
 
-func pushPythonArtifact(runner command.CommandRunner, args Arguments, client auth.HTTPClient, logger *zap.Logger) error {
-	logger.Info("Pushing python artifact")
-
+func pushPythonArtifact(runner command.CommandRunner, args Arguments, client auth.HTTPClient) error {
+	slog.Info("Pushing python artifact to artifact registry")
 	if args.ArtifactRegistryUrl == "" {
 		return fmt.Errorf("artifactRegistryUrl is required")
 	}
 
-	gcpToken, err := auth.GetGCPToken(client, logger)
+	gcpToken, err := auth.GetGCPToken(client)
 	if err != nil {
 		return err
 	}
@@ -172,17 +162,16 @@ func pushPythonArtifact(runner command.CommandRunner, args Arguments, client aut
 		"--password", gcpToken,
 		"dist/*",
 	}
-	if err := runner.Run(logger, command.VirtualEnvPython3, commands...); err != nil {
+	if err := runner.Run(command.VirtualEnvPython3, commands...); err != nil {
 		return fmt.Errorf("failed to push python artifacts: %w", err)
 	}
 
-	logger.Info("Successfully pushed python artifact")
+	slog.Info("Successfully pushed python artifact to artifact registry")
 	return nil
 }
 
-func generateProvenance(distDir string, args Arguments, logger *zap.Logger) error {
-	logger.Info("Generating provenance")
-
+func generateResults(distDir string, args Arguments) error {
+	slog.Info("Generating build results")
 	files, err := os.ReadDir(distDir)
 	if err != nil {
 		return fmt.Errorf("error reading dist directory: %w", err)
@@ -214,7 +203,7 @@ func generateProvenance(distDir string, args Arguments, logger *zap.Logger) erro
 		if err != nil {
 			return fmt.Errorf("error marshalling output data: %w", err)
 		}
-		logger.Debug("Generated provenance", zap.String("output", string(output)))
+		slog.Debug("Generated results", "results", output)
 
 		var outputPath string
 		switch {
@@ -230,14 +219,13 @@ func generateProvenance(distDir string, args Arguments, logger *zap.Logger) erro
 			return fmt.Errorf("file already exists at %s", outputPath)
 		}
 
-		logger.Debug("Writing provenance", zap.String("outputPath", outputPath))
 		err = os.WriteFile(outputPath, output, 0444)
 		if err != nil {
 			return fmt.Errorf("error writing to %s: %w", outputPath, err)
 		}
 	}
 
-	logger.Info("Successfully generated provenance")
+	slog.Info("Successfully generated build results")
 	return nil
 }
 

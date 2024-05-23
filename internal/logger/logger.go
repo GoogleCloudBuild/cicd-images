@@ -1,4 +1,4 @@
-// Copyright 2023 Google LLC
+// Copyright 2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,22 +14,21 @@
 package logger
 
 import (
-	"testing"
-
-	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
+	"log/slog"
+	"os"
 )
 
-func TestSetupLoggerVerbose(t *testing.T) {
-	logger, err := SetupLogger(true)
+// SetupLogger sets up a logger with the given verbosity.
+func SetupLogger(verbose bool) {
+	var level slog.Level
+	if verbose {
+		level = slog.LevelDebug
+	} else {
+		level = slog.LevelInfo
+	}
 
-	assert.NoError(t, err)
-	assert.Equal(t, zap.DebugLevel, logger.Level())
-}
+	handler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: level})
+	logger := slog.New(handler)
 
-func TestSetupLoggerNonVerbose(t *testing.T) {
-	logger, err := SetupLogger(false)
-
-	assert.NoError(t, err)
-	assert.Equal(t, zap.InfoLevel, logger.Level())
+	slog.SetDefault(logger)
 }

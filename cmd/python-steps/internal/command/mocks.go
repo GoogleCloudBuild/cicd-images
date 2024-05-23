@@ -14,17 +14,28 @@
 package command
 
 import (
-	"github.com/stretchr/testify/mock"
-	"go.uber.org/zap"
+	"fmt"
+	"reflect"
 )
 
 // MockCommandRunner is a mock implementation of CommandRunner.
 type MockCommandRunner struct {
-	mock.Mock
+	CalledCommands   []string
+	ExpectedCommands []string
+	Err              error
 }
 
-// Run runs the given command with the given arguments for testing.
-func (m *MockCommandRunner) Run(logger *zap.Logger, cmd string, args ...string) error {
-	arguments := m.Called(cmd, args)
-	return arguments.Error(0)
+func (m *MockCommandRunner) Run(cmd string, args ...string) error {
+	m.CalledCommands = append(m.CalledCommands, cmd)
+	m.CalledCommands = append(m.CalledCommands, args...)
+
+	if m.Err != nil {
+		return m.Err
+	}
+
+	if !reflect.DeepEqual(m.CalledCommands, m.ExpectedCommands) {
+		return fmt.Errorf("unexpected commands: got %v, expected %v", m.CalledCommands, m.ExpectedCommands)
+	}
+
+	return nil
 }
