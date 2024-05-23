@@ -33,13 +33,12 @@ func TestRetrieveRepos(t *testing.T) {
 		"valid-artifact-registry-distribution-management": "https://us-central1-maven.pkg.dev/dummy-project2/dummy-repo-url2",
 		"valid-artifact-registry":                         "https://us-central1-maven.pkg.dev/dummy-project3/dummy-repo-url3",
 	}
-	artifactDirectory := "./target"
 
 	tmpdir := t.TempDir()
 	fileName := createTempTestingFile(t, tmpdir, testFile)
 
 	t.Run("valid pom.xml", func(t *testing.T) {
-		result, err := RetrieveRepos(fileName, artifactDirectory)
+		result, err := RetrieveRepos(fileName)
 		if err != nil {
 			t.Errorf("Expected no errors, but got %v", err)
 		} else if !reflect.DeepEqual(result, expectedResult) {
@@ -52,10 +51,9 @@ func TestRetrieveRepos(t *testing.T) {
 func TestRetrieveReposNonexistent(t *testing.T) {
 	fileName := "./testdata/nonexistent.xml"
 	expectedErr := fmt.Errorf("Error: retrieving pom.xml: open ./testdata/nonexistent.xml: no such file or directory")
-	artifactDirectory := "./target"
 
 	t.Run("pom.xml nonexistent", func(t *testing.T) {
-		_, err := RetrieveRepos(fileName, artifactDirectory)
+		_, err := RetrieveRepos(fileName)
 		if reflect.DeepEqual(err.Error(), expectedErr.Error()) {
 			t.Errorf("Expected %v, but got %v", expectedErr, err)
 		}
@@ -89,7 +87,6 @@ func TestPomParse(t *testing.T) {
 			},
 		},
 	}
-	artifactDirectory := "./target"
 
 	// Run test cases
 	for _, tc := range testCases {
@@ -97,7 +94,7 @@ func TestPomParse(t *testing.T) {
 			tmpdir := t.TempDir()
 			fileName := createTempTestingFile(t, tmpdir, tc.arg)
 
-			result, err := RetrieveRepos(fileName, artifactDirectory)
+			result, err := RetrieveRepos(fileName)
 			if err != nil {
 				t.Errorf("Expected no errors, but got %v", err)
 			} else if !reflect.DeepEqual(result, tc.expected) {
@@ -241,7 +238,7 @@ func TestValidateMavenInstallFlags(t *testing.T) {
 	}
 }
 
-func TestUpdatePomSingle(t *testing.T) {
+func TestUpdatePomBuildDirectory(t *testing.T) {
 	// Define test case
 	pomFile := "./testdata/pom-test.xml"
 	artifactDirectory := "./testDirectory"
@@ -249,8 +246,8 @@ func TestUpdatePomSingle(t *testing.T) {
 	tmpdir := t.TempDir()
 	fileName := createTempTestingFile(t, tmpdir, pomFile)
 
-	t.Run("single project pom.xml", func(t *testing.T) {
-		_, err := RetrieveRepos(fileName, artifactDirectory)
+	t.Run("update pom.xml build directory", func(t *testing.T) {
+		err := UpdatePomBuildDirectory(fileName, artifactDirectory)
 
 		if err != nil {
 			t.Errorf("Expected no errors, but got %v", err)
@@ -267,43 +264,6 @@ func TestUpdatePomSingle(t *testing.T) {
 		}
 	})
 
-}
-
-func TestUpdatePomMultiple(t *testing.T) {
-	// Define test case
-	pomFile := "./testdata/pom-test-multi-module.xml"
-	artifactDirectory := "./testDirectory"
-
-	type Projects struct {
-		Projects []gopom.Project `xml:"project"`
-	}
-
-	tmpdir := t.TempDir()
-	fileName := createTempTestingFile(t, tmpdir, pomFile)
-
-	t.Run("multi-project pom.xml", func(t *testing.T) {
-		_, err := RetrieveRepos(fileName, artifactDirectory)
-		if err != nil {
-			t.Errorf("Expected no errors, but got %v", err)
-		} else {
-			// Read the pom file and unmarshal the XML data into a struct
-			content, err := os.ReadFile(fileName)
-			if err != nil {
-				t.Errorf("Error reading temp pom file: %v", err)
-			}
-
-			var projects Projects
-			err = xml.Unmarshal(content, &projects)
-			if err != nil {
-				t.Errorf("Error parsing xml data: %v", err)
-			}
-			for _, project := range projects.Projects {
-				if *project.Build.Directory != artifactDirectory {
-					t.Errorf("Expected %v, but got %v", artifactDirectory, project.Build.Directory)
-				}
-			}
-		}
-	})
 }
 
 // Helper function to create copy of the testing files

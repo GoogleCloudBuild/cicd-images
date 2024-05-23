@@ -100,7 +100,7 @@ func pomParse(path string) (*Projects, error) {
 }
 
 // Retrieves repositories at multi project level.
-func RetrieveRepos(pomPath string, artifactDirectory string) (map[string]string, error) {
+func RetrieveRepos(pomPath string) (map[string]string, error) {
 	fmt.Printf("POM path: %s\n", pomPath)
 	pom, err := gopom.Parse(pomPath)
 	repos := map[string]string{}
@@ -110,21 +110,11 @@ func RetrieveRepos(pomPath string, artifactDirectory string) (map[string]string,
 		if err != nil {
 			return nil, fmt.Errorf("retrieving pom.xml: %w", err)
 		}
-		for i, project := range projects.Projects {
+		for _, project := range projects.Projects {
 			retrieveProjectRepos(&project, repos)
-			projects.Projects[i].Build.Directory = &artifactDirectory
-		}
-		updatePom(pomPath, projects)
-		if err != nil {
-			return nil, fmt.Errorf("updating pom.xml: %w", err)
 		}
 	} else {
 		retrieveProjectRepos(pom, repos)
-		pom.Build.Directory = &artifactDirectory
-		updatePom(pomPath, pom)
-		if err != nil {
-			return nil, fmt.Errorf("updating pom.xml: %w", err)
-		}
 	}
 
 	fmt.Printf("POM.XML scan done.\n")
@@ -134,8 +124,21 @@ func RetrieveRepos(pomPath string, artifactDirectory string) (map[string]string,
 // Retrieves repositories at single project level.
 func retrieveProjectRepos(project *gopom.Project, repos map[string]string) {
 	// Get the distribution management repository
-	(repos)[*project.DistributionManagement.SnapshotRepository.ID] = *project.DistributionManagement.SnapshotRepository.URL
-	(repos)[*project.DistributionManagement.Repository.ID] = *project.DistributionManagement.Repository.URL
+	if project.DistributionManagement != nil {
+		if project.DistributionManagement.SnapshotRepository != nil && project.DistributionManagement.SnapshotRepository.ID != nil && project.DistributionManagement.SnapshotRepository.URL != nil {
+			(repos)[*project.DistributionManagement.SnapshotRepository.ID] = *project.DistributionManagement.SnapshotRepository.URL
+		} else {
+			log.Printf("Snapshot repository in distribution management does not exist or is missing ID/URL.")
+		}
+
+		if project.DistributionManagement.Repository != nil && project.DistributionManagement.Repository.ID != nil && project.DistributionManagement.Repository.URL != nil {
+			(repos)[*project.DistributionManagement.Repository.ID] = *project.DistributionManagement.Repository.URL
+		} else {
+			log.Printf("Repository in distribution management does not exist or is missing ID/URL.")
+		}
+	} else {
+		log.Printf("Distribution management field does not exist.")
+	}
 
 	// Get the repositories in "repositories"
 	if project.Repositories != nil {
@@ -270,16 +273,24 @@ func RetrieveSettingSecret(secretName string, c *secretmanager.Client, ctx conte
 	return result.Payload.Data, nil
 }
 
-// Write the updated xml back to effective-pom.xml
-func updatePom[T *Projects | *gopom.Project](pomPath string, data T) error {
-	updatedXML, err := xml.MarshalIndent(data, "", "  ")
+// Update the pom.xml file with the artifact directory
+func UpdatePomBuildDirectory(pomPath string, artifactDirectory string) error {
+	pom, err := gopom.Parse(pomPath)
+	if err != nil {
+		return fmt.Errorf("parsing pom.xml file: %w", err)
+	}
+
+	// Update the build directory
+	pom.Build.Directory = &artifactDirectory
+
+	updatedPom, err := xml.MarshalIndent(pom, "", "  ")
 	if err != nil {
 		return fmt.Errorf("encode in XML: %w", err)
 	}
 
-	err = os.WriteFile(pomPath, updatedXML, 0444)
-	if err != nil {
-		return fmt.Errorf("write payload to file: %w", err)
+	if err = os.WriteFile(pomPath, updatedPom, 0444); err != nil {
+		return fmt.Errorf("write payload to pom.xml file: %w", err)
 	}
+
 	return nil
 }
