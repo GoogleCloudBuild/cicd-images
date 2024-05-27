@@ -25,13 +25,14 @@ test-unit: ## runs unit tests
 	@go test $(GOFLAGS_TEST) ./...
 
 .PHONY: pre-commit
-pre-commit: ## Run pre-commit hooks script manually
+pre-commit: ## run pre-commit hooks script manually
 	@pre-commit run --all-files
+
+.PHONY: check-licenses
+check-licenses: ## run licensing check and create licensings if needed
+	@./license_check.sh
 
 .PHONY: help
 help:
 	@grep -hE '^[ a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
 		awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-17s\033[0m %s\n", $$1, $$2}'
-
-
-

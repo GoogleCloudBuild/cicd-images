@@ -20,22 +20,12 @@ FROM google-go.pkg.dev/golang:1.21.5 as builder
 WORKDIR /src
 COPY --from=src . .
 
-WORKDIR /src/tools
-RUN go install github.com/google/go-licenses
-
-# Run binary tests, build and license scan.
-WORKDIR /src
 RUN go mod download && \
     go test ./cmd/maven-steps/... -timeout 30s && \
     go build ./cmd/maven-steps
-
-# Scan and save licenses.
-RUN go-licenses check ./cmd/maven-steps && \
-    go-licenses save ./cmd/maven-steps --save_path=/THIRD_PARTY_NOTICES/maven-steps && \
-    go-licenses report ./cmd/maven-steps > /THIRD_PARTY_NOTICES/maven-steps/licenses.csv
 
 # hadolint ignore=DL3006
 FROM base
 
 COPY --from=builder /src/maven-steps /usr/local/bin/maven-steps
-COPY --from=builder /THIRD_PARTY_NOTICES/maven-steps /THIRD_PARTY_NOTICES/maven-steps
+COPY --from=src --chmod=755 ./THIRD_PARTY_NOTICES.tar.gz /home

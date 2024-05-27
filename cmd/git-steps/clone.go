@@ -24,11 +24,11 @@ import (
 )
 
 var (
-	subDirectory        string
-	deleteExisting      string
-	depth               string
-	revision            string
-	submodules          string
+	subDirectory   string
+	deleteExisting string
+	depth          string
+	revision       string
+	submodules     string
 )
 
 var cloneCmd = &cobra.Command{
@@ -75,7 +75,7 @@ var cloneCmd = &cobra.Command{
 			return fmt.Errorf("error running 'git %v': %v", initCommand, err)
 		}
 
-		if (checkoutDir != ""){
+		if checkoutDir != "" {
 			// change to initialized git directory
 			err = os.Chdir(checkoutDir)
 			if err != nil {

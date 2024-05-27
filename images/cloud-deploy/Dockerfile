@@ -20,22 +20,13 @@ FROM google-go.pkg.dev/golang:1.21.5 as builder
 WORKDIR /src
 COPY --from=src . .
 
-WORKDIR /src/tools
-RUN go install github.com/google/go-licenses
-
-# Run binary tests, build and license scan.
 WORKDIR /src
 RUN go mod download && \
     go test ./cmd/cloud-deploy/... -timeout 30s && \
     go build ./cmd/cloud-deploy
 
-# Scan and save licenses.
-RUN go-licenses check ./cmd/cloud-deploy && \
-    go-licenses save ./cmd/cloud-deploy --save_path=/THIRD_PARTY_NOTICES/cloud-deploy && \
-    go-licenses report ./cmd/cloud-deploy > /THIRD_PARTY_NOTICES/cloud-deploy/licenses.csv
-
 # hadolint ignore=DL3006
 FROM base
 
 COPY --from=builder /src/cloud-deploy /usr/local/bin/cloud-deploy
-COPY --from=builder /THIRD_PARTY_NOTICES/cloud-deploy /THIRD_PARTY_NOTICES/cloud-deploy
+COPY --from=src --chmod=755 ./THIRD_PARTY_NOTICES.tar.gz /home

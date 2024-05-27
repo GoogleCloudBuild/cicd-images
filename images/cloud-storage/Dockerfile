@@ -20,22 +20,12 @@ FROM google-go.pkg.dev/golang:1.21.5 as builder
 WORKDIR /src
 COPY --from=src . .
 
-WORKDIR /src/tools
-RUN go install github.com/google/go-licenses
-
-# Run binary tests, build and license scan.
-WORKDIR /src
 RUN go mod download && \
     go test ./cmd/cloud-storage/... -timeout 30s && \
     go build ./cmd/cloud-storage
-
-# Scan and save licenses.
-RUN go-licenses check ./cmd/cloud-storage && \
-    go-licenses save ./cmd/cloud-storage --save_path=/THIRD_PARTY_NOTICES/cloud-storage && \
-    go-licenses report ./cmd/cloud-storage > /THIRD_PARTY_NOTICES/cloud-storage/licenses.csv
 
 # hadolint ignore=DL3006
 FROM base
 
 COPY --from=builder /src/cloud-storage /usr/local/bin/cloud-storage
-COPY --from=builder /THIRD_PARTY_NOTICES/cloud-storage /THIRD_PARTY_NOTICES/cloud-storage
+COPY --from=src --chmod=755 ./THIRD_PARTY_NOTICES.tar.gz /home
