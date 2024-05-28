@@ -94,7 +94,7 @@ func init() {
 
 	generateCredentialsCmd.Flags().StringVar(&url, "url", "", "The URL of the repository.")
 	generateCredentialsCmd.Flags().StringVar(&urlPath, "urlPath", "", "The path to store the extracted URL of the repository.")
-	generateCredentialsCmd.Flags().StringArrayVar(&sshServerPublicKeys, "sshServerPublicKeys", []string{}, "The public keys of the SSH server in an array.")
+	generateCredentialsCmd.Flags().StringSliceVar(&sshServerPublicKeys, "sshServerPublicKeys", []string{}, "The public keys of the SSH server in an array.")
 	generateCredentialsCmd.Flags().StringVar(&sshPrivateKeySecretsResource, "sshPrivateKeySecretsResource", "", "The URL of the SSH private key saved on Secret Manager.")
 	generateCredentialsCmd.Flags().StringVar(&reposResource, "reposResource", "", "The URL of the Cloud Build Repository resource.")
 }
