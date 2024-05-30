@@ -33,32 +33,70 @@ curl  -fsSL "https://packages.cloud.google.com/apt/doc/apt-key.gpg" \
 
 clean-install apt-transport-https python3 google-cloud-cli
 
-COMMON_COMPONENTS="
+COMMON_COMPONENTS="google-cloud-cli-package-go-module"
+ALL_COMPONENTS="
+    $COMMON_COMPONENTS \
     google-cloud-cli-app-engine-go \
     google-cloud-cli-app-engine-java \
     google-cloud-cli-app-engine-python \
     google-cloud-cli-app-engine-python-extras \
-    google-cloud-cli-bigtable-emulator \
+    google-cloud-cli-gke-gcloud-auth-plugin \
     google-cloud-cli-cbt \
+    google-cloud-cli-bigtable-emulator \
     google-cloud-cli-datastore-emulator \
     google-cloud-cli-firestore-emulator \
-    google-cloud-cli-gke-gcloud-auth-plugin \
-    google-cloud-cli-docker-credential-gcr \
     google-cloud-cli-kpt \
     google-cloud-cli-local-extract \
-    google-cloud-cli-package-go-module \
     google-cloud-cli-pubsub-emulator \
     google-cloud-cli-skaffold \
+    google-cloud-cli-anthos-auth \
+    google-cloud-cli-app-engine-grpc \
+    google-cloud-cli-config-connector \
+    google-cloud-cli-istioctl \
+    google-cloud-cli-kubectl-oidc \
+    google-cloud-cli-nomos \
+    google-cloud-cli-spanner-migration-tool \
+    google-cloud-cli-terraform-tools \
+    google-cloud-sdk \
+    google-cloud-sdk-anthos-auth \
+    google-cloud-sdk-app-engine-go \
+    google-cloud-sdk-app-engine-grpc \
+    google-cloud-sdk-app-engine-java \
+    google-cloud-sdk-app-engine-python \
+    google-cloud-sdk-app-engine-python-extras \
+    google-cloud-sdk-cbt \
+    google-cloud-sdk-config-connector \
+    google-cloud-sdk-datalab \
+    google-cloud-sdk-gke-gcloud-auth-plugin \
+    google-cloud-sdk-istioctl \
+    google-cloud-sdk-kpt \
+    google-cloud-sdk-kubectl-oidc \
+    google-cloud-sdk-nomos \
+    google-cloud-sdk-package-go-module \
+    google-cloud-sdk-skaffold \
+    google-cloud-sdk-spanner-migration-tool \
+    google-cloud-sdk-terraform-tools \
+    google-cloud-sdk-terraform-validator \
     kubectl
 "
-if [[ $# -lt 1 ]]; then
-  FULL_INSTALL=""
-else
-  FULL_INSTALL=${1#-}
+
+INSTALL_COMPONENTS="$COMMON_COMPONENTS"
+INSTALL_OPTS=""
+if [[ $# -gt 0 ]]; then
+    INSTALL_OPTS="$1"
 fi
 
-if [[ "$FULL_INSTALL" == "full" ]]; then
-    clean-install $COMMON_COMPONENTS
+case $INSTALL_OPTS in
+  -full)
+    INSTALL_COMPONENTS="$ALL_COMPONENTS"
+    ;;
+  -slim)
+    INSTALL_COMPONENTS="$COMMON_COMPONENTS"
+    ;;
+esac
+
+if [[ -n "$INSTALL_COMPONENTS" ]]; then
+  clean-install $INSTALL_COMPONENTS
 fi
 
 # anthoscli is for legacy usage, we don't support it
@@ -72,4 +110,3 @@ find /usr/lib/google-cloud-sdk/ -name "*.pyc" -exec rm -rf '{}' + && \
 find /usr/lib/google-cloud-sdk \
   -type d \( -name 'tests' -o -name 'test' \) \
   -path '*/third_party/*' -exec rm -rf {} +
-

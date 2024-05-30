@@ -51,4 +51,5 @@ if [[ "$GIT_LFS" == "git-lfs" ]]; then
     clean-install git-lfs="${GIT_LFS_VERSION}.*"
 fi
 
+git config --system credential.helper gcloud.sh
 git config --global --add safe.directory "*"

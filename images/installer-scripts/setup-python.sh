@@ -38,7 +38,9 @@ export PYTHON_VERSION
 # Install python
 MINOR_VERSION=$(echo $PYTHON_VERSION | cut -d. -f1-2)
 
-BIN_DIR="/opt/python-$MINOR_VERSION/bin"
+INSTALL_DIR="/opt/python$MINOR_VERSION"
+BIN_DIR="${INSTALL_DIR}/bin"
+
 
 INSTALL="false"
 if [[ ! -d $BIN_DIR ]]; then
@@ -59,16 +61,16 @@ if [[ "$INSTALL" == "true" ]]; then
   DOWNLOAD_FILE="python-${FULL_VERSION}.tar.gz"
   DOWNLOAD_URL="${RUNTIME_URL}/python/${DOWNLOAD_FILE}"
   $CURL_CMD -o /tmp/${DOWNLOAD_FILE} $DOWNLOAD_URL
-  mkdir -p "/opt/python-${MINOR_VERSION}"
+  mkdir -p "${INSTALL_DIR}"
   tar --strip-components=1 -zxf /tmp/${DOWNLOAD_FILE} \
-      -C "/opt/python-${MINOR_VERSION}"
+      -C "${INSTALL_DIR}"
   rm /tmp/${DOWNLOAD_FILE}
 fi
 
-copy_licenses "$( dirname ${BIN_DIR} )"
+copy_licenses "$INSTALL_DIR"
 
 #Create links to installed binaries
 ln -s ${BIN_DIR}/* -t /usr/local/bin
 
-update_env PYTHONHOME "$(dirname $BIN_DIR)"
+update_env PYTHONHOME "$INSTALL_DIR"
 update_env PATH "${BIN_DIR}:${PATH}"

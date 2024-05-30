@@ -34,8 +34,8 @@ export NODEJS_VERSION
 
 MAJOR_VERSION=$(echo $NODEJS_VERSION | cut -d. -f1)
 
-BIN_DIR="/opt/node-${MAJOR_VERSION}/bin"
-
+INSTALL_DIR="/opt/node${MAJOR_VERSION}"
+BIN_DIR="${INSTALL_DIR}/bin"
 INSTALL="false"
 if [[ ! -d $BIN_DIR ]]; then
     is_version_supported $NODEJS_VERSION $NODEJS_KEY \
@@ -51,16 +51,15 @@ if [[ "$INSTALL" == "true" ]]; then
   FULL_VERSION=$($CURL_CMD $VERS_URL | jq '.[]' | sed -e 's/"//g' | \
                 grep "^$MAJOR_VERSION" | sort -V | tail -1 )
   #Install required version
-  CURL_CMD="curl -fsSL -A GCPBuildpacks"
   DOWNLOAD_FILE="nodejs-${FULL_VERSION}.tar.gz"
   DOWNLOAD_URL="${RUNTIME_URL}/nodejs/${DOWNLOAD_FILE}"
   $CURL_CMD -o /tmp/${DOWNLOAD_FILE} $DOWNLOAD_URL
-  mkdir -p "/opt/node-${MAJOR_VERSION}"
+  mkdir -p "${INSTALL_DIR}"
   tar -zxf /tmp/${DOWNLOAD_FILE} \
-    -C "/opt/node-${MAJOR_VERSION}"
+    -C "${INSTALL_DIR}"
 fi
 
-copy_licenses "$( dirname ${BIN_DIR} )"
+copy_licenses "${INSTALL_DIR}"
 
 #Create links to installed binaries
 ln -s ${BIN_DIR}/* -t /usr/local/bin

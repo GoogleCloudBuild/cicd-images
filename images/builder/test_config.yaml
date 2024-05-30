@@ -67,6 +67,6 @@ metadataTest:
       value: root
     - key: DEBIAN_FRONTEND
       value: noninteractive
-  workdir: "/builder/home"
+  workdir: "/workspace"
   user: root
   cmd: [ "/bin/bash" ]

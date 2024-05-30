@@ -64,7 +64,8 @@ export OPENJDK_VERSION MAVEN_VERSION GRADLE_VERSION
 
 MAJOR_VERSION=$(echo $OPENJDK_VERSION | cut -d. -f1)
 
-BIN_DIR="/opt/openjdk-${MAJOR_VERSION}/bin"
+INSTALL_DIR="/opt/jdk-${MAJOR_VERSION}"
+BIN_DIR="${INSTALL_DIR}/bin"
 
 INSTALL="false"
 if [[ ! -d $BIN_DIR ]]; then
@@ -88,26 +89,27 @@ if [[ "$INSTALL" == "true" ]]; then
   DOWNLOAD_FILE="openjdk-${FQ_VERSION}.tar.gz"
   DOWNLOAD_URL="${RUNTIME_URL}/openjdk/${DOWNLOAD_FILE}"
   $CURL_CMD -o /tmp/${DOWNLOAD_FILE} $DOWNLOAD_URL
-  mkdir -p "/opt/openjdk-${MAJOR_VERSION}"
+  mkdir -p "${INSTALL_DIR}"
   tar --strip-components=1 -zxf /tmp/${DOWNLOAD_FILE} \
-      -C "/opt/openjdk-${MAJOR_VERSION}"
+      -C "${INSTALL_DIR}"
   rm /tmp/${DOWNLOAD_FILE}
 fi
 
-copy_licenses "$( dirname ${BIN_DIR} )"
+copy_licenses "${INSTALL_DIR}"
 
 #Create links to installed binaries
 ln -s ${BIN_DIR}/* -t /usr/local/bin
 
 update_env PATH "${BIN_DIR}:${PATH}"
-update_env JAVA_HOME "$(dirname $BIN_DIR)"
-update_env JDK_HOME "$(dirname $BIN_DIR)"
-update_env JRE_HOME "$(dirname $BIN_DIR)"
+update_env JAVA_HOME "${INSTALL_DIR}"
+update_env JDK_HOME "${INSTALL_DIR}"
+update_env JRE_HOME "${INSTALL_DIR}"
 
 
 # Install maven
 
-BIN_DIR="/opt/maven-${MAVEN_VERSION}/bin"
+INSTALL_DIR="/opt/maven-${MAVEN_VERSION}"
+BIN_DIR="${INSTALL_DIR}/bin"
 INSTALL="false"
 MAVE_KEY="build-tools.maven"
 if [[ ! -d $BIN_DIR ]]; then
@@ -129,25 +131,26 @@ if [[ "$INSTALL" == "true" ]]; then
   gpg --batch --keyserver hkps://keyserver.ubuntu.com --recv-keys $GPG_DIGEST
   gpg --batch --verify  /tmp/apache-maven-${MAVEN_VERSION}-bin.tar.gz.asc \
                         /tmp/apache-maven-${MAVEN_VERSION}-bin.tar.gz
-  mkdir /opt/maven-${MAVEN_VERSION}
+  mkdir "$INSTALL_DIR"
   tar -xzf /tmp/apache-maven-${MAVEN_VERSION}-bin.tar.gz \
-      -C /opt/maven-${MAVEN_VERSION} --strip-components=1
+      -C ${INSTALL_DIR} --strip-components=1
   rm /tmp/apache-maven-${MAVEN_VERSION}-bin.tar.gz.asc \
     /tmp/apache-maven-${MAVEN_VERSION}-bin.tar.gz
 fi
 
-copy_licenses "$( dirname ${BIN_DIR} )"
+copy_licenses "$INSTALL_DIR"
 
 #Create links to installed binaries
 ln -s ${BIN_DIR}/* -t /usr/local/bin
 
-update_env M2_HOME "$(dirname $BIN_DIR)"
+update_env M2_HOME "${INSTALL_DIR}"
 update_env M2 "$HOME/.m2"
 update_env PATH "${BIN_DIR}:${PATH}"
 
 # Install gradle
 
-BIN_DIR="/opt/gradle-${GRADLE_VERSION}/bin"
+INSTALL_DIR="/opt/gradle-${GRADLE_VERSION}"
+BIN_DIR="${INSTALL_DIR}/bin"
 INSTALL="false"
 GRADLE_KEY="build-tools.gradle"
 if [[ ! -d $BIN_DIR ]]; then
@@ -169,11 +172,11 @@ if [[ "$INSTALL" == "true" ]]; then
 
 fi
 
-copy_licenses "$( dirname ${BIN_DIR} )"
+copy_licenses "$INSTALL_DIR"
 
 #Create links to installed binaries
 ln -s ${BIN_DIR}/* -t /usr/local/bin
 
-update_env GRADLE_HOME "$(dirname $BIN_DIR)"
+update_env GRADLE_HOME "$INSTALL_DIR"
 update_env GRADLE_USER_HOME "$HOME/.gradle"
 update_env PATH "${BIN_DIR}:${PATH}"
