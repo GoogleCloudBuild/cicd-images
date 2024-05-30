@@ -27,7 +27,7 @@ type SMClient interface {
 	AccessSecretVersion(req *secretmanagerpb.AccessSecretVersionRequest) (*secretmanagerpb.AccessSecretVersionResponse, error)
 }
 
-type CBRepoClient interface {
+type DCRepoClient interface {
 	AccessReadWriteToken(string) (string, error)
 	Get(string) (string, error)
 }
@@ -108,24 +108,24 @@ func storePublicKeys(repoUrl string, sshServerPublicKeys []string, urlPath strin
 	return nil
 }
 
-// Authenticate using Repos API.
-func AuthenticateWithReposAPI(reposResource string, rf CBRepoClient, urlPath string) error {
-	domain, err := getRemoteGitRepoUrl(rf, reposResource, urlPath)
+// Authenticate using Developer Connect.
+func AuthenticateWithDeveloperConnect(gitRepositoryLink string, rf DCRepoClient, urlPath string) error {
+	domain, err := getRemoteGitRepoUrl(rf, gitRepositoryLink, urlPath)
 	if err != nil {
 		return err
 	}
 
-	if err := getReadWriteAccessToken(rf, reposResource, domain); err != nil {
+	if err := getReadWriteAccessToken(rf, gitRepositoryLink, domain); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-// Call the Cloud Build API service to get repository details and store in .gitconfig file.
-func getRemoteGitRepoUrl(rf CBRepoClient, reposResource string, urlPath string) (string, error) {
+// Call the Developer Connect API service to get repository details and store in .gitconfig file.
+func getRemoteGitRepoUrl(rf DCRepoClient, gitRepositoryLink string, urlPath string) (string, error) {
 	// Get details of remote repo and extract url
-	remoteUri, err := rf.Get(reposResource)
+	remoteUri, err := rf.Get(gitRepositoryLink)
 	if err != nil {
 		return "", fmt.Errorf("error getting repository details: %v", err)
 	}
@@ -156,10 +156,10 @@ func getRemoteGitRepoUrl(rf CBRepoClient, reposResource string, urlPath string) 
 	return domain, nil
 }
 
-// Call the Cloud Build API service to get the read-write access token and store in .git-credentials file.
-func getReadWriteAccessToken(rf CBRepoClient, reposResource string, domain string) error {
+// Call the Developer Connect API service to get the read-write access token and store in .git-credentials file.
+func getReadWriteAccessToken(rf DCRepoClient, gitRepositoryLink string, domain string) error {
 	// Get the read-write access token for the repository
-	reposAPIToken, err := rf.AccessReadWriteToken(reposResource)
+	repoToken, err := rf.AccessReadWriteToken(gitRepositoryLink)
 	if err != nil {
 		return fmt.Errorf("error getting read-write access token: %v", err)
 	}
@@ -171,7 +171,7 @@ func getReadWriteAccessToken(rf CBRepoClient, reposResource string, domain strin
 	}
 	defer credFile.Close()
 
-	tokenCredentials := fmt.Sprintf("https://x-access-token:%s@%s\n", reposAPIToken, domain)
+	tokenCredentials := fmt.Sprintf("https://x-access-token:%s@%s\n", repoToken, domain)
 	if _, err := credFile.WriteString(tokenCredentials); err != nil {
 		return fmt.Errorf("error writing to .git-credentials file: %v\n", err)
 	}

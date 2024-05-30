@@ -23,7 +23,7 @@ import (
 	auth "github.com/GoogleCloudBuild/cicd-images/cmd/git-steps/pkg"
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2/google"
-	"google.golang.org/api/cloudbuild/v2"
+	"google.golang.org/api/developerconnect/v1"
 	"google.golang.org/api/option"
 )
 
@@ -32,18 +32,18 @@ var (
 	urlPath                      string
 	sshServerPublicKeys          []string
 	sshPrivateKeySecretsResource string
-	reposResource                string
+	gitRepositoryLink            string
 )
 
 const gcpAccessTokenURL = "https://www.googleapis.com/auth/cloud-platform"
 
 var generateCredentialsCmd = &cobra.Command{
 	Use:   "generate-credentials",
-	Short: "Fetch secrets and generate credential files for authentication.", //TODO
+	Short: "Fetch secrets and generate credential files for authentication.",
 	Long: `Peform authentication by fetching secrets and generating related credential files.
 	Two authentication methods:
 	- SSH Keys: provided public keys, fetch private key from Secret Manager, and store the keys in their corresponding .ssh files
-	- Repos API: provided url of cloud build repository resource, fetch access token, and store the credentials in the corresponding .git files
+	- Developer Connect: provided url of developer connect git repository, fetch access token, and store the credentials in the corresponding .git files
 	`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
@@ -54,16 +54,16 @@ var generateCredentialsCmd = &cobra.Command{
 			return fmt.Errorf("error finding default credentials: %v", err)
 		}
 
-		if reposResource != "" {
-			// Connect to Cloud Build API with access token
-			cloudbuildService, err := cloudbuild.NewService(ctx, option.WithTokenSource(credentials.TokenSource))
+		if gitRepositoryLink != "" {
+			// Connect to Developer Connect API with access token
+			developerconnectService, err := developerconnect.NewService(ctx, option.WithTokenSource(credentials.TokenSource))
 			if err != nil {
-				return fmt.Errorf("error creating new cloudbuild service: %v", err)
+				return fmt.Errorf("error creating new developer connect service: %v", err)
 			}
 
-			arf := &repositoryFetcher{cb: cloudbuildService}
+			arf := &repositoryFetcher{dc: developerconnectService}
 
-			if err := auth.AuthenticateWithReposAPI(reposResource, arf, urlPath); err != nil {
+			if err := auth.AuthenticateWithDeveloperConnect(gitRepositoryLink, arf, urlPath); err != nil {
 				return err
 			}
 		} else if sshPrivateKeySecretsResource != "" {
@@ -95,26 +95,26 @@ func init() {
 	generateCredentialsCmd.Flags().StringVar(&url, "url", "", "The URL of the repository.")
 	generateCredentialsCmd.Flags().StringVar(&urlPath, "urlPath", "", "The path to store the extracted URL of the repository.")
 	generateCredentialsCmd.Flags().StringSliceVar(&sshServerPublicKeys, "sshServerPublicKeys", []string{}, "The public keys of the SSH server in an array.")
-	generateCredentialsCmd.Flags().StringVar(&sshPrivateKeySecretsResource, "sshPrivateKeySecretsResource", "", "The URL of the SSH private key saved on Secret Manager.")
-	generateCredentialsCmd.Flags().StringVar(&reposResource, "reposResource", "", "The URL of the Cloud Build Repository resource.")
+	generateCredentialsCmd.Flags().StringVar(&sshPrivateKeySecretsResource, "sshPrivateKeySecretsResource", "", "The secret version resource name of the SSH private key saved on Secret Manager.")
+	generateCredentialsCmd.Flags().StringVar(&gitRepositoryLink, "gitRepositoryLink", "", "The resource name of the repository linked to Developer Connect.")
 }
 
 type repositoryFetcher struct {
-	cb *cloudbuild.Service
+	dc *developerconnect.Service
 }
 
-var _ auth.CBRepoClient = (*repositoryFetcher)(nil) // Verify repositoryFetcher implements CBRepoClient
+var _ auth.DCRepoClient = (*repositoryFetcher)(nil) // Verify repositoryFetcher implements DCRepoClient
 
-func (r *repositoryFetcher) Get(reposResource string) (string, error) {
-	repoDetails, err := cloudbuild.NewProjectsLocationsConnectionsRepositoriesService(r.cb).Get(reposResource).Do()
+func (r *repositoryFetcher) Get(gitRepositoryLink string) (string, error) {
+	repoDetails, err := developerconnect.NewProjectsLocationsConnectionsGitRepositoryLinksService(r.dc).Get(gitRepositoryLink).Do()
 	if err != nil {
 		return "", err
 	}
-	return repoDetails.RemoteUri, nil
+	return repoDetails.CloneUri, nil
 }
 
-func (r *repositoryFetcher) AccessReadWriteToken(reposResource string) (string, error) {
-	tokenResponse, err := cloudbuild.NewProjectsLocationsConnectionsRepositoriesService(r.cb).AccessReadWriteToken(reposResource, &cloudbuild.FetchReadWriteTokenRequest{}).Do()
+func (r *repositoryFetcher) AccessReadWriteToken(gitRepositoryLink string) (string, error) {
+	tokenResponse, err := developerconnect.NewProjectsLocationsConnectionsGitRepositoryLinksService(r.dc).FetchReadWriteToken(gitRepositoryLink, &developerconnect.FetchReadWriteTokenRequest{}).Do()
 	if err != nil {
 		return "", err
 	}

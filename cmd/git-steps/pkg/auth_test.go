@@ -101,7 +101,7 @@ type fakeRepositoryFetcher struct {
 	fakeToken   string
 }
 
-var _ CBRepoClient = (*fakeRepositoryFetcher)(nil) // Verify fakeRepositoryFetcher implements CBRepoClient
+var _ DCRepoClient = (*fakeRepositoryFetcher)(nil) // Verify fakeRepositoryFetcher implements DCRepoClient
 
 func (f *fakeRepositoryFetcher) Get(string) (string, error) {
 	return f.fakeRepoUri, nil
@@ -111,12 +111,12 @@ func (f *fakeRepositoryFetcher) AccessReadWriteToken(string) (string, error) {
 	return f.fakeToken, nil
 }
 
-func TestReposApiAuth(t *testing.T) {
+func TestDeveloperConnectAuth(t *testing.T) {
 	rf := &fakeRepositoryFetcher{
 		fakeRepoUri: "https://fakeDomain/test/private-repo.git",
 		fakeToken:   "fakeToken",
 	}
-	reposResource := ""
+	gitRepositoryLink := ""
 	configResult := "[credential \"https://fakeDomain\"]\n  helper = store\n"
 	credResult := "https://x-access-token:fakeToken@fakeDomain\n"
 
@@ -128,8 +128,8 @@ func TestReposApiAuth(t *testing.T) {
 	}
 	defer tmpfile.Close()
 
-	t.Run("repos api auth", func(t *testing.T) {
-		if err := AuthenticateWithReposAPI(reposResource, rf, tmpfile.Name()); err != nil {
+	t.Run("developer connect auth", func(t *testing.T) {
+		if err := AuthenticateWithDeveloperConnect(gitRepositoryLink, rf, tmpfile.Name()); err != nil {
 			t.Fatalf("Expected no errors, but got %v", err)
 		}
 		defer os.Remove(".gitconfig")
