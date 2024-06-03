@@ -69,6 +69,7 @@ steps:
       - "--image=${_IMAGE_REGISTRY}/cloud-deploy:${_IMAGE_TAG}"
       - "--image=${_IMAGE_REGISTRY}/cloud-storage:${_IMAGE_TAG}"
       - "--image=${_IMAGE_REGISTRY}/cloud-run:${_IMAGE_TAG}"
+      - "--image=${_IMAGE_REGISTRY}/cloud-function:${_IMAGE_TAG}"
       - "--image=${_IMAGE_REGISTRY}/gke-deploy:${_IMAGE_TAG}"
       - "--image=${_IMAGE_REGISTRY}/builder:${_IMAGE_TAG}"
       # Toolchain Images
@@ -104,6 +105,8 @@ images:
   - ${_IMAGE_REGISTRY}/cloud-storage:${_IMAGE_TAG}
   - ${_IMAGE_REGISTRY}/cloud-run:latest
   - ${_IMAGE_REGISTRY}/cloud-run:${_IMAGE_TAG}
+  - ${_IMAGE_REGISTRY}/cloud-function:latest
+  - ${_IMAGE_REGISTRY}/cloud-function:${_IMAGE_TAG}
   - ${_IMAGE_REGISTRY}/gke-deploy:latest
   - ${_IMAGE_REGISTRY}/gke-deploy:${_IMAGE_TAG}
   - ${_IMAGE_REGISTRY}/builder:latest

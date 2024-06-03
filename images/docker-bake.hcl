@@ -17,6 +17,7 @@ group "default" {
       "gke-deploy",
       "syft",
       "cloud-deploy",
+      "cloud-function",
       "cloud-storage",
       "cloud-run",
       "go",
@@ -173,6 +174,19 @@ target "cloud-deploy" {
   tags = [
     "${REGISTRY}/cloud-deploy:${TAG}",
     "${REGISTRY}/cloud-deploy:latest"
+  ]
+}
+
+target "cloud-function" {
+  dockerfile = "Dockerfile"
+  context = "cloud-function"
+  contexts = {
+    base = "target:base"
+    src = "../"
+  }
+  tags = [
+    "${REGISTRY}/cloud-function:${TAG}",
+    "${REGISTRY}/cloud-function:latest"
   ]
 }
 

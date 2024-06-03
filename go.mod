@@ -5,9 +5,10 @@ go 1.21
 require (
 	cloud.google.com/go/appengine v1.8.7
 	cloud.google.com/go/compute/metadata v0.3.0
-	cloud.google.com/go/deploy v1.18.1
-	cloud.google.com/go/longrunning v0.5.7
-	cloud.google.com/go/secretmanager v1.13.0
+	cloud.google.com/go/deploy v1.17.2
+	cloud.google.com/go/functions v1.16.2
+	cloud.google.com/go/longrunning v0.5.6
+	cloud.google.com/go/secretmanager v1.12.0
 	cloud.google.com/go/storage v1.40.0
 	github.com/GoogleCloudPlatform/artifact-registry-go-tools v0.2.0
 	github.com/fsouza/fake-gcs-server v1.49.0
@@ -16,6 +17,7 @@ require (
 	github.com/google/go-containerregistry v0.19.1
 	github.com/google/uuid v1.6.0
 	github.com/googleapis/google-cloud-go-testing v0.0.0-20210719221736-1c9a4c676720
+	github.com/inhies/go-bytesize v0.0.0-20220417184213-4913239db9cf
 	github.com/package-url/packageurl-go v0.1.2
 	github.com/pkg/errors v0.9.1
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06
@@ -27,6 +29,7 @@ require (
 	github.com/yargevad/filepathx v1.0.0
 	golang.org/x/oauth2 v0.20.0
 	google.golang.org/api v0.182.0
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240521202816-d264139d666e
 	google.golang.org/grpc v1.64.0
 	google.golang.org/protobuf v1.34.2
 )
@@ -36,7 +39,7 @@ require (
 	cloud.google.com/go/auth v0.4.2 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.2 // indirect
 	cloud.google.com/go/iam v1.1.8 // indirect
-	cloud.google.com/go/pubsub v1.38.0 // indirect
+	cloud.google.com/go/pubsub v1.37.0 // indirect
 	github.com/containerd/stargz-snapshotter/estargz v0.15.1 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/docker/cli v26.1.4+incompatible // indirect
@@ -93,9 +96,8 @@ require (
 	golang.org/x/text v0.16.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028 // indirect
-	google.golang.org/genproto v0.0.0-20240513163218-0867130af1f8 // indirect
+	google.golang.org/genproto v0.0.0-20240401170217-c3f982113cda // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240513163218-0867130af1f8 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20240521202816-d264139d666e // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
