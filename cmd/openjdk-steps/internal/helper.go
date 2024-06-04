@@ -18,6 +18,8 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"strings"
 
@@ -92,4 +94,30 @@ func WriteSettingsXML(token string, localRepository string, repositoryIds []stri
 	}
 
 	return nil
+}
+
+// Get SHA1 checksum of remote artifact in Artifact Registry
+func GetCheckSum(artifactRegistryUrl string, ctx context.Context) (string, error) {
+	c := metadata.NewClient(&http.Client{})
+	token, err := GetAuthenticationToken(c, ctx)
+	if err != nil {
+		return "", fmt.Errorf("error getting auth token: %w", err)
+	}
+
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s.sha1", artifactRegistryUrl), nil)
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("error downloading checksum: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("error reading response body: %w", err)
+	}
+
+	checksum := fmt.Sprintf("sha1:%s", string(body))
+	return checksum, nil
 }
