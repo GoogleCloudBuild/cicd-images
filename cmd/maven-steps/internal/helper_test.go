@@ -18,7 +18,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/GoogleCloudBuild/cicd-images/cmd/openjdk-steps/internal/xmlmodules"
+	"github.com/GoogleCloudBuild/cicd-images/cmd/maven-steps/internal/xmlmodules"
 )
 
 func TestWriteSettingXML(t *testing.T) {

@@ -62,11 +62,6 @@ commandTests:
     expectedOutput:
       - "Gradle 8.7"
 
-  - name: "openjdk-steps is installed"
-    command: "openjdk-steps"
-    args: ["--help"]
-    exitCode: 0
-
 metadataTest:
   envVars:
     - key: GOOGLE_OPENJDK_VERSION

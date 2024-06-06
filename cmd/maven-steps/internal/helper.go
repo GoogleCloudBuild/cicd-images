@@ -24,7 +24,7 @@ import (
 	"strings"
 
 	"cloud.google.com/go/compute/metadata"
-	"github.com/GoogleCloudBuild/cicd-images/cmd/openjdk-steps/internal/xmlmodules"
+	"github.com/GoogleCloudBuild/cicd-images/cmd/maven-steps/internal/xmlmodules"
 )
 
 const tokenPathSuffix = "instance/service-accounts/default/token"

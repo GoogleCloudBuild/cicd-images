@@ -20,7 +20,7 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use: "openjdk-steps",
+	Use: "maven-steps",
 }
 
 func Execute(ctx context.Context) error {

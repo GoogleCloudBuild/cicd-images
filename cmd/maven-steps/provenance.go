@@ -21,7 +21,7 @@ import (
 	"os"
 	"strings"
 
-	helper "github.com/GoogleCloudBuild/cicd-images/cmd/openjdk-steps/internal"
+	helper "github.com/GoogleCloudBuild/cicd-images/cmd/maven-steps/internal"
 	"github.com/spf13/cobra"
 )
 

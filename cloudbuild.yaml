@@ -75,6 +75,7 @@ steps:
       - "--image=${_IMAGE_REGISTRY}/nodejs:${_IMAGE_TAG}"
       - "--image=${_IMAGE_REGISTRY}/python:${_IMAGE_TAG}"
       - "--image=${_IMAGE_REGISTRY}/openjdk:${_IMAGE_TAG}"
+      - "--image=${_IMAGE_REGISTRY}/maven-steps:${_IMAGE_TAG}"
 
 # Push the images.
 images:
@@ -113,3 +114,5 @@ images:
   - ${_IMAGE_REGISTRY}/python:${_IMAGE_TAG}
   - ${_IMAGE_REGISTRY}/openjdk:latest
   - ${_IMAGE_REGISTRY}/openjdk:${_IMAGE_TAG}
+  - ${_IMAGE_REGISTRY}/maven-steps:latest
+  - ${_IMAGE_REGISTRY}/maven-steps:${_IMAGE_TAG}

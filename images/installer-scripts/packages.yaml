@@ -120,8 +120,8 @@ catalog-steps:
     source: ./cmd/go-steps
   nodejs-steps:
     source: ./cmd/nodejs-steps
-  openjdk-steps:
-    source: ./cmd/openjdk-steps
+  maven-steps:
+    source: ./cmd/maven-steps
   python-steps:
     source: ./cmd/python-steps
 

@@ -26,16 +26,16 @@ RUN go install github.com/google/go-licenses
 # Run binary tests, build and license scan.
 WORKDIR /src
 RUN go mod download && \
-    go test ./cmd/openjdk-steps/... -timeout 30s && \
-    go build ./cmd/openjdk-steps
+    go test ./cmd/maven-steps/... -timeout 30s && \
+    go build ./cmd/maven-steps
 
 # Scan and save licenses.
-RUN go-licenses check ./cmd/openjdk-steps && \
-    go-licenses save ./cmd/openjdk-steps --save_path=/THIRD_PARTY_NOTICES/openjdk-steps && \
-    go-licenses report ./cmd/openjdk-steps > /THIRD_PARTY_NOTICES/openjdk-steps/licenses.csv
+RUN go-licenses check ./cmd/maven-steps && \
+    go-licenses save ./cmd/maven-steps --save_path=/THIRD_PARTY_NOTICES/maven-steps && \
+    go-licenses report ./cmd/maven-steps > /THIRD_PARTY_NOTICES/maven-steps/licenses.csv
 
 # hadolint ignore=DL3006
 FROM base
 
-COPY --from=builder /src/openjdk-steps /usr/local/bin/openjdk-steps
-COPY --from=builder /THIRD_PARTY_NOTICES/openjdk-steps /THIRD_PARTY_NOTICES/openjdk-steps
+COPY --from=builder /src/maven-steps /usr/local/bin/maven-steps
+COPY --from=builder /THIRD_PARTY_NOTICES/maven-steps /THIRD_PARTY_NOTICES/maven-steps

@@ -214,25 +214,28 @@ target "nodejs" {
   ]
 }
 
-target "openjdk-base" {
+target "openjdk" {
   dockerfile = "Dockerfile.base"
   context = "openjdk"
   contexts = {
     base = "target:base"
   }
-  output = ["type=cacheonly"]
-}
-
-target "openjdk" {
-  dockerfile = "Dockerfile"
-  context = "openjdk"
-  contexts = {
-    base = "target:openjdk-base"
-    src = "../"
-  }
   tags = [
     "${REGISTRY}/openjdk:${TAG}",
     "${REGISTRY}/openjdk:latest"
+  ]
+}
+
+target "maven-steps" {
+  dockerfile = "Dockerfile"
+  context = "maven-steps"
+  contexts = {
+    base = "target:base"
+    src = "../"
+  }
+  tags = [
+    "${REGISTRY}/maven-steps:${TAG}",
+    "${REGISTRY}/maven-steps:latest"
   ]
 }
 

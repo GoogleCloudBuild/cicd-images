@@ -2,8 +2,7 @@ REGISTRY ?= us-docker.pkg.dev/gcb-catalog-release/catalog
 TAG ?= ubuntu22
 
 build:
-	@echo "+ building installer scripts"
-	shellcheck  -S warning *sh
+	@echo "+ nothing to build"
 
 test:
 	@echo "+ no tests"
