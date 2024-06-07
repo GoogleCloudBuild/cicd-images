@@ -42,19 +42,11 @@ RUN bash /opt/installer-scripts/common-apt.sh
 # Install build tools
 
 #hadolint ignore=DL3059
-RUN bash /opt/installer-scripts/gcloud.sh -slim
-#hadolint ignore=DL3059
 RUN bash /opt/installer-scripts/docker.sh
 #hadolint ignore=DL3059
 RUN bash /opt/installer-scripts/git.sh -git-lfs
 #hadolint ignore=DL3059
 RUN bash /opt/installer-scripts/setup-nodejs.sh
-#hadolint ignore=DL3059
-RUN bash /opt/installer-scripts/setup-openjdk.sh
-#hadolint ignore=DL3059
-RUN bash /opt/installer-scripts/setup-go.sh
-#hadolint ignore=DL3059
-RUN bash /opt/installer-scripts/setup-python.sh
 
 VOLUME /workspace
 WORKDIR /workspace
