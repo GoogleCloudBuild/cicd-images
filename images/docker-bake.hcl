@@ -6,20 +6,8 @@ variable "TAG" {
 }
 
 group "default" {
-  targets = ["base", "tool-images", "toolchain-images"]
-}
-
-target "base" {
-  dockerfile = "Dockerfile"
-  context = "base"
-  tags = [
-    "${REGISTRY}/gcb-base:${TAG}",
-    "${REGISTRY}/gcb-base:latest"
-  ]
-}
-
-group "tool-images" {
     targets = [
+      "base",
       "docker-cli",
       "docker-dind",
       "gar-upload",
@@ -29,8 +17,23 @@ group "tool-images" {
       "syft",
       "cloud-deploy",
       "cloud-storage",
-      "cloud-run"
+      "cloud-run",
+      "go",
+      "nodejs",
+      "python",
+      "openjdk",
+      "maven-steps",
+      "builder"
     ]
+}
+
+target "base" {
+  dockerfile = "Dockerfile"
+  context = "base"
+  tags = [
+    "${REGISTRY}/gcb-base:${TAG}",
+    "${REGISTRY}/gcb-base:latest"
+  ]
 }
 
 target "docker-cli" {
@@ -105,16 +108,6 @@ target "syft" {
     tags = [
       "${REGISTRY}/syft:${TAG}",
       "${REGISTRY}/syft:latest"
-    ]
-}
-
-group "toolchain-images" {
-    targets = [
-      "go",
-      "nodejs",
-      "python",
-      "openjdk",
-      "builder"
     ]
 }
 
