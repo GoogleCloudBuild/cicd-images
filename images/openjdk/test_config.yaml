@@ -60,7 +60,7 @@ commandTests:
     command: "gradle"
     args: ["--version"]
     expectedOutput:
-      - "Gradle 8.7"
+      - "Gradle 8.8"
 
 metadataTest:
   envVars:
@@ -69,7 +69,7 @@ metadataTest:
     - key: MAVEN_VERSION
       value: 3.9.6
     - key: GRADLE_VERSION
-      value: 8.7
+      value: 8.8
   user: nonroot
   entrypoint: ["entrypoint.sh"]
   cmd: ["java"]
