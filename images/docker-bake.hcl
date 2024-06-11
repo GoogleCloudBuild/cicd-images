@@ -8,6 +8,7 @@ variable "TAG" {
 group "default" {
     targets = [
       "base",
+      "app-engine",
       "docker-cli",
       "docker-dind",
       "gar-upload",
@@ -34,6 +35,22 @@ target "base" {
     "${REGISTRY}/gcb-base:${TAG}",
     "${REGISTRY}/gcb-base:latest"
   ]
+}
+
+group "tool-images" {
+    targets = [
+      "app-engine",
+      "docker-cli",
+      "docker-dind",
+      "gar-upload",
+      "gcloud",
+      "git",
+      "gke-deploy",
+      "syft",
+      "cloud-deploy",
+      "cloud-storage",
+      "cloud-run"
+    ]
 }
 
 target "docker-cli" {
@@ -130,6 +147,19 @@ target "go" {
   tags = [
     "${REGISTRY}/go:${TAG}",
     "${REGISTRY}/go:latest"
+  ]
+}
+
+target "app-engine" {
+  dockerfile = "Dockerfile"
+  context = "app-engine"
+  contexts = {
+    base = "target:base"
+    src = "../"
+  }
+  tags = [
+    "${REGISTRY}/app-engine:${TAG}",
+    "${REGISTRY}/app-engine:latest"
   ]
 }
 
