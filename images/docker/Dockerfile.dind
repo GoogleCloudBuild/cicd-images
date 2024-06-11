@@ -35,7 +35,7 @@ RUN set -eux; \
     uidmap \
     pigz \
     mount \
-    ; \
+    util-linux; \
     dockerd --version; \
     containerd --version; \
     ctr --version; \
