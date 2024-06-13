@@ -29,7 +29,6 @@ FROM base
 USER root
 ENV USER=root \
     ENV=/etc/environment \
-    BASH_ENV=/etc/environment \
     HOME=/root
 
 COPY --chmod=755 --from=go-build /go/bin/* /usr/local/bin/
