@@ -16,10 +16,12 @@ package main
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"os/exec"
 	"strings"
 
+	"github.com/GoogleCloudBuild/cicd-images/internal/logger"
 	"github.com/spf13/cobra"
 )
 
@@ -29,20 +31,26 @@ var (
 	depth          string
 	revision       string
 	submodules     string
+	verbose        bool
 )
 
 var cloneCmd = &cobra.Command{
 	Use:   "clone",
 	Short: "Clone a public or private git repository.",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		logger.SetupLogger(verbose)
+		slog.Info("Executing clone command")
+
 		// extract url from urlPath
 		url, err := os.ReadFile(urlPath)
 		if err != nil {
 			return fmt.Errorf("error reading urlPath: %v", err)
 		}
+		slog.Debug("Extracted URL from urlPath", "url", string(url))
 
 		checkoutDir := ""
 		if (len(subDirectory) != 0) && (deleteExisting == "true") {
+			slog.Debug("Deleting existing repo directory")
 			checkoutDir = subDirectory
 			// 	Delete any existing contents of the repo directory if it exists.
 			//  We don't just "rm -rf ${CHECKOUT_DIR}" because ${CHECKOUT_DIR} might be "/" or the root of a mounted volume.
@@ -74,6 +82,7 @@ var cloneCmd = &cobra.Command{
 		if err := gitInit.Run(); err != nil {
 			return fmt.Errorf("error running 'git %v': %v", initCommand, err)
 		}
+		slog.Info("Initialized git repository")
 
 		if checkoutDir != "" {
 			// change to initialized git directory
@@ -81,6 +90,7 @@ var cloneCmd = &cobra.Command{
 			if err != nil {
 				return fmt.Errorf("error running 'cd %v': %v", checkoutDir, err)
 			}
+			slog.Info("Changed to directory", "directory", checkoutDir)
 		}
 
 		// git remote add origin "${URL}"
@@ -89,6 +99,7 @@ var cloneCmd = &cobra.Command{
 		if err = gitRemoteAdd.Run(); err != nil {
 			return fmt.Errorf("error running 'git %v': %v", remoteAddCommand, err)
 		}
+		slog.Debug("Added remote origin", "url", string(url))
 
 		// fetch branch/tag/sha
 		fetchCommand := "fetch --all"
@@ -99,6 +110,7 @@ var cloneCmd = &cobra.Command{
 		if err = gitFetch.Run(); err != nil {
 			return fmt.Errorf("error running 'git %v': %v", fetchCommand, err)
 		}
+		slog.Info("Fetched all branches/tags/shas")
 
 		//git checkout -f "${REVISION}"
 		checkoutCommand := fmt.Sprintf("checkout -f %v", revision)
@@ -106,6 +118,7 @@ var cloneCmd = &cobra.Command{
 		if err = gitCheckout.Run(); err != nil {
 			return fmt.Errorf("error running 'git %v': %v", checkoutCommand, err)
 		}
+		slog.Info("Checked out revision", "revision", revision)
 
 		// update submodules if true: git submodule update --init --recursive
 		if submodules == "true" {
@@ -114,8 +127,10 @@ var cloneCmd = &cobra.Command{
 			if err = gitUpdateSubmodules.Run(); err != nil {
 				return fmt.Errorf("error running 'git %v': %v", submodulesCommand, err)
 			}
+			slog.Info("Updated submodules")
 		}
 
+		slog.Info("Successfully cloned git repository")
 		return nil
 	},
 }
@@ -129,5 +144,5 @@ func init() {
 	cloneCmd.Flags().StringVar(&depth, "depth", "", "Depth level to perform git clones. If unspecified, a full clone will be performed.")
 	cloneCmd.Flags().StringVar(&revision, "revision", "", "Revision (branch, tag, or commit sha) to checkout.")
 	cloneCmd.Flags().StringVar(&submodules, "submodules", "", "Initialize and fetch git submodules.")
-
+	cloneCmd.Flags().BoolVar(&verbose, "verbose", false, "Whether to print verbose output.")
 }

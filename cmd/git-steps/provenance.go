@@ -17,10 +17,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/exec"
 	"strings"
 
+	"github.com/GoogleCloudBuild/cicd-images/internal/logger"
 	"github.com/spf13/cobra"
 )
 
@@ -36,12 +38,16 @@ var generateProvenanceCmd = &cobra.Command{
 	Use:   "generate-provenance",
 	Short: "Get the git artifact results.",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		logger.SetupLogger(verbose)
+		slog.Info("Executing generate-provenance command")
+
 		uriCmd := exec.Command("git", strings.Fields("config --get remote.origin.url")...)
 		uri, err := uriCmd.Output()
 		if err != nil {
 			fmt.Printf("error running 'git config --get remote.origin.url': %v", err) // capture error, but continue with empty field
 			uri = []byte("")
 		}
+		slog.Debug("Configured remote origin url", "uri", string(uri))
 
 		digestCmd := exec.Command("git", strings.Fields("rev-parse HEAD")...)
 		digest, err := digestCmd.Output()
@@ -49,6 +55,7 @@ var generateProvenanceCmd = &cobra.Command{
 			fmt.Printf("error running 'git rev-parse HEAD': %v", err) // capture error, but continue with empty field
 			digest = []byte("")
 		}
+		slog.Debug("Revision digest", "digest", string(digest))
 
 		refCmd := exec.Command("git", strings.Fields("symbolic-ref HEAD")...)
 		ref, err := refCmd.Output()
@@ -56,12 +63,14 @@ var generateProvenanceCmd = &cobra.Command{
 			fmt.Printf("error running 'git symbolic-ref HEAD': %v", err) // capture error, but continue with empty field
 			ref = []byte("")
 		}
+		slog.Debug("Symbolic ref", "ref", string(ref))
 
 		provenance := &Provenance{
 			Uri:    strings.TrimSpace(string(uri)),
 			Digest: strings.TrimSpace("sha1:" + string(digest)),
 			Ref:    strings.TrimSpace(string(ref)),
 		}
+		slog.Debug("Provenance", "provenance", provenance)
 
 		file, err := json.Marshal(provenance)
 		if err != nil {
@@ -72,6 +81,7 @@ var generateProvenanceCmd = &cobra.Command{
 			return fmt.Errorf("error writing results into %s: %v", resultsPath, err)
 		}
 
+		slog.Info("Successfully generated provenance")
 		return nil
 	},
 }
@@ -80,4 +90,5 @@ func init() {
 	rootCmd.AddCommand(generateProvenanceCmd)
 
 	generateProvenanceCmd.Flags().StringVar(&resultsPath, "resultsPath", "", "Path to write the results in.")
+	generateProvenanceCmd.Flags().BoolVar(&verbose, "verbose", false, "Whether to print verbose output.")
 }

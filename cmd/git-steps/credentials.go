@@ -17,10 +17,12 @@ package main
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	secretmanager "cloud.google.com/go/secretmanager/apiv1"
 	"cloud.google.com/go/secretmanager/apiv1/secretmanagerpb"
 	auth "github.com/GoogleCloudBuild/cicd-images/cmd/git-steps/pkg"
+	"github.com/GoogleCloudBuild/cicd-images/internal/logger"
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/developerconnect/v1"
@@ -47,12 +49,15 @@ var generateCredentialsCmd = &cobra.Command{
 	`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
+		logger.SetupLogger(verbose)
+		slog.Info("Executing generate-credentials command")
 
 		// Get default access token
 		credentials, err := getAccessToken(ctx)
 		if err != nil {
 			return fmt.Errorf("error finding default credentials: %v", err)
 		}
+		slog.Info("Successfully retrieved default credentials")
 
 		if gitRepositoryLink != "" {
 			// Connect to Developer Connect API with access token
@@ -66,6 +71,7 @@ var generateCredentialsCmd = &cobra.Command{
 			if err := auth.AuthenticateWithDeveloperConnect(gitRepositoryLink, arf, urlPath); err != nil {
 				return err
 			}
+			slog.Info("Successfully authenticated with Developer Connect")
 		} else if sshPrivateKeySecretsResource != "" {
 			// Authenticate with Secret Manager
 			client, err := secretmanager.NewClient(ctx, option.WithTokenSource(credentials.TokenSource))
@@ -79,12 +85,15 @@ var generateCredentialsCmd = &cobra.Command{
 			if err := auth.AuthenticateWithSSHKeys(sf, sshPrivateKeySecretsResource, url, sshServerPublicKeys, urlPath); err != nil {
 				return err
 			}
+			slog.Info("Successfully authenticated with SSH Keys")
 		} else {
 			// for public repositories, just store url without auth
 			if err := auth.StoreURL(url, urlPath); err != nil {
 				return fmt.Errorf("error storing url without auth: %v", err)
 			}
 		}
+
+		slog.Info("Successfully executed generate-credentials command")
 		return nil
 	},
 }
@@ -97,6 +106,7 @@ func init() {
 	generateCredentialsCmd.Flags().StringSliceVar(&sshServerPublicKeys, "sshServerPublicKeys", []string{}, "The public keys of the SSH server in an array.")
 	generateCredentialsCmd.Flags().StringVar(&sshPrivateKeySecretsResource, "sshPrivateKeySecretsResource", "", "The secret version resource name of the SSH private key saved on Secret Manager.")
 	generateCredentialsCmd.Flags().StringVar(&gitRepositoryLink, "gitRepositoryLink", "", "The resource name of the repository linked to Developer Connect.")
+	generateCredentialsCmd.Flags().BoolVar(&verbose, "verbose", false, "Whether to print verbose output.")
 }
 
 type repositoryFetcher struct {
