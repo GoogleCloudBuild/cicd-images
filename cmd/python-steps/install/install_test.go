@@ -14,13 +14,9 @@
 package install
 
 import (
-	"bytes"
-	"io"
-	"net/http"
 	"reflect"
 	"testing"
 
-	"github.com/GoogleCloudBuild/cicd-images/cmd/python-steps/internal/auth"
 	"github.com/GoogleCloudBuild/cicd-images/cmd/python-steps/internal/command"
 )
 
@@ -38,17 +34,9 @@ func TestInstallDependency(t *testing.T) {
 func TestAuthenticateRegistryAndGetFlags(t *testing.T) {
 	registryURL := "https://foo-registry.com"
 	expectedFlags := []string{"--index-url=https://pypi.org/simple/", "--extra-index-url=https://oauth2accesstoken:foo-token@foo-registry.com/simple"}
-	client := &auth.MockHTTPClient{
-		DoFunc: func(req *http.Request) (*http.Response, error) {
-			return &http.Response{
-				StatusCode: 200,
-				Body:       io.NopCloser(bytes.NewReader([]byte(`{"access_token": "foo-token"}`))),
-			}, nil
+	token := "foo-token"
 
-		},
-	}
-
-	flags, err := authenticateRegistryAndGetFlags(registryURL, client)
+	flags, err := getFlags(registryURL, token)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}

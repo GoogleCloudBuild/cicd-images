@@ -32,7 +32,7 @@ func TestWriteSettingXML(t *testing.T) {
 	settingXMLName := "test_setting.xml"
 
 	t.Run("write setting.xml", func(t *testing.T) {
-		err := WriteSettingsXML(token, localRepository, repos, settingXMLName)
+		err := WriteSettingsXML(token, localRepository, settingXMLName, repos)
 		if err != nil {
 			t.Errorf("Error in writeSettingXML: %v", err)
 		}
@@ -87,7 +87,7 @@ func TestWriteSettingXMLExist(t *testing.T) {
 
 	t.Run("write setting.xml", func(t *testing.T) {
 		// Call the function being tested
-		err := WriteSettingsXML(token, localRepository, repos, settingXMLName)
+		err := WriteSettingsXML(token, localRepository, settingXMLName, repos)
 		if err != nil {
 			t.Errorf("Error in writeSettingXML: %v", err)
 		}
@@ -101,6 +101,5 @@ func TestWriteSettingXMLExist(t *testing.T) {
 			t.Errorf("No data should be writing to an existing settings.xml")
 		}
 		defer os.Remove(settingXMLName)
-
 	})
 }

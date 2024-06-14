@@ -37,7 +37,7 @@ func TestSshAuth(t *testing.T) {
 privatekey
 -----END PRIVATE KEY-----`)
 	sshPrivateKeySecretsResource := ""
-	repoUrl := "git@github.com:test/test-repo.git"
+	repoURL := "git@github.com:test/test-repo.git"
 	sshServerPublicKeys := []string{"ssh-ed25519 key1", "ssh-rsa key2"}
 	publicKeyResult := `github.com ssh-ed25519 key1
 github.com ssh-rsa key2
@@ -61,7 +61,7 @@ github.com ssh-rsa key2
 	defer tmpfile.Close()
 
 	t.Run("ssh auth", func(t *testing.T) {
-		if err := AuthenticateWithSSHKeys(sf, sshPrivateKeySecretsResource, repoUrl, sshServerPublicKeys, tmpfile.Name()); err != nil {
+		if err := AuthenticateWithSSHKeys(sf, sshPrivateKeySecretsResource, repoURL, tmpfile.Name(), sshServerPublicKeys); err != nil {
 			t.Fatalf("Expected no errors, but got %v", err)
 		}
 		defer os.RemoveAll(".ssh")
@@ -90,8 +90,8 @@ github.com ssh-rsa key2
 		if err != nil {
 			t.Fatalf("Error reading .gitconfig file: %v", err)
 		}
-		if !bytes.Equal(url, []byte(repoUrl)) {
-			t.Errorf("Generated url file does not match expected results. Expected:\n%v\n Got:\n%v\n", repoUrl, string(url))
+		if !bytes.Equal(url, []byte(repoURL)) {
+			t.Errorf("Generated url file does not match expected results. Expected:\n%v\n Got:\n%v\n", repoURL, string(url))
 		}
 	})
 }

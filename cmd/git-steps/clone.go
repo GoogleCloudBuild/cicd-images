@@ -112,7 +112,7 @@ var cloneCmd = &cobra.Command{
 		}
 		slog.Info("Fetched all branches/tags/shas")
 
-		//git checkout -f "${REVISION}"
+		// git checkout -f "${REVISION}"
 		checkoutCommand := fmt.Sprintf("checkout -f %v", revision)
 		gitCheckout := exec.Command("git", strings.Fields(checkoutCommand)...)
 		if err = gitCheckout.Run(); err != nil {
@@ -144,5 +144,4 @@ func init() {
 	cloneCmd.Flags().StringVar(&depth, "depth", "", "Depth level to perform git clones. If unspecified, a full clone will be performed.")
 	cloneCmd.Flags().StringVar(&revision, "revision", "", "Revision (branch, tag, or commit sha) to checkout.")
 	cloneCmd.Flags().StringVar(&submodules, "submodules", "", "Initialize and fetch git submodules.")
-	cloneCmd.Flags().BoolVar(&verbose, "verbose", false, "Whether to print verbose output.")
 }

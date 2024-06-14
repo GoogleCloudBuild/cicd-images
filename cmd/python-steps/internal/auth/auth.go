@@ -14,10 +14,7 @@
 package auth
 
 import (
-	"encoding/json"
 	"fmt"
-	"log/slog"
-	"net/http"
 	"net/url"
 )
 
@@ -25,65 +22,7 @@ const (
 	GKE_METADATA_SERVER_ENDPOINT = "http://169.254.169.254/computeMetadata/v1/instance/service-accounts/default/token"
 )
 
-// HTTPClient is an interface for making HTTP requests.
-type HTTPClient interface {
-	Do(req *http.Request) (*http.Response, error)
-}
-
-// TokenResponse represents the response from the GKE metadata server.
-type TokenResponse struct {
-	AccessToken string `json:"access_token"`
-}
-
-// GetArtifactRegistryURL returns the authenticated URL for the given artifact registry URL.
-func GetArtifactRegistryURL(client HTTPClient, registryURL string) (string, error) {
-	slog.Info("Getting the artifact registry URL")
-	gcpToken, err := GetGCPToken(client)
-	if err != nil {
-		return "", err
-	}
-
-	authenticatedURL, err := constructAuthenticatedURL(registryURL, gcpToken)
-	if err != nil {
-		return "", err
-	}
-
-	slog.Info("Successfully got the artifact registry URL")
-	return authenticatedURL, nil
-}
-
-// GetGCPToken retrieves a GCP token from the GKE metadata server.
-func GetGCPToken(client HTTPClient) (string, error) {
-	slog.Info("Getting the GCP token")
-	// Create a HTTP request for the GKE metadata server endpoint.
-	req, err := http.NewRequest("GET", GKE_METADATA_SERVER_ENDPOINT, nil)
-	if err != nil {
-		return "", err
-	}
-	req.Header.Add("Metadata-Flavor", "Google")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	// Decode the JSON response.
-	var tokenData TokenResponse
-	decoder := json.NewDecoder(resp.Body)
-	if err := decoder.Decode(&tokenData); err != nil {
-		return "", err
-	}
-
-	if tokenData.AccessToken == "" {
-		return "", fmt.Errorf("no access token in the response from metadata server")
-	}
-
-	slog.Info("Successfully got the GCP token")
-	return tokenData.AccessToken, nil
-}
-
-func constructAuthenticatedURL(registryURL, token string) (string, error) {
+func ConstructAuthenticatedURL(registryURL, token string) (string, error) {
 	u, err := url.Parse(registryURL)
 	if err != nil {
 		return "", err

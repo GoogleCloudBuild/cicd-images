@@ -20,9 +20,11 @@ import (
 	"strings"
 )
 
-var registryRegex = regexp.MustCompile(`(@[a-zA-Z0-9-*~][a-zA-Z0-9-*._~]*:)?registry=https:(\/\/[a-zA-Z0-9-]+[-]npm[.]pkg[.]dev\/.*\/)`)
-var authTokenRegex = regexp.MustCompile(`(\/\/[a-zA-Z0-9-]+[-]npm[.]pkg[.]dev\/.*\/):_authToken=(.*)`)
-var passwordRegex = regexp.MustCompile(`(\/\/[a-zA-Z0-9-]+[-]npm[.]pkg[.]dev\/.*\/):_password=(.*)`)
+var (
+	registryRegex  = regexp.MustCompile(`(@[a-zA-Z0-9-*~][a-zA-Z0-9-*._~]*:)?registry=https:(\/\/[a-zA-Z0-9-]+[-]npm[.]pkg[.]dev\/.*\/)`)
+	authTokenRegex = regexp.MustCompile(`(\/\/[a-zA-Z0-9-]+[-]npm[.]pkg[.]dev\/.*\/):_authToken=(.*)`)
+	passwordRegex  = regexp.MustCompile(`(\/\/[a-zA-Z0-9-]+[-]npm[.]pkg[.]dev\/.*\/):_password=(.*)`)
+)
 
 var configType = struct {
 	Default   string

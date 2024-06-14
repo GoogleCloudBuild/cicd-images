@@ -55,7 +55,6 @@ func TestAddTokenToConfigFile(t *testing.T) {
 			if npmrc != tc.wantNpmrc {
 				t.Errorf("unexpected npmrc: got %q, want %q", npmrc, tc.wantNpmrc)
 			}
-
 		})
 	}
 }

@@ -14,10 +14,12 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
 
+	"cloud.google.com/go/compute/metadata"
 	"github.com/GoogleCloudBuild/cicd-images/cmd/python-steps/install"
 	"github.com/GoogleCloudBuild/cicd-images/cmd/python-steps/internal/command"
 	"github.com/GoogleCloudBuild/cicd-images/cmd/python-steps/pack"
@@ -25,9 +27,9 @@ import (
 )
 
 func main() {
-	var rootCmd = &cobra.Command{Use: "python-steps"}
+	rootCmd := &cobra.Command{Use: "python-steps"}
 
-	var installCmd = &cobra.Command{
+	installCmd := &cobra.Command{
 		Use:   "install",
 		Short: "Install Python dependencies.",
 		Long: `install is for installing Python dependencies.
@@ -40,8 +42,9 @@ artifacts from a GCP Artifact Registry.`,
 				return err
 			}
 			runner := &command.DefaultCommandRunner{}
-			client := &http.Client{}
-			if err := install.Execute(runner, runArgs, client); err != nil {
+			client := metadata.NewClient(&http.Client{})
+			ctx := context.Background()
+			if err := install.Execute(ctx, runner, runArgs, client); err != nil {
 				return err
 			}
 			return nil
@@ -53,7 +56,7 @@ artifacts from a GCP Artifact Registry.`,
 	installCmd.Flags().BoolP("verbose", "", false, "Whether to print verbose output.")
 	installCmd.Flags().StringP("script", "", "", "The Python script to run inline, e.g. `print('hello world')`.")
 
-	var packCmd = &cobra.Command{
+	packCmd := &cobra.Command{
 		Use:   "package",
 		Short: "Package a Python project.",
 		Long: `package is for packaging and pushing
@@ -64,8 +67,9 @@ a Python project to a GCP Artifact Registry repository.`,
 				return err
 			}
 			runner := &command.DefaultCommandRunner{}
-			client := &http.Client{}
-			if err := pack.Execute(runner, packageArgs, client); err != nil {
+			client := metadata.NewClient(&http.Client{})
+			ctx := context.Background()
+			if err := pack.Execute(ctx, runner, packageArgs, client); err != nil {
 				return err
 			}
 			return nil

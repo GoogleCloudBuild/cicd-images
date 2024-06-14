@@ -21,7 +21,7 @@ import (
 	"os"
 	"strings"
 
-	helper "github.com/GoogleCloudBuild/cicd-images/cmd/maven-steps/internal"
+	provenanceHelper "github.com/GoogleCloudBuild/cicd-images/cmd/maven-steps/internal"
 	"github.com/spf13/cobra"
 )
 
@@ -49,7 +49,7 @@ var generateProvenanceCmd = &cobra.Command{
 
 		uri := fmt.Sprintf("%s/%s/%s/%s/%s", repositoryUrl, groupId, artifactId, version, artifactName)
 
-		digest, err := helper.GetCheckSum(uri, ctx)
+		digest, err := provenanceHelper.GetCheckSum(ctx, uri)
 		if err != nil {
 			return fmt.Errorf("error generating checksum: %w", err)
 		}

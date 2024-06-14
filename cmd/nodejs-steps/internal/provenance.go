@@ -14,11 +14,11 @@
 package internal
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
+
+	"github.com/GoogleCloudBuild/cicd-images/internal/helper"
 )
 
 type Provenance struct {
@@ -26,8 +26,8 @@ type Provenance struct {
 	Digest string
 }
 
-func GenerateProvenance(provenancePath string, packageFileName string, uri string) error {
-	digest, err := computeDigest(packageFileName)
+func GenerateProvenance(provenancePath, packageFileName, uri string) error {
+	digest, err := helper.ComputeDigest(packageFileName)
 	if err != nil {
 		return fmt.Errorf("error computing digest for %s: %w", packageFileName, err)
 	}
@@ -51,16 +51,4 @@ func GenerateProvenance(provenancePath string, packageFileName string, uri strin
 	}
 
 	return nil
-}
-
-func computeDigest(filePath string) (string, error) {
-	data, err := os.ReadFile(filePath)
-	if err != nil {
-		return "", fmt.Errorf("error reading %s: %w", filePath, err)
-	}
-	if len(data) == 0 {
-		return "", fmt.Errorf("empty file: %s", filePath)
-	}
-	hash := sha256.Sum256(data)
-	return hex.EncodeToString(hash[:]), nil
 }

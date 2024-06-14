@@ -22,9 +22,10 @@ import (
 	secretmanager "cloud.google.com/go/secretmanager/apiv1"
 	"cloud.google.com/go/secretmanager/apiv1/secretmanagerpb"
 	auth "github.com/GoogleCloudBuild/cicd-images/cmd/git-steps/pkg"
+	"github.com/GoogleCloudBuild/cicd-images/internal/helper"
 	"github.com/GoogleCloudBuild/cicd-images/internal/logger"
 	"github.com/spf13/cobra"
-	"golang.org/x/oauth2/google"
+	"golang.org/x/oauth2"
 	"google.golang.org/api/developerconnect/v1"
 	"google.golang.org/api/option"
 )
@@ -53,7 +54,7 @@ var generateCredentialsCmd = &cobra.Command{
 		slog.Info("Executing generate-credentials command")
 
 		// Get default access token
-		credentials, err := getAccessToken(ctx)
+		accessToken, err := helper.GetAccessToken(ctx)
 		if err != nil {
 			return fmt.Errorf("error finding default credentials: %v", err)
 		}
@@ -61,7 +62,7 @@ var generateCredentialsCmd = &cobra.Command{
 
 		if gitRepositoryLink != "" {
 			// Connect to Developer Connect API with access token
-			developerconnectService, err := developerconnect.NewService(ctx, option.WithTokenSource(credentials.TokenSource))
+			developerconnectService, err := developerconnect.NewService(ctx, option.WithTokenSource(oauth2.StaticTokenSource(&oauth2.Token{AccessToken: accessToken})))
 			if err != nil {
 				return fmt.Errorf("error creating new developer connect service: %v", err)
 			}
@@ -74,7 +75,7 @@ var generateCredentialsCmd = &cobra.Command{
 			slog.Info("Successfully authenticated with Developer Connect")
 		} else if sshPrivateKeySecretsResource != "" {
 			// Authenticate with Secret Manager
-			client, err := secretmanager.NewClient(ctx, option.WithTokenSource(credentials.TokenSource))
+			client, err := secretmanager.NewClient(ctx, option.WithTokenSource(oauth2.StaticTokenSource(&oauth2.Token{AccessToken: accessToken})))
 			if err != nil {
 				return fmt.Errorf("error authenticating and connecting to Secret Manager: %v\n", err)
 			}
@@ -82,7 +83,7 @@ var generateCredentialsCmd = &cobra.Command{
 
 			sf := &secretVersionFetcher{client: client, ctx: ctx}
 
-			if err := auth.AuthenticateWithSSHKeys(sf, sshPrivateKeySecretsResource, url, sshServerPublicKeys, urlPath); err != nil {
+			if err := auth.AuthenticateWithSSHKeys(sf, sshPrivateKeySecretsResource, url, urlPath, sshServerPublicKeys); err != nil {
 				return err
 			}
 			slog.Info("Successfully authenticated with SSH Keys")
@@ -144,17 +145,4 @@ func (r *secretVersionFetcher) AccessSecretVersion(req *secretmanagerpb.AccessSe
 		return &secretmanagerpb.AccessSecretVersionResponse{}, fmt.Errorf("error accessing secret version: %v\n", err)
 	}
 	return resp, nil
-}
-
-// Get access token for google cloud service.
-func getAccessToken(ctx context.Context) (*google.Credentials, error) {
-	scopes := []string{
-		gcpAccessTokenURL,
-	}
-	credentials, err := google.FindDefaultCredentials(ctx, scopes...)
-	if err != nil {
-		return &google.Credentials{}, err
-	}
-
-	return credentials, nil
 }

@@ -14,12 +14,15 @@
 package install
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"strings"
 
+	"cloud.google.com/go/compute/metadata"
 	"github.com/GoogleCloudBuild/cicd-images/cmd/python-steps/internal/auth"
 	"github.com/GoogleCloudBuild/cicd-images/cmd/python-steps/internal/command"
+	"github.com/GoogleCloudBuild/cicd-images/internal/helper"
 	"github.com/GoogleCloudBuild/cicd-images/internal/logger"
 	"github.com/spf13/pflag"
 )
@@ -32,7 +35,7 @@ const (
 type Arguments struct {
 	Dependencies        []string
 	RequirementsPath    string
-	ArtifactRegistryUrl string
+	ArtifactRegistryURL string
 	Verbose             bool
 }
 
@@ -46,13 +49,13 @@ func ParseArgs(f *pflag.FlagSet) (Arguments, error) {
 	if err != nil {
 		return Arguments{}, fmt.Errorf("failed to get requirementsPath: %w", err)
 	}
-	artifactRegistryUrl, err := f.GetString("artifactRegistryUrl")
+	artifactRegistryURL, err := f.GetString("artifactRegistryURL")
 	if err != nil {
-		return Arguments{}, fmt.Errorf("failed to get artifactRegistryUrl: %w", err)
+		return Arguments{}, fmt.Errorf("failed to get artifactRegistryURL: %w", err)
 	}
-	artifactRegistryUrl, err = auth.EnsureHTTPSByDefault(artifactRegistryUrl)
+	artifactRegistryURL, err = auth.EnsureHTTPSByDefault(artifactRegistryURL)
 	if err != nil {
-		return Arguments{}, fmt.Errorf("failed to ensure artifactRegistryUrl is https: %w", err)
+		return Arguments{}, fmt.Errorf("failed to ensure artifactRegistryURL is https: %w", err)
 	}
 	verbose, err := f.GetBool("verbose")
 	if err != nil {
@@ -62,13 +65,13 @@ func ParseArgs(f *pflag.FlagSet) (Arguments, error) {
 	return Arguments{
 		Dependencies:        strings.Fields(dependencies),
 		RequirementsPath:    requirementsPath,
-		ArtifactRegistryUrl: artifactRegistryUrl,
+		ArtifactRegistryURL: artifactRegistryURL,
 		Verbose:             verbose,
 	}, nil
 }
 
 // Execute is the entrypoint for the run command execution.
-func Execute(runner command.CommandRunner, args Arguments, client auth.HTTPClient) error {
+func Execute(ctx context.Context, runner command.CommandRunner, args Arguments, client *metadata.Client) error {
 	logger.SetupLogger(args.Verbose)
 	slog.Info("Executing run command", "args", args)
 
@@ -76,7 +79,12 @@ func Execute(runner command.CommandRunner, args Arguments, client auth.HTTPClien
 		return fmt.Errorf("failed to create virtual environment: %w", err)
 	}
 
-	if err := installDependencies(runner, args, client); err != nil {
+	token, err := helper.GetAuthenticationToken(ctx, client)
+	if err != nil {
+		return fmt.Errorf("error getting authentication token: %w", err)
+	}
+
+	if err := installDependencies(runner, args, token); err != nil {
 		return fmt.Errorf("failed to install dependencies: %w", err)
 	}
 
@@ -84,8 +92,8 @@ func Execute(runner command.CommandRunner, args Arguments, client auth.HTTPClien
 	return nil
 }
 
-func installDependencies(runner command.CommandRunner, args Arguments, client auth.HTTPClient) error {
-	indexFlags, err := authenticateRegistryAndGetFlags(args.ArtifactRegistryUrl, client)
+func installDependencies(runner command.CommandRunner, args Arguments, gcpToken string) error {
+	indexFlags, err := getFlags(args.ArtifactRegistryURL, gcpToken)
 	if err != nil {
 		return err
 	}
@@ -105,19 +113,17 @@ func installDependencies(runner command.CommandRunner, args Arguments, client au
 	return nil
 }
 
-func authenticateRegistryAndGetFlags(artifactRegistryUrl string, client auth.HTTPClient) ([]string, error) {
-	slog.Info("Authenticating artifact registry", "artifactRegistryUrl", artifactRegistryUrl)
-
-	if artifactRegistryUrl == "" {
+func getFlags(artifactRegistryURL, gcpToken string) ([]string, error) {
+	if artifactRegistryURL == "" {
 		return []string{"--index-url=" + IndexURL}, nil
 	}
 
-	authenticatedArtifactRegistryURL, err := auth.GetArtifactRegistryURL(client, artifactRegistryUrl)
+	authenticatedArtifactRegistryURL, err := auth.ConstructAuthenticatedURL(artifactRegistryURL, gcpToken)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get authenticated Artifact Registry URL: %w", err)
 	}
 
-	slog.Info("Successfully authenticated artifact registry")
+	slog.Info("Successfully constructed artifact registry url")
 	return []string{"--index-url=" + IndexURL, "--extra-index-url=" + authenticatedArtifactRegistryURL}, nil
 }
 

@@ -15,50 +15,27 @@ package helper
 
 import (
 	"context"
-	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
-	"strings"
 
 	"cloud.google.com/go/compute/metadata"
 	"github.com/GoogleCloudBuild/cicd-images/cmd/maven-steps/internal/xmlmodules"
+	"github.com/GoogleCloudBuild/cicd-images/internal/helper"
 )
 
-const tokenPathSuffix = "instance/service-accounts/default/token"
-
-type response struct {
-	AccessToken string `json:"access_token"`
-	ExpiresIn   int    `json:"expires_in"`
-	TokenType   string `json:"token_type"`
-}
-
-// Get access token to call GCP API's with, can pass scopes as an query param
-func GetAuthenticationToken(c *metadata.Client, ctx context.Context) (string, error) {
-	accessTokenJSON, err := c.GetWithContext(ctx, tokenPathSuffix)
-	if err != nil {
-		return "", fmt.Errorf("requesting token: %w", err)
-	}
-	var jsonRes response
-	err = json.NewDecoder(strings.NewReader(accessTokenJSON)).Decode(&jsonRes)
-	if err != nil {
-		return "", fmt.Errorf("retrieving auth token: %w", err)
-	}
-	return string(jsonRes.AccessToken), nil
-}
-
 // Create settings.xml with authentication token
-func WriteSettingsXML(token string, localRepository string, repositoryIds []string, settingsPath string) error {
+func WriteSettingsXML(token, localRepository, settingsPath string, repositoryIDs []string) error {
 	settings := xmlmodules.Settings{
 		Servers:         xmlmodules.Servers{},
 		LocalRepository: xmlmodules.LocalRepository{Path: localRepository},
 	}
 
-	for _, repoId := range repositoryIds {
+	for _, repoID := range repositoryIDs {
 		server := xmlmodules.Server{
-			ID: repoId,
+			ID: repoID,
 			Configuration: xmlmodules.Configuration{
 				HttpConfiguration: xmlmodules.HttpConfiguration{
 					Get:  true,
@@ -97,14 +74,17 @@ func WriteSettingsXML(token string, localRepository string, repositoryIds []stri
 }
 
 // Get SHA1 checksum of remote artifact in Artifact Registry
-func GetCheckSum(artifactRegistryUrl string, ctx context.Context) (string, error) {
-	c := metadata.NewClient(&http.Client{})
-	token, err := GetAuthenticationToken(c, ctx)
+func GetCheckSum(ctx context.Context, artifactRegistryURL string) (string, error) {
+	client := metadata.NewClient(&http.Client{})
+	token, err := helper.GetAuthenticationToken(ctx, client)
 	if err != nil {
 		return "", fmt.Errorf("error getting auth token: %w", err)
 	}
 
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s.sha1", artifactRegistryUrl), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s.sha1", artifactRegistryURL), nil)
+	if err != nil {
+		return "", fmt.Errorf("error in GET request: %w", err)
+	}
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 
 	resp, err := http.DefaultClient.Do(req)

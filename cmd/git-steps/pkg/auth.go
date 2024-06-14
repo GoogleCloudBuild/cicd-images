@@ -33,12 +33,12 @@ type DCRepoClient interface {
 }
 
 // Authenticate using ssh public and private keys.
-func AuthenticateWithSSHKeys(sf SMClient, sshPrivateKeySecretsResource string, repoUrl string, sshServerPublicKeys []string, urlPath string) error {
+func AuthenticateWithSSHKeys(sf SMClient, sshPrivateKeySecretsResource, repoURL, urlPath string, sshServerPublicKeys []string) error {
 	if err := getPrivateKey(sf, sshPrivateKeySecretsResource); err != nil {
 		return err
 	}
 
-	if err := storePublicKeys(repoUrl, sshServerPublicKeys, urlPath); err != nil {
+	if err := storePublicKeys(repoURL, urlPath, sshServerPublicKeys); err != nil {
 		return err
 	}
 
@@ -58,20 +58,20 @@ func getPrivateKey(sf SMClient, sshPrivateKeySecretsResource string) error {
 	payload := resp.GetPayload().GetData()
 
 	// Place private key in id_rsa file, and set file permissions
-	err = os.MkdirAll(".ssh", 0700) // rwx permissions for owner only
+	err = os.MkdirAll(".ssh", 0o700) // rwx permissions for owner only
 	if err != nil {
 		return fmt.Errorf("error creating .ssh directory: %v\n", err)
 	}
 
-	id_rsa, err := os.OpenFile(".ssh/id_rsa", os.O_CREATE|os.O_WRONLY, 0700) // rwx permissions for owner only
+	idRsa, err := os.OpenFile(".ssh/id_rsa", os.O_CREATE|os.O_WRONLY, 0o700) // rwx permissions for owner only
 	if err != nil {
 		return fmt.Errorf("error opening id_rsa file: %v\n", err)
 	}
 
-	if _, err := id_rsa.Write(payload); err != nil {
+	if _, err := idRsa.Write(payload); err != nil {
 		return fmt.Errorf("error writing key to id_rsa file: %v\n", err)
 	}
-	if err := id_rsa.Chmod(0400); err != nil { // change permission to read only for owner
+	if err := idRsa.Chmod(0o400); err != nil { // change permission to read only for owner
 		return fmt.Errorf("error changing permission of id_rsa file: %v", err)
 	}
 
@@ -79,21 +79,21 @@ func getPrivateKey(sf SMClient, sshPrivateKeySecretsResource string) error {
 }
 
 // Format and store the public keys in .ssh file.
-func storePublicKeys(repoUrl string, sshServerPublicKeys []string, urlPath string) error {
+func storePublicKeys(repoURL, urlPath string, sshServerPublicKeys []string) error {
 	// Parse host and port from URL param
-	u, err := url.Parse(repoUrl)
+	u, err := url.Parse(repoURL)
 	if err != nil {
 		return fmt.Errorf("error parsing host and port from URL: %v\n", err)
 	}
 	host := u.Host
 
 	// store host in urlPath
-	if err := StoreURL(repoUrl, urlPath); err != nil {
+	if err := StoreURL(repoURL, urlPath); err != nil {
 		return fmt.Errorf("error storing url in path: %v", err)
 	}
 
 	// Add the ssh public keys to .ssh file
-	file, err := os.OpenFile(".ssh/known_hosts", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.OpenFile(".ssh/known_hosts", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 	if err != nil {
 		return fmt.Errorf("error opening known_hosts file: %v\n", err)
 	}
@@ -110,7 +110,7 @@ func storePublicKeys(repoUrl string, sshServerPublicKeys []string, urlPath strin
 
 // Authenticate using Developer Connect.
 func AuthenticateWithDeveloperConnect(gitRepositoryLink string, rf DCRepoClient, urlPath string) error {
-	domain, err := getRemoteGitRepoUrl(rf, gitRepositoryLink, urlPath)
+	domain, err := getRemoteGitRepoURL(rf, gitRepositoryLink, urlPath)
 	if err != nil {
 		return err
 	}
@@ -123,7 +123,7 @@ func AuthenticateWithDeveloperConnect(gitRepositoryLink string, rf DCRepoClient,
 }
 
 // Call the Developer Connect API service to get repository details and store in .gitconfig file.
-func getRemoteGitRepoUrl(rf DCRepoClient, gitRepositoryLink string, urlPath string) (string, error) {
+func getRemoteGitRepoURL(rf DCRepoClient, gitRepositoryLink, urlPath string) (string, error) {
 	// Get details of remote repo and extract url
 	remoteUri, err := rf.Get(gitRepositoryLink)
 	if err != nil {
@@ -142,7 +142,7 @@ func getRemoteGitRepoUrl(rf DCRepoClient, gitRepositoryLink string, urlPath stri
 	}
 
 	// Store the domain in the .gitconfig file
-	configFile, err := os.OpenFile(".gitconfig", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	configFile, err := os.OpenFile(".gitconfig", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 	if err != nil {
 		return "", fmt.Errorf("error opening .gitconfig file: %v\n", err)
 	}
@@ -157,7 +157,7 @@ func getRemoteGitRepoUrl(rf DCRepoClient, gitRepositoryLink string, urlPath stri
 }
 
 // Call the Developer Connect API service to get the read-write access token and store in .git-credentials file.
-func getReadWriteAccessToken(rf DCRepoClient, gitRepositoryLink string, domain string) error {
+func getReadWriteAccessToken(rf DCRepoClient, gitRepositoryLink, domain string) error {
 	// Get the read-write access token for the repository
 	repoToken, err := rf.AccessReadWriteToken(gitRepositoryLink)
 	if err != nil {
@@ -165,7 +165,7 @@ func getReadWriteAccessToken(rf DCRepoClient, gitRepositoryLink string, domain s
 	}
 
 	// Store formatted token in .git-credentials file
-	credFile, err := os.OpenFile(".git-credentials", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	credFile, err := os.OpenFile(".git-credentials", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 	if err != nil {
 		return fmt.Errorf("error opening .git-credentials file: %v\n", err)
 	}
@@ -179,7 +179,7 @@ func getReadWriteAccessToken(rf DCRepoClient, gitRepositoryLink string, domain s
 	return nil
 }
 
-func StoreURL(data string, urlPath string) error {
+func StoreURL(data, urlPath string) error {
 	if urlPath == "" { // if urlPath is empty, then do not need to write URL
 		return nil
 	}

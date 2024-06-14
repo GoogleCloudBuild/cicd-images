@@ -20,7 +20,8 @@ import (
 	"net/http"
 
 	"cloud.google.com/go/compute/metadata"
-	helper "github.com/GoogleCloudBuild/cicd-images/cmd/maven-steps/internal"
+	setupHelper "github.com/GoogleCloudBuild/cicd-images/cmd/maven-steps/internal"
+	"github.com/GoogleCloudBuild/cicd-images/internal/helper"
 	"github.com/spf13/cobra"
 )
 
@@ -42,14 +43,14 @@ var setupCmd = &cobra.Command{
 
 		cmd.SilenceUsage = true
 
-		c := metadata.NewClient(&http.Client{})
+		client := metadata.NewClient(&http.Client{})
 
-		token, err := helper.GetAuthenticationToken(c, ctx)
+		token, err := helper.GetAuthenticationToken(ctx, client)
 		if err != nil {
 			return fmt.Errorf("error getting authentication token: %w", err)
 		}
 
-		if err = helper.WriteSettingsXML(token, localRepository, repositoryIds, settingsPath); err != nil {
+		if err = setupHelper.WriteSettingsXML(token, localRepository, settingsPath, repositoryIds); err != nil {
 			return err
 		}
 
@@ -63,5 +64,4 @@ func init() {
 	setupCmd.Flags().StringSliceVar(&repositoryIds, "repositoryIds", []string{}, "Repository IDs for which to setup authentication to Artifact Registry.")
 	setupCmd.Flags().StringVar(&settingsPath, "settingsPath", "", "Path to store generated settings.xml file.")
 	setupCmd.MarkFlagRequired("settingsPath")
-
 }

@@ -14,18 +14,11 @@
 package internal
 
 import (
-	"context"
 	"os"
 	"path"
 
 	"github.com/GoogleCloudBuild/cicd-images/cmd/nodejs-steps/pkg/npmrc"
-	"github.com/GoogleCloudPlatform/artifact-registry-go-tools/pkg/auth"
 )
-
-// GetToken receives a context and returns the Token from Artifact Registry.
-func GetToken(ctx context.Context) (string, error) {
-	return auth.Token(ctx)
-}
 
 // AuthenticateNpmrcFile receives a token to write into the user's .npmrc file
 func AuthenticateNpmrcFile(token string) error {

@@ -14,8 +14,7 @@
 package pack
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
+	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -25,8 +24,10 @@ import (
 	"regexp"
 	"strings"
 
+	"cloud.google.com/go/compute/metadata"
 	"github.com/GoogleCloudBuild/cicd-images/cmd/python-steps/internal/auth"
 	"github.com/GoogleCloudBuild/cicd-images/cmd/python-steps/internal/command"
+	"github.com/GoogleCloudBuild/cicd-images/internal/helper"
 	"github.com/GoogleCloudBuild/cicd-images/internal/logger"
 	"github.com/package-url/packageurl-go"
 	"github.com/spf13/pflag"
@@ -36,10 +37,8 @@ const (
 	PYTHON_DIST_DIR = "dist"
 )
 
-var (
-	// Matches the following filename format: <name>-<version>.<extension>
-	filenameRegex = regexp.MustCompile(`^(?P<name>[a-zA-Z0-9_\-]+)-(?P<version>[0-9a-zA-Z._\-+]+)\.(tar\.gz|whl)$`)
-)
+// Matches the following filename format: <name>-<version>.<extension>.
+var filenameRegex = regexp.MustCompile(`^(?P<name>[a-zA-Z0-9_\-]+)-(?P<version>[0-9a-zA-Z._\-+]+)\.(tar\.gz|whl)$`)
 
 type ProvenanceOutput struct {
 	URI    string `json:"uri"`
@@ -49,7 +48,7 @@ type ProvenanceOutput struct {
 // Arguments represents the arguments passed to the pack command.
 type Arguments struct {
 	Command                       []string
-	ArtifactRegistryUrl           string
+	ArtifactRegistryURL           string
 	SourceDistributionResultsPath string
 	WheelDistributionResultsPath  string
 	Verbose                       bool
@@ -61,13 +60,13 @@ func ParseArgs(f *pflag.FlagSet) (Arguments, error) {
 	if err != nil {
 		return Arguments{}, fmt.Errorf("failed to get command: %w", err)
 	}
-	artifactRegistryUrl, err := f.GetString("artifactRegistryUrl")
+	artifactRegistryURL, err := f.GetString("artifactRegistryURL")
 	if err != nil {
-		return Arguments{}, fmt.Errorf("failed to get artifactRegistryUrl: %w", err)
+		return Arguments{}, fmt.Errorf("failed to get artifactRegistryURL: %w", err)
 	}
-	artifactRegistryUrl, err = auth.EnsureHTTPSByDefault(artifactRegistryUrl)
+	artifactRegistryURL, err = auth.EnsureHTTPSByDefault(artifactRegistryURL)
 	if err != nil {
-		return Arguments{}, fmt.Errorf("failed to ensure artifactRegistryUrl is https: %w", err)
+		return Arguments{}, fmt.Errorf("failed to ensure artifactRegistryURL is https: %w", err)
 	}
 	sourceDistributionResultsPath, err := f.GetString("sourceDistributionResultsPath")
 	if err != nil {
@@ -84,7 +83,7 @@ func ParseArgs(f *pflag.FlagSet) (Arguments, error) {
 
 	return Arguments{
 		Command:                       strings.Fields(command),
-		ArtifactRegistryUrl:           artifactRegistryUrl,
+		ArtifactRegistryURL:           artifactRegistryURL,
 		SourceDistributionResultsPath: sourceDistributionResultsPath,
 		WheelDistributionResultsPath:  wheelDistributionResultsPath,
 		Verbose:                       verbose,
@@ -92,7 +91,7 @@ func ParseArgs(f *pflag.FlagSet) (Arguments, error) {
 }
 
 // Execute is the entrypoint for the package command execution.
-func Execute(runner command.CommandRunner, args Arguments, client auth.HTTPClient) error {
+func Execute(ctx context.Context, runner command.CommandRunner, args Arguments, client *metadata.Client) error {
 	logger.SetupLogger(args.Verbose)
 	slog.Info("Executing pack command", "args", args)
 
@@ -108,7 +107,12 @@ func Execute(runner command.CommandRunner, args Arguments, client auth.HTTPClien
 		return fmt.Errorf("failed to package python artifact: %w", err)
 	}
 
-	if err := pushPythonArtifact(runner, args, client); err != nil {
+	gcpToken, err := helper.GetAuthenticationToken(ctx, client)
+	if err != nil {
+		return err
+	}
+
+	if err := pushPythonArtifact(runner, args, gcpToken); err != nil {
 		return fmt.Errorf("failed to push python artifact: %w", err)
 	}
 
@@ -144,20 +148,15 @@ func packagePythonArtifact(runner command.CommandRunner, args Arguments) error {
 	return nil
 }
 
-func pushPythonArtifact(runner command.CommandRunner, args Arguments, client auth.HTTPClient) error {
+func pushPythonArtifact(runner command.CommandRunner, args Arguments, gcpToken string) error {
 	slog.Info("Pushing python artifact to artifact registry")
-	if args.ArtifactRegistryUrl == "" {
-		return fmt.Errorf("artifactRegistryUrl is required")
-	}
-
-	gcpToken, err := auth.GetGCPToken(client)
-	if err != nil {
-		return err
+	if args.ArtifactRegistryURL == "" {
+		return fmt.Errorf("artifactRegistryURL is required")
 	}
 
 	commands := []string{
 		"-m", "twine", "upload",
-		"--repository-url", args.ArtifactRegistryUrl,
+		"--repository-url", args.ArtifactRegistryURL,
 		"--username", "oauth2accesstoken",
 		"--password", gcpToken,
 		"dist/*",
@@ -186,11 +185,11 @@ func generateResults(distDir string, args Arguments) error {
 			continue
 		}
 
-		uri, err := generateUri(args.ArtifactRegistryUrl, file.Name())
+		uri, err := generateURI(args.ArtifactRegistryURL, file.Name())
 		if err != nil {
 			return fmt.Errorf("error generating URI for %s: %w", file.Name(), err)
 		}
-		digest, err := computeDigest(filepath.Join(distDir, file.Name()))
+		digest, err := helper.ComputeDigest(filepath.Join(distDir, file.Name()))
 		if err != nil {
 			return fmt.Errorf("error computing digest for %s: %w", file.Name(), err)
 		}
@@ -229,8 +228,8 @@ func generateResults(distDir string, args Arguments) error {
 	return nil
 }
 
-func generateUri(artifactRegistryUrl string, fileName string) (string, error) {
-	// Matches the following filename format: <name>-<version>.<extension>
+func generateURI(artifactRegistryURL, fileName string) (string, error) {
+	// Matches the following filename format: <name>-<version>.<extension>.
 	matches := filenameRegex.FindStringSubmatch(fileName)
 	if matches == nil || len(matches) < 4 {
 		return "", fmt.Errorf("invalid filename format: %s", fileName)
@@ -238,25 +237,11 @@ func generateUri(artifactRegistryUrl string, fileName string) (string, error) {
 	packageName := matches[1]
 	packageVersion := matches[2]
 
-	parsedUrl, err := url.Parse(artifactRegistryUrl)
+	parsedURL, err := url.Parse(artifactRegistryURL)
 	if err != nil {
-		return "", fmt.Errorf("error parsing ArtifactRegistryUrl: %w", err)
+		return "", fmt.Errorf("error parsing artifactRegistryURL: %w", err)
 	}
 
-	purl := packageurl.NewPackageURL(parsedUrl.Host, parsedUrl.Path, packageName, packageVersion, packageurl.Qualifiers{}, "")
+	purl := packageurl.NewPackageURL(parsedURL.Host, parsedURL.Path, packageName, packageVersion, packageurl.Qualifiers{}, "")
 	return purl.ToString(), nil
-}
-
-func computeDigest(filePath string) (string, error) {
-	data, err := os.ReadFile(filePath)
-	if err != nil {
-		return "", fmt.Errorf("error reading %s: %w", filePath, err)
-	}
-	if len(data) == 0 {
-		return "", fmt.Errorf("empty file: %s", filePath)
-	}
-
-	hash := sha256.Sum256(data)
-
-	return hex.EncodeToString(hash[:]), nil
 }

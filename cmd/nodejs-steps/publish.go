@@ -16,6 +16,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -23,6 +24,7 @@ import (
 	"strings"
 
 	"github.com/GoogleCloudBuild/cicd-images/cmd/nodejs-steps/internal"
+	"github.com/GoogleCloudBuild/cicd-images/internal/helper"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -46,9 +48,10 @@ var publishCmd = &cobra.Command{
 		}
 
 		cmd.SilenceUsage = true
+		ctx := context.Background()
 
 		// fetch Artifact Registry Token.
-		token, err := internal.GetToken(cmd.Context())
+		token, err := helper.GetAccessToken(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to fetch Artifact Registry token: %w", err)
 		}
