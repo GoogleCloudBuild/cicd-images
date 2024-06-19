@@ -27,15 +27,23 @@ RUN go install github.com/google/go-licenses
 WORKDIR /src
 RUN go mod download && \
     go test ./cmd/app-engine/... -timeout 30s && \
-    go build ./cmd/app-engine
+    go test ./cmd/google-cloud-auth/... -timeout 30s && \
+    go build ./cmd/app-engine && \
+    go build ./cmd/google-cloud-auth
 
 # Scan and save licenses.
 RUN go-licenses check ./cmd/app-engine && \
     go-licenses save ./cmd/app-engine --save_path=/THIRD_PARTY_NOTICES/app-engine && \
     go-licenses report ./cmd/app-engine > /THIRD_PARTY_NOTICES/app-engine/licenses.csv
+RUN go-licenses check ./cmd/google-cloud-auth && \
+    go-licenses save ./cmd/google-cloud-auth --save_path=/THIRD_PARTY_NOTICES/google-cloud-auth && \
+    go-licenses report ./cmd/google-cloud-auth > /THIRD_PARTY_NOTICES/google-cloud-auth/licenses.csv
 
 # hadolint ignore=DL3006
 FROM base
 
 COPY --from=builder /src/app-engine /usr/local/bin/app-engine
 COPY --from=builder /THIRD_PARTY_NOTICES/app-engine /THIRD_PARTY_NOTICES/app-engine
+
+COPY --from=builder /src/google-cloud-auth /usr/local/bin/google-cloud-auth
+COPY --from=builder /THIRD_PARTY_NOTICES/google-cloud-auth /THIRD_PARTY_NOTICES/google-cloud-auth
