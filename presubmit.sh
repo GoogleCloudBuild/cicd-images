@@ -16,6 +16,9 @@
 # TODO(kmonty): Move this to the Makefile so it's easier to know how to run locally too.
 set -eu
 
+# Run pre-commit hooks
+make pre-commit
+
 # Test image builds if the source was modified
 changed_image_dirs=$(git show --name-only --pretty="" HEAD | xargs dirname | grep -E "^images/[^/]+$" | uniq)
 

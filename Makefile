@@ -26,7 +26,7 @@ test-unit: ## runs unit tests
 
 .PHONY: pre-commit
 pre-commit: ## run pre-commit hooks script manually
-	@pre-commit run --all-files
+	@pre-commit run --verbose --all-files --hook-stage pre-push
 
 .PHONY: check-licenses
 check-licenses: ## run licensing check and create licensings if needed
