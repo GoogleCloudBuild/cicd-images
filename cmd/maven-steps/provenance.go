@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -28,7 +29,7 @@ import (
 
 var (
 	repositoryUrl   string
-	artifactName    string
+	artifactPath    string
 	artifactId      string
 	groupId         string
 	version         string
@@ -49,7 +50,10 @@ var generateProvenanceCmd = &cobra.Command{
 		ctx, cf := context.WithTimeout(cmd.Context(), 30*time.Second)
 		defer cf()
 
-		uri := fmt.Sprintf("%s/%s/%s/%s/%s", repositoryUrl, groupId, artifactId, version, artifactName)
+		artifactGroupID := strings.ReplaceAll(groupId, ".", "/")
+		artifactName := filepath.Base(artifactPath)
+
+		uri := fmt.Sprintf("%s/%s/%s/%s/%s", repositoryUrl, artifactGroupID, artifactId, version, artifactName)
 
 		digest, err := provenanceHelper.GetCheckSum(ctx, uri)
 		if err != nil {
@@ -79,7 +83,7 @@ func init() {
 	rootCmd.AddCommand(generateProvenanceCmd)
 
 	generateProvenanceCmd.Flags().StringVar(&repositoryUrl, "repositoryUrl", "", "URL of the Artifact Registry repository.")
-	generateProvenanceCmd.Flags().StringVar(&artifactName, "artifactName", "", "The name of the artifact.")
+	generateProvenanceCmd.Flags().StringVar(&artifactPath, "artifactPath", "", "The path to the packaged file.")
 	generateProvenanceCmd.Flags().StringVar(&artifactId, "artifactId", "", "The name of the package file created from the build step.")
 	generateProvenanceCmd.Flags().StringVar(&groupId, "groupId", "", "ID to uniquely identify the project across all Maven projects.")
 	generateProvenanceCmd.Flags().StringVar(&version, "version", "", "The version for the application.")

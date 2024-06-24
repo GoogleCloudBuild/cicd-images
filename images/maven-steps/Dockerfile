@@ -29,3 +29,15 @@ FROM base
 
 COPY --from=builder /src/maven-steps /usr/local/bin/maven-steps
 COPY --from=src --chmod=755 ./THIRD_PARTY_NOTICES.tar.gz /home
+
+USER root
+
+# Install Maven
+RUN apt-get update && \
+    apt-get -y upgrade && \
+    clean-install maven
+
+# Change to the USER specified by the base image to be used at runtime.
+USER $USER:$USER
+
+CMD [ "java" ]

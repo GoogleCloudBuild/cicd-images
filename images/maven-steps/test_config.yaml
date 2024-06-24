@@ -20,3 +20,11 @@ commandTests:
     command: "maven-steps"
     args: ["--help"]
     exitCode: 0
+  - name: "which mvn"
+    command: "which"
+    args: ["mvn"]
+    expectedOutput: ["/usr/bin/mvn"]
+  - name: "which java"
+    command: "which"
+    args: ["java"]
+    expectedOutput: ["/usr/bin/java"]

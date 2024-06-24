@@ -23,7 +23,6 @@ group "default" {
       "go",
       "nodejs",
       "python",
-      "openjdk",
       "maven-steps",
       "builder"
     ]
@@ -248,18 +247,6 @@ target "nodejs" {
   tags = [
     "${REGISTRY}/nodejs:${TAG}",
     "${REGISTRY}/nodejs:latest"
-  ]
-}
-
-target "openjdk" {
-  dockerfile = "Dockerfile.base"
-  context = "openjdk"
-  contexts = {
-    base = "target:base"
-  }
-  tags = [
-    "${REGISTRY}/openjdk:${TAG}",
-    "${REGISTRY}/openjdk:latest"
   ]
 }
 
