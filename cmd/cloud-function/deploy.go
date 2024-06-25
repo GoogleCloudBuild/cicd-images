@@ -40,7 +40,6 @@ func NewDeployCmd() *cobra.Command {
 	deployCmd.Flags().StringVar(&opts.Source, "source", "", "Location of source code to deploy. Can be one Google Cloud Storage, Google Source Repository or a Local filesystem path")
 
 	_ = deployCmd.MarkFlagRequired("name")
-	_ = deployCmd.MarkFlagRequired("entry-point")
 	_ = deployCmd.MarkFlagRequired("runtime")
 	_ = deployCmd.MarkFlagRequired("source")
 
