@@ -17,9 +17,8 @@ package main
 import (
 	"context"
 	"fmt"
-	"net/http"
+	"time"
 
-	"cloud.google.com/go/compute/metadata"
 	setupHelper "github.com/GoogleCloudBuild/cicd-images/cmd/maven-steps/internal"
 	"github.com/GoogleCloudBuild/cicd-images/internal/helper"
 	"github.com/spf13/cobra"
@@ -39,13 +38,12 @@ var setupCmd = &cobra.Command{
 	Short: "Authenticate and setup settings file.",
 	Long:  "Retrieve authentication token from GKE metadata server, and configure settings.xml",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		ctx := context.Background()
+		ctx, cf := context.WithTimeout(cmd.Context(), 30*time.Second)
+		defer cf()
 
 		cmd.SilenceUsage = true
 
-		client := metadata.NewClient(&http.Client{})
-
-		token, err := helper.GetAuthenticationToken(ctx, client)
+		token, err := helper.GetAccessToken(ctx)
 		if err != nil {
 			return fmt.Errorf("error getting authentication token: %w", err)
 		}

@@ -16,10 +16,9 @@ package main
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"os"
+	"time"
 
-	"cloud.google.com/go/compute/metadata"
 	"github.com/GoogleCloudBuild/cicd-images/cmd/python-steps/install"
 	"github.com/GoogleCloudBuild/cicd-images/cmd/python-steps/internal/command"
 	"github.com/GoogleCloudBuild/cicd-images/cmd/python-steps/pack"
@@ -42,9 +41,9 @@ artifacts from a GCP Artifact Registry.`,
 				return err
 			}
 			runner := &command.DefaultCommandRunner{}
-			client := metadata.NewClient(&http.Client{})
-			ctx := context.Background()
-			if err := install.Execute(ctx, runner, runArgs, client); err != nil {
+			ctx, cf := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cf()
+			if err := install.Execute(ctx, runner, runArgs); err != nil {
 				return err
 			}
 			return nil
@@ -67,9 +66,9 @@ a Python project to a GCP Artifact Registry repository.`,
 				return err
 			}
 			runner := &command.DefaultCommandRunner{}
-			client := metadata.NewClient(&http.Client{})
-			ctx := context.Background()
-			if err := pack.Execute(ctx, runner, packageArgs, client); err != nil {
+			ctx, cf := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cf()
+			if err := pack.Execute(ctx, runner, packageArgs); err != nil {
 				return err
 			}
 			return nil

@@ -19,7 +19,6 @@ import (
 	"log/slog"
 	"strings"
 
-	"cloud.google.com/go/compute/metadata"
 	"github.com/GoogleCloudBuild/cicd-images/cmd/python-steps/internal/auth"
 	"github.com/GoogleCloudBuild/cicd-images/cmd/python-steps/internal/command"
 	"github.com/GoogleCloudBuild/cicd-images/internal/helper"
@@ -49,7 +48,7 @@ func ParseArgs(f *pflag.FlagSet) (Arguments, error) {
 	if err != nil {
 		return Arguments{}, fmt.Errorf("failed to get requirementsPath: %w", err)
 	}
-	artifactRegistryURL, err := f.GetString("artifactRegistryURL")
+	artifactRegistryURL, err := f.GetString("artifactRegistryUrl")
 	if err != nil {
 		return Arguments{}, fmt.Errorf("failed to get artifactRegistryURL: %w", err)
 	}
@@ -71,7 +70,7 @@ func ParseArgs(f *pflag.FlagSet) (Arguments, error) {
 }
 
 // Execute is the entrypoint for the run command execution.
-func Execute(ctx context.Context, runner command.CommandRunner, args Arguments, client *metadata.Client) error {
+func Execute(ctx context.Context, runner command.CommandRunner, args Arguments) error {
 	logger.SetupLogger(args.Verbose)
 	slog.Info("Executing run command", "args", args)
 
@@ -79,7 +78,7 @@ func Execute(ctx context.Context, runner command.CommandRunner, args Arguments, 
 		return fmt.Errorf("failed to create virtual environment: %w", err)
 	}
 
-	token, err := helper.GetAuthenticationToken(ctx, client)
+	token, err := helper.GetAccessToken(ctx)
 	if err != nil {
 		return fmt.Errorf("error getting authentication token: %w", err)
 	}

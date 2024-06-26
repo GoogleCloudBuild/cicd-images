@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/GoogleCloudBuild/cicd-images/cmd/nodejs-steps/internal"
 	"github.com/GoogleCloudBuild/cicd-images/internal/helper"
@@ -34,7 +35,8 @@ var nodeCmd = &cobra.Command{
 It fetches an access token from application default credentials
 or gcloud CLI and writes it into the users npmrc file`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		ctx := context.Background()
+		ctx, cf := context.WithTimeout(cmd.Context(), 30*time.Second)
+		defer cf()
 		// fetch Artifact Registry Token.
 		token, err := helper.GetAccessToken(ctx)
 		if err != nil {

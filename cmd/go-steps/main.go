@@ -23,7 +23,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GoogleCloudPlatform/artifact-registry-go-tools/pkg/auth"
+	helper "github.com/GoogleCloudBuild/cicd-images/internal/helper"
 	"github.com/GoogleCloudPlatform/artifact-registry-go-tools/pkg/netrc"
 	"github.com/pkg/errors"
 )
@@ -79,8 +79,7 @@ func extractLocation(str string) (string, error) {
 }
 
 func refreshToken() error {
-	ctx := context.Background()
-	ctx, cf := context.WithTimeout(ctx, 30*time.Second)
+	ctx, cf := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cf()
 
 	p, config, err := netrc.Load()
@@ -88,7 +87,7 @@ func refreshToken() error {
 		return err
 	}
 
-	token, err := auth.Token(ctx)
+	token, err := helper.GetAccessToken(ctx)
 	if err != nil {
 		return err
 	}

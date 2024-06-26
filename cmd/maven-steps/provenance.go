@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	provenanceHelper "github.com/GoogleCloudBuild/cicd-images/cmd/maven-steps/internal"
 	"github.com/spf13/cobra"
@@ -45,7 +46,8 @@ var generateProvenanceCmd = &cobra.Command{
 	Use:   "generate-provenance",
 	Short: "Get the maven artifact results.",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		ctx := context.Background()
+		ctx, cf := context.WithTimeout(cmd.Context(), 30*time.Second)
+		defer cf()
 
 		uri := fmt.Sprintf("%s/%s/%s/%s/%s", repositoryUrl, groupId, artifactId, version, artifactName)
 

@@ -23,6 +23,7 @@ import (
 	"os/exec"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/GoogleCloudBuild/cicd-images/cmd/nodejs-steps/internal"
 	"github.com/GoogleCloudBuild/cicd-images/internal/helper"
@@ -54,7 +55,8 @@ var publishCmd = &cobra.Command{
 		slog.Info("Executing publish command")
 
 		cmd.SilenceUsage = true
-		ctx := context.Background()
+		ctx, cf := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cf()
 
 		// fetch Artifact Registry Token.
 		token, err := helper.GetAccessToken(ctx)

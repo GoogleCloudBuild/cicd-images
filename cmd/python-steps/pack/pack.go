@@ -24,7 +24,6 @@ import (
 	"regexp"
 	"strings"
 
-	"cloud.google.com/go/compute/metadata"
 	"github.com/GoogleCloudBuild/cicd-images/cmd/python-steps/internal/auth"
 	"github.com/GoogleCloudBuild/cicd-images/cmd/python-steps/internal/command"
 	"github.com/GoogleCloudBuild/cicd-images/internal/helper"
@@ -60,7 +59,7 @@ func ParseArgs(f *pflag.FlagSet) (Arguments, error) {
 	if err != nil {
 		return Arguments{}, fmt.Errorf("failed to get command: %w", err)
 	}
-	artifactRegistryURL, err := f.GetString("artifactRegistryURL")
+	artifactRegistryURL, err := f.GetString("artifactRegistryUrl")
 	if err != nil {
 		return Arguments{}, fmt.Errorf("failed to get artifactRegistryURL: %w", err)
 	}
@@ -91,7 +90,7 @@ func ParseArgs(f *pflag.FlagSet) (Arguments, error) {
 }
 
 // Execute is the entrypoint for the package command execution.
-func Execute(ctx context.Context, runner command.CommandRunner, args Arguments, client *metadata.Client) error {
+func Execute(ctx context.Context, runner command.CommandRunner, args Arguments) error {
 	logger.SetupLogger(args.Verbose)
 	slog.Info("Executing pack command", "args", args)
 
@@ -107,7 +106,7 @@ func Execute(ctx context.Context, runner command.CommandRunner, args Arguments, 
 		return fmt.Errorf("failed to package python artifact: %w", err)
 	}
 
-	gcpToken, err := helper.GetAuthenticationToken(ctx, client)
+	gcpToken, err := helper.GetAccessToken(ctx)
 	if err != nil {
 		return err
 	}

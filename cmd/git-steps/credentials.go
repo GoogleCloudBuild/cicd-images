@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"time"
 
 	secretmanager "cloud.google.com/go/secretmanager/apiv1"
 	"cloud.google.com/go/secretmanager/apiv1/secretmanagerpb"
@@ -49,7 +50,9 @@ var generateCredentialsCmd = &cobra.Command{
 	- Developer Connect: provided url of developer connect git repository, fetch access token, and store the credentials in the corresponding .git files
 	`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		ctx := context.Background()
+		ctx, cf := context.WithTimeout(cmd.Context(), 30*time.Second)
+		defer cf()
+
 		logger.SetupLogger(verbose)
 		slog.Info("Executing generate-credentials command")
 

@@ -14,36 +14,10 @@
 package helper
 
 import (
-	"context"
 	"os"
 	"strings"
 	"testing"
 )
-
-type mockMetaDataClient struct{}
-
-var _ metadataClient = (*mockMetaDataClient)(nil)
-
-func (r *mockMetaDataClient) GetWithContext(_ context.Context, _ string) (string, error) {
-	return `{"access_token": "fetched_access_token", "expires_in": 3600, "token_type": "Bearer"}`, nil
-}
-
-func TestGetAuthenticationToken(t *testing.T) {
-	mockClient := &mockMetaDataClient{}
-	ctx := context.Background()
-	result := "fetched_access_token"
-
-	t.Run("get authentication token", func(t *testing.T) {
-		token, err := GetAuthenticationToken(ctx, mockClient)
-		if err != nil {
-			t.Fatalf("Expected no errors, but got %v", err)
-		}
-
-		if token != result {
-			t.Errorf("Fetched token does not match expected token. Expected: \n%v\n Got: \n%v\n", result, token)
-		}
-	})
-}
 
 func TestComputeDigest(t *testing.T) {
 	testCases := []struct {

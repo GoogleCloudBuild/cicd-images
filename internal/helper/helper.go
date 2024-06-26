@@ -17,47 +17,11 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/GoogleCloudPlatform/artifact-registry-go-tools/pkg/auth"
 )
-
-const tokenPathSuffix = "instance/service-accounts/default/token"
-
-type response struct {
-	AccessToken string `json:"access_token"`
-	ExpiresIn   int    `json:"expires_in"`
-	TokenType   string `json:"token_type"`
-}
-
-type metadataClient interface {
-	GetWithContext(ctx context.Context, suffix string) (string, error)
-}
-
-// Get GCP authentication token from the metadata server.
-// Parameter 'client' is of type *metadata.Client.
-// Refer to https://pkg.go.dev/cloud.google.com/go/compute/metadata.
-func GetAuthenticationToken(ctx context.Context, client metadataClient) (string, error) {
-	accessTokenJSON, err := client.GetWithContext(ctx, tokenPathSuffix)
-	if err != nil {
-		return "", fmt.Errorf("requesting token: %w", err)
-	}
-
-	var jsonRes response
-	err = json.NewDecoder(strings.NewReader(accessTokenJSON)).Decode(&jsonRes)
-	if err != nil {
-		return "", fmt.Errorf("retrieving auth token: %w", err)
-	}
-
-	if jsonRes.AccessToken == "" {
-		return "", fmt.Errorf("no access token in the response from metadata server")
-	}
-
-	return string(jsonRes.AccessToken), nil
-}
 
 // Get oauth2 access token from Application Default Credentials (ADC) for Google Cloud Service.
 func GetAccessToken(ctx context.Context) (string, error) {

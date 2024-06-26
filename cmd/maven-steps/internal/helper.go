@@ -21,7 +21,6 @@ import (
 	"net/http"
 	"os"
 
-	"cloud.google.com/go/compute/metadata"
 	"github.com/GoogleCloudBuild/cicd-images/cmd/maven-steps/internal/xmlmodules"
 	"github.com/GoogleCloudBuild/cicd-images/internal/helper"
 )
@@ -75,8 +74,7 @@ func WriteSettingsXML(token, localRepository, settingsPath string, repositoryIDs
 
 // Get SHA1 checksum of remote artifact in Artifact Registry
 func GetCheckSum(ctx context.Context, artifactRegistryURL string) (string, error) {
-	client := metadata.NewClient(&http.Client{})
-	token, err := helper.GetAuthenticationToken(ctx, client)
+	token, err := helper.GetAccessToken(ctx)
 	if err != nil {
 		return "", fmt.Errorf("error getting auth token: %w", err)
 	}
