@@ -27,31 +27,28 @@ import (
 // NewVersion creates a new `appenginepb.Version` struct to be used
 // as an argument for CreateVersion.
 func NewVersion(appYAML *appYAML.AppYAML, opts config.AppEngineDeployOptions) (*appenginepb.Version, error) {
-	runtime := appYAML.Runtime
-	if runtime == "" {
-		return nil, fmt.Errorf("runtime is required in app.yaml")
+	if appYAML.Runtime == "" {
+		return nil, fmt.Errorf("runtime is required")
 	}
-	env := appYAML.Env
-	if env != "flex" && env != "flexible" {
-		return nil, fmt.Errorf("expected flexible environment, got %s", env)
+	if appYAML.Env != "flex" && appYAML.Env != "flexible" {
+		return nil, fmt.Errorf("expected flexible environment, got %s", appYAML.Env)
 	}
 
 	version := &appenginepb.Version{
-		Env: env,
+		Env: appYAML.Env,
 		Id:  opts.VersionID,
 		Deployment: &appenginepb.Deployment{
 			Container: &appenginepb.ContainerInfo{
 				Image: opts.ImageURL,
 			},
 		},
-		Runtime: runtime,
+		Runtime: appYAML.Runtime,
 	}
 	return version, nil
 }
 
 // ID returns a timestamp string suitable for use as an App Engine version ID.
-// The format is YYYYMMDDtHHMMSS.
+// The format is YYYYMMDDtHHMMSS, consistent with the default of "gcloud app deploy".
 func ID() string {
-	now := time.Now()
-	return now.UTC().Format("20060102t150405")
+	return time.Now().UTC().Format("20060102t150405")
 }

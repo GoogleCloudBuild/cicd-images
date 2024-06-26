@@ -71,8 +71,7 @@ func CreateVersion(ctx context.Context, client *appengine.VersionsClient, servic
 		return nil, fmt.Errorf("failed to create version: %w", err)
 	}
 
-	resp, err := op.Wait(ctx)
-	return resp, err
+	return op.Wait(ctx)
 }
 
 // CreateAndDeployVersion parses given runtime configuration and deploys
@@ -99,11 +98,11 @@ func CreateAndDeployVersion(ctx context.Context, versionClient *appengine.Versio
 func parseYAMLFromPath(opts config.AppEngineDeployOptions) (*appYAML.AppYAML, error) {
 	appYAMLBytes, err := os.ReadFile(opts.AppYAMLPath)
 	if err != nil {
-		return nil, fmt.Errorf("error reading app.yaml: %w", err)
+		return nil, err
 	}
 	appYAML, err := appYAML.ParseAppYAML(appYAMLBytes)
 	if err != nil {
-		return nil, fmt.Errorf("error parsing app.yaml: %w", err)
+		return nil, err
 	}
 	return appYAML, nil
 }

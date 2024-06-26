@@ -51,7 +51,7 @@ func TestNewVersion(t *testing.T) {
 				ImageURL:  "us-docker.pkg.dev/cloudrun/container/hello",
 				VersionID: "test-version",
 			},
-			expectedErr: "runtime is required in app.yaml",
+			expectedErr: "runtime is required",
 		},
 		{
 			name: "InvalidEnv",

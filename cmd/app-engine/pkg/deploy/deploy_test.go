@@ -79,11 +79,7 @@ func (s *MockAppengineServer) Start() (string, func(), error) {
 		}
 	}()
 
-	cleanup := func() {
-		grpcServer.GracefulStop()
-	}
-
-	return lis.Addr().String(), cleanup, nil
+	return lis.Addr().String(), grpcServer.GracefulStop, nil
 }
 
 func (s *MockAppengineServer) CreateVersion(ctx context.Context, req *appenginepb.CreateVersionRequest) (*longrunningpb.Operation, error) {
@@ -390,7 +386,7 @@ env: flex`
 				Promote:     true,
 				VersionID:   "test-version-id",
 			},
-			expectedErr: "error reading app.yaml: open : no such file or directory",
+			expectedErr: "open : no such file or directory",
 		},
 		{
 			name: "ErrorCreateVersion",

@@ -16,11 +16,7 @@
 // for Google App Engine flexible environment deployments.
 package appyaml
 
-import (
-	"fmt"
-
-	"github.com/goccy/go-yaml"
-)
+import "github.com/goccy/go-yaml"
 
 // AppYAML represents the structure of an app.yaml file.
 // See https://cloud.google.com/appengine/docs/flexible/reference/app-yaml
@@ -36,7 +32,7 @@ func ParseAppYAML(data []byte) (*AppYAML, error) {
 	appYAML := &AppYAML{}
 	err := yaml.Unmarshal(data, appYAML)
 	if err != nil {
-		return nil, fmt.Errorf("error parsing app.yaml: %w", err)
+		return nil, err
 	}
 	return appYAML, nil
 }
