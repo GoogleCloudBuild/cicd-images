@@ -20,7 +20,7 @@ set -eu
 make pre-commit
 
 # Test image builds if the source was modified
-changed_image_dirs=$(git show --name-only --pretty="" HEAD | xargs dirname | grep -E "^images/[^/]+$" | uniq)
+changed_image_dirs=$(git show --name-only --pretty="" HEAD | xargs dirname | grep -E "^images/" | sed 's#\(images/[^/]*/\).*#\1#' | uniq)
 
 for dir in $changed_image_dirs; do
   if [ -d "${dir}" ] ; then
