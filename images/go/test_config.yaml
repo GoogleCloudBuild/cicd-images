@@ -16,14 +16,14 @@
 schemaVersion: "2.0.0"
 
 commandTests:
-  - name: go1.20 installed
+  - name: go1.22 installed
     envVars:
       - key: GOOGLE_GO_VERSION
-        value: "1.20"
+        value: "1.22"
     command: "entrypoint.sh"
     args: ["go", "version"]
     expectedOutput:
-      - "go version go1.20"
+      - "go version go1.22"
 
   - name: go1.21 (default) installed
     command: "go"
