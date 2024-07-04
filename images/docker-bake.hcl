@@ -22,7 +22,7 @@ group "default" {
       "cloud-run",
       "go",
       "nodejs",
-      "python",
+      "python-steps",
       "maven-steps",
       "builder"
     ]
@@ -263,25 +263,16 @@ target "maven-steps" {
   ]
 }
 
-target "python-base" {
-  dockerfile = "Dockerfile.base"
-  context = "python"
+target "python-steps" {
+  dockerfile = "Dockerfile"
+  context = "python-steps"
   contexts = {
     base = "target:base"
-  }
-  output = ["type=cacheonly"]
-}
-
-target "python" {
-  dockerfile = "Dockerfile"
-  context = "python"
-  contexts = {
-    base = "target:python-base"
     src = "../"
   }
   tags = [
-    "${REGISTRY}/python:${TAG}",
-    "${REGISTRY}/python:latest"
+    "${REGISTRY}/python-steps:${TAG}",
+    "${REGISTRY}/python-steps:latest"
   ]
 }
 

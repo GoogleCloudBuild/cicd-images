@@ -11,42 +11,44 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package pack
+package publish
 
 import (
+	"fmt"
+	"reflect"
 	"strings"
 	"testing"
-
-	"github.com/GoogleCloudBuild/cicd-images/cmd/python-steps/internal/command"
 )
 
-func TestInstallDependenciesForPackage(t *testing.T) {
-	runner := &command.MockCommandRunner{
-		ExpectedCommands: []string{command.VirtualEnvPip, "install", "build", "wheel", "twine"},
-	}
-	if err := installDependenciesForPackage(runner); err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
+// MockCommandRunner is a mock implementation of CommandRunner.
+type mockCommandRunner struct {
+	CalledCommands   []string
+	ExpectedCommands []string
+	Err              error
 }
 
-func TestPackagePythonArtifact(t *testing.T) {
-	runner := &command.MockCommandRunner{
-		ExpectedCommands: []string{command.VirtualEnvPython3, "setup.py", "sdist", "bdist_wheel"},
+func (m *mockCommandRunner) Run(cmd string, args ...string) error {
+	m.CalledCommands = append(m.CalledCommands, cmd)
+	m.CalledCommands = append(m.CalledCommands, args...)
+
+	if m.Err != nil {
+		return m.Err
 	}
-	args := Arguments{
-		Command: []string{"setup.py", "sdist", "bdist_wheel"},
+
+	if !reflect.DeepEqual(m.CalledCommands, m.ExpectedCommands) {
+		return fmt.Errorf("unexpected commands: got %v, expected %v", m.CalledCommands, m.ExpectedCommands)
 	}
-	if err := packagePythonArtifact(runner, args); err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
+
+	return nil
 }
 
 func TestPushPythonArtifact(t *testing.T) {
-	runner := &command.MockCommandRunner{
-		ExpectedCommands: []string{command.VirtualEnvPython3, "-m", "twine", "upload", "--repository-url", "foo-url", "--username", "oauth2accesstoken", "--password", "foo-token", "dist/*"},
+	runner := &mockCommandRunner{
+		ExpectedCommands: []string{"python3", "-m", "twine", "upload", "--repository-url", "foo-url", "--username", "oauth2accesstoken", "--password", "foo-token", "dist/*"},
 	}
 	args := Arguments{
 		ArtifactRegistryURL: "foo-url",
+		ArtifactDir:         "dist",
 	}
 	gcpToken := "foo-token"
 

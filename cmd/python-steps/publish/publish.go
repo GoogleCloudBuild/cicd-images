@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package pack
+package publish
 
 import (
 	"context"
@@ -24,48 +24,44 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/GoogleCloudBuild/cicd-images/cmd/python-steps/internal/auth"
-	"github.com/GoogleCloudBuild/cicd-images/cmd/python-steps/internal/command"
 	"github.com/GoogleCloudBuild/cicd-images/internal/helper"
 	"github.com/GoogleCloudBuild/cicd-images/internal/logger"
 	"github.com/package-url/packageurl-go"
 	"github.com/spf13/pflag"
 )
 
-const (
-	PYTHON_DIST_DIR = "dist"
-)
-
 // Matches the following filename format: <name>-<version>.<extension>.
 var filenameRegex = regexp.MustCompile(`^(?P<name>[a-zA-Z0-9_\-]+)-(?P<version>[0-9a-zA-Z._\-+]+)\.(tar\.gz|whl)$`)
 
 type ProvenanceOutput struct {
-	URI    string `json:"uri"`
-	Digest string `json:"digest"`
+	URI             string `json:"uri"`
+	Digest          string `json:"digest"`
+	IsBuildArtifact string `json:"isBuildArtifact"`
 }
 
-// Arguments represents the arguments passed to the pack command.
+// Arguments represents the arguments passed to the publish command.
 type Arguments struct {
-	Command                       []string
 	ArtifactRegistryURL           string
+	ArtifactDir                   string
 	SourceDistributionResultsPath string
 	WheelDistributionResultsPath  string
+	IsBuildArtifact               string
 	Verbose                       bool
 }
 
-// ParseArgs parses the arguments passed to the pack command.
+// ParseArgs parses the arguments passed to the publish command.
 func ParseArgs(f *pflag.FlagSet) (Arguments, error) {
-	command, err := f.GetString("command")
-	if err != nil {
-		return Arguments{}, fmt.Errorf("failed to get command: %w", err)
-	}
 	artifactRegistryURL, err := f.GetString("artifactRegistryUrl")
 	if err != nil {
 		return Arguments{}, fmt.Errorf("failed to get artifactRegistryURL: %w", err)
 	}
-	artifactRegistryURL, err = auth.EnsureHTTPSByDefault(artifactRegistryURL)
+	artifactRegistryURL, err = ensureHTTPSByDefault(artifactRegistryURL)
 	if err != nil {
 		return Arguments{}, fmt.Errorf("failed to ensure artifactRegistryURL is https: %w", err)
+	}
+	artifactDir, err := f.GetString("artifactDir")
+	if err != nil {
+		return Arguments{}, fmt.Errorf("failed to get artifacPath: %w", err)
 	}
 	sourceDistributionResultsPath, err := f.GetString("sourceDistributionResultsPath")
 	if err != nil {
@@ -75,79 +71,48 @@ func ParseArgs(f *pflag.FlagSet) (Arguments, error) {
 	if err != nil {
 		return Arguments{}, fmt.Errorf("failed to get wheelDistributionResultsPath: %w", err)
 	}
+	isBuildArtifact, err := f.GetString("isBuildArtifact")
+	if err != nil {
+		return Arguments{}, fmt.Errorf("failed to get isBuildArtifact: %w", err)
+	}
 	verbose, err := f.GetBool("verbose")
 	if err != nil {
 		return Arguments{}, fmt.Errorf("failed to get verbose: %w", err)
 	}
 
 	return Arguments{
-		Command:                       strings.Fields(command),
 		ArtifactRegistryURL:           artifactRegistryURL,
+		ArtifactDir:                   artifactDir,
 		SourceDistributionResultsPath: sourceDistributionResultsPath,
 		WheelDistributionResultsPath:  wheelDistributionResultsPath,
+		IsBuildArtifact:               isBuildArtifact,
 		Verbose:                       verbose,
 	}, nil
 }
 
-// Execute is the entrypoint for the package command execution.
-func Execute(ctx context.Context, runner command.CommandRunner, args Arguments) error {
+// Execute is the entrypoint for the publish command execution.
+func Execute(ctx context.Context, runner helper.CommandRunner, args Arguments) error {
 	logger.SetupLogger(args.Verbose)
-	slog.Info("Executing pack command", "args", args)
-
-	if err := command.CreateVirtualEnv(runner); err != nil {
-		return fmt.Errorf("failed to create virtual environment: %w", err)
-	}
-
-	if err := installDependenciesForPackage(runner); err != nil {
-		return fmt.Errorf("failed to install dependencies for package command: %w", err)
-	}
-
-	if err := packagePythonArtifact(runner, args); err != nil {
-		return fmt.Errorf("failed to package python artifact: %w", err)
-	}
 
 	gcpToken, err := helper.GetAccessToken(ctx)
 	if err != nil {
 		return err
 	}
 
+	slog.Info("Publishing python artifact")
 	if err := pushPythonArtifact(runner, args, gcpToken); err != nil {
 		return fmt.Errorf("failed to push python artifact: %w", err)
 	}
 
-	if err := generateResults(PYTHON_DIST_DIR, args); err != nil {
+	if err := generateResults(args.ArtifactDir, args); err != nil {
 		return fmt.Errorf("failed to generate provenance: %w", err)
 	}
 
-	slog.Info("Successfully executed pack command")
+	slog.Info("Successfully published artifact")
 	return nil
 }
 
-func installDependenciesForPackage(runner command.CommandRunner) error {
-	slog.Info("Installing dependencies for package command")
-	commands := []string{
-		"install", "build", "wheel", "twine",
-	}
-	if err := runner.Run(command.VirtualEnvPip, commands...); err != nil {
-		return err
-	}
-	slog.Info("Successfully installed dependencies for package command")
-	return nil
-}
-
-func packagePythonArtifact(runner command.CommandRunner, args Arguments) error {
-	slog.Info("Packaging python artifact")
-	if len(args.Command) == 0 {
-		return fmt.Errorf("command is required")
-	}
-	if err := runner.Run(command.VirtualEnvPython3, args.Command...); err != nil {
-		return fmt.Errorf("failed to package python artifacts: %w", err)
-	}
-	slog.Info("Successfully packaged python artifact")
-	return nil
-}
-
-func pushPythonArtifact(runner command.CommandRunner, args Arguments, gcpToken string) error {
+func pushPythonArtifact(runner helper.CommandRunner, args Arguments, gcpToken string) error {
 	slog.Info("Pushing python artifact to artifact registry")
 	if args.ArtifactRegistryURL == "" {
 		return fmt.Errorf("artifactRegistryURL is required")
@@ -158,9 +123,9 @@ func pushPythonArtifact(runner command.CommandRunner, args Arguments, gcpToken s
 		"--repository-url", args.ArtifactRegistryURL,
 		"--username", "oauth2accesstoken",
 		"--password", gcpToken,
-		"dist/*",
+		args.ArtifactDir + "/*",
 	}
-	if err := runner.Run(command.VirtualEnvPython3, commands...); err != nil {
+	if err := runner.Run("python3", commands...); err != nil {
 		return fmt.Errorf("failed to push python artifacts: %w", err)
 	}
 
@@ -194,8 +159,9 @@ func generateResults(distDir string, args Arguments) error {
 		}
 
 		outputData := ProvenanceOutput{
-			URI:    uri,
-			Digest: digest,
+			URI:             strings.TrimSpace(uri),
+			Digest:          strings.TrimSpace(digest),
+			IsBuildArtifact: strings.TrimSpace(args.IsBuildArtifact),
 		}
 		output, err := json.Marshal(outputData)
 		if err != nil {
@@ -243,4 +209,27 @@ func generateURI(artifactRegistryURL, fileName string) (string, error) {
 
 	purl := packageurl.NewPackageURL(parsedURL.Host, parsedURL.Path, packageName, packageVersion, packageurl.Qualifiers{}, "")
 	return purl.ToString(), nil
+}
+
+// ensureHTTPSByDefault ensures that the given registry URL has a https scheme.
+func ensureHTTPSByDefault(registryURL string) (string, error) {
+	if registryURL == "" {
+		return "", nil
+	}
+
+	parsedURL, err := url.Parse(registryURL)
+	if err != nil {
+		return "", fmt.Errorf("invalid URL: %w", err)
+	}
+
+	// If the scheme is missing, default to HTTPS
+	if parsedURL.Scheme == "" {
+		_, err := url.ParseRequestURI("https://" + registryURL)
+		if err != nil {
+			return "", fmt.Errorf("invalid URL after adding https scheme: %w", err)
+		}
+		parsedURL.Scheme = "https"
+	}
+
+	return parsedURL.String(), nil
 }

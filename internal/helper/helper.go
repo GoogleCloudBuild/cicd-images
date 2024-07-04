@@ -18,10 +18,29 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"log/slog"
 	"os"
+	"os/exec"
 
 	"github.com/GoogleCloudPlatform/artifact-registry-go-tools/pkg/auth"
 )
+
+// CommandRunner is an interface for running commands.
+type CommandRunner interface {
+	Run(cmd string, args ...string) error
+}
+
+// DefaultCommandRunner is the default implementation of CommandRunner.
+type DefaultCommandRunner struct{}
+
+// Run runs the given command with the given arguments.
+func (r *DefaultCommandRunner) Run(cmd string, args ...string) error {
+	slog.Debug("Running command", "cmd", cmd, "args", args)
+	command := exec.Command(cmd, args...)
+	command.Stdout = os.Stdout
+	command.Stderr = os.Stderr
+	return command.Run()
+}
 
 // Get oauth2 access token from Application Default Credentials (ADC) for Google Cloud Service.
 func GetAccessToken(ctx context.Context) (string, error) {
@@ -40,5 +59,5 @@ func ComputeDigest(filePath string) (string, error) {
 
 	hash := sha256.Sum256(data)
 
-	return hex.EncodeToString(hash[:]), nil
+	return "sha256:" + hex.EncodeToString(hash[:]), nil
 }

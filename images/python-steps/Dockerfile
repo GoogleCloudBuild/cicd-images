@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-# 
+#
 # Copyright 2023 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,3 +29,15 @@ FROM base
 
 COPY --from=builder /src/python-steps /usr/local/bin/python-steps
 COPY --from=src --chmod=755 ./THIRD_PARTY_NOTICES.tar.gz /home
+
+USER root
+
+# Install packages
+RUN apt-get update && \
+    apt-get -y upgrade && \
+    clean-install python3 twine
+
+# Change to the USER specified by the base image to be used at runtime.
+USER $USER:$USER
+
+CMD [ "python-steps" ]
