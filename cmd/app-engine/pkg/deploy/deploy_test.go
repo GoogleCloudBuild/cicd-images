@@ -26,7 +26,9 @@ import (
 	appengine "cloud.google.com/go/appengine/apiv1"
 	"cloud.google.com/go/appengine/apiv1/appenginepb"
 	"cloud.google.com/go/longrunning/autogen/longrunningpb"
+	"cloud.google.com/go/storage"
 	"github.com/GoogleCloudBuild/cicd-images/cmd/app-engine/pkg/config"
+	"github.com/fsouza/fake-gcs-server/fakestorage"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
@@ -164,6 +166,13 @@ func setupMockServerConnection(t *testing.T, mockServer *MockAppengineServer) *g
 	})
 
 	return conn
+}
+
+func setupFakeStorage(t *testing.T, objects []fakestorage.Object) *storage.Client {
+	t.Helper()
+	server := fakestorage.NewServer(objects)
+	t.Cleanup(server.Stop)
+	return server.Client()
 }
 
 func TestDeployService(t *testing.T) {
@@ -446,10 +455,12 @@ env: flex`
 			servicesClient, err := appengine.NewServicesClient(context.Background(), option.WithGRPCConn(conn))
 			assert.NoError(t, err, "failed to create ServicesClient")
 
+			storageClient := setupFakeStorage(t, []fakestorage.Object{})
+
 			// Capture log output
 			log.SetOutput(os.Stdout)
 
-			err = CreateAndDeployVersion(context.Background(), versionClient, servicesClient, tc.opts)
+			err = CreateAndDeployVersion(context.Background(), versionClient, servicesClient, storageClient, tc.opts)
 
 			if tc.expectedErr != "" {
 				assert.ErrorContains(t, err, tc.expectedErr)

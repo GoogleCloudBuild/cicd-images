@@ -17,6 +17,7 @@ package version
 import (
 	"testing"
 
+	"cloud.google.com/go/appengine/apiv1/appenginepb"
 	"github.com/stretchr/testify/assert"
 
 	appYAML "github.com/GoogleCloudBuild/cicd-images/cmd/app-engine/pkg/appyaml"
@@ -29,18 +30,56 @@ func TestNewVersion(t *testing.T) {
 		appYAML     *appYAML.AppYAML
 		opts        config.AppEngineDeployOptions
 		expectedErr string
+		want        *appenginepb.Version
 	}{
 		{
-			name: "Success",
+			name: "SuccessWithImage",
 			appYAML: &appYAML.AppYAML{
 				Runtime: "go122",
 				Env:     "flex",
 			},
 			opts: config.AppEngineDeployOptions{
-				ImageURL:  "us-docker.pkg.dev/cloudrun/container/hello",
+				ImageURL:  "us-docker.pkg.dev/appengine/container/hello",
 				VersionID: "test-version",
 			},
 			expectedErr: "",
+			want: &appenginepb.Version{
+				Env:     "flex",
+				Id:      "test-version",
+				Runtime: "go122",
+				Deployment: &appenginepb.Deployment{
+					Container: &appenginepb.ContainerInfo{
+						Image: "us-docker.pkg.dev/appengine/container/hello",
+					},
+				},
+			},
+		},
+		{
+			name: "SuccessWithSource",
+			appYAML: &appYAML.AppYAML{
+				Runtime: "go122",
+				Env:     "flex",
+				Service: "testservice",
+			},
+			opts: config.AppEngineDeployOptions{
+				SourceURL:   "gs://test-bucket/test-source.zip",
+				VersionID:   "test-version",
+				AppYAMLPath: "app.yaml",
+			},
+			expectedErr: "",
+			want: &appenginepb.Version{
+				Env:     "flex",
+				Id:      "test-version",
+				Runtime: "go122",
+				Deployment: &appenginepb.Deployment{
+					Zip: &appenginepb.ZipInfo{
+						SourceUrl: "gs://test-bucket/test-source.zip",
+					},
+					CloudBuildOptions: &appenginepb.CloudBuildOptions{
+						AppYamlPath: "app.yaml",
+					},
+				},
+			},
 		},
 		{
 			name: "MissingRuntime",
@@ -48,7 +87,7 @@ func TestNewVersion(t *testing.T) {
 				Env: "flex",
 			},
 			opts: config.AppEngineDeployOptions{
-				ImageURL:  "us-docker.pkg.dev/cloudrun/container/hello",
+				ImageURL:  "us-docker.pkg.dev/appengine/container/hello",
 				VersionID: "test-version",
 			},
 			expectedErr: "runtime is required",
@@ -60,7 +99,7 @@ func TestNewVersion(t *testing.T) {
 				Env:     "standard", // Invalid env
 			},
 			opts: config.AppEngineDeployOptions{
-				ImageURL:  "us-docker.pkg.dev/cloudrun/container/hello",
+				ImageURL:  "us-docker.pkg.dev/appengine/container/hello",
 				VersionID: "test-version",
 			},
 			expectedErr: "expected flexible environment, got standard",
@@ -76,10 +115,7 @@ func TestNewVersion(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.NotNil(t, version)
-				assert.Equal(t, "flex", version.Env)
-				assert.Equal(t, tc.opts.VersionID, version.Id)
-				assert.Equal(t, tc.opts.ImageURL, version.Deployment.Container.Image)
-				assert.Equal(t, tc.appYAML.Runtime, version.Runtime)
+				assert.Equal(t, tc.want, version)
 			}
 		})
 	}

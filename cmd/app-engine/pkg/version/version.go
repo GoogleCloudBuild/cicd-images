@@ -33,16 +33,29 @@ func NewVersion(appYAML *appYAML.AppYAML, opts config.AppEngineDeployOptions) (*
 	if appYAML.Env != "flex" && appYAML.Env != "flexible" {
 		return nil, fmt.Errorf("expected flexible environment, got %s", appYAML.Env)
 	}
-
-	version := &appenginepb.Version{
-		Env: appYAML.Env,
-		Id:  opts.VersionID,
-		Deployment: &appenginepb.Deployment{
+	var deployment *appenginepb.Deployment
+	// If an image is specified, deploy image, otherwise upload source
+	if opts.ImageURL == "" {
+		deployment = &appenginepb.Deployment{
+			Zip: &appenginepb.ZipInfo{
+				SourceUrl: opts.SourceURL,
+			},
+			CloudBuildOptions: &appenginepb.CloudBuildOptions{
+				AppYamlPath: opts.AppYAMLPath,
+			},
+		}
+	} else {
+		deployment = &appenginepb.Deployment{
 			Container: &appenginepb.ContainerInfo{
 				Image: opts.ImageURL,
 			},
-		},
-		Runtime: appYAML.Runtime,
+		}
+	}
+	version := &appenginepb.Version{
+		Env:        appYAML.Env,
+		Id:         opts.VersionID,
+		Deployment: deployment,
+		Runtime:    appYAML.Runtime,
 	}
 	return version, nil
 }

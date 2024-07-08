@@ -16,7 +16,9 @@ package config
 
 type AppEngineDeployOptions struct {
 	AppYAMLPath string
+	Bucket      string
 	ImageURL    string
+	SourceURL   string
 	ProjectID   string
 	Promote     bool
 	VersionID   string

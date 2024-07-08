@@ -23,8 +23,10 @@ import (
 
 	appengine "cloud.google.com/go/appengine/apiv1"
 	"cloud.google.com/go/appengine/apiv1/appenginepb"
+	"cloud.google.com/go/storage"
 	appYAML "github.com/GoogleCloudBuild/cicd-images/cmd/app-engine/pkg/appyaml"
 	"github.com/GoogleCloudBuild/cicd-images/cmd/app-engine/pkg/config"
+	"github.com/GoogleCloudBuild/cicd-images/cmd/app-engine/pkg/upload"
 	"github.com/GoogleCloudBuild/cicd-images/cmd/app-engine/pkg/version"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 )
@@ -78,7 +80,7 @@ func CreateVersion(ctx context.Context, client *appengine.VersionsClient, servic
 // the given version to the specified App Engine service.
 // It returns an error if the deployment fails.
 // The function uses long-running operations to perform the deployment.
-func CreateAndDeployVersion(ctx context.Context, versionClient *appengine.VersionsClient, servicesClient *appengine.ServicesClient, opts config.AppEngineDeployOptions) error {
+func CreateAndDeployVersion(ctx context.Context, versionClient *appengine.VersionsClient, servicesClient *appengine.ServicesClient, storageClient *storage.Client, opts config.AppEngineDeployOptions) error {
 	appYAML, err := parseYAMLFromPath(opts)
 	if err != nil {
 		return err
@@ -86,6 +88,15 @@ func CreateAndDeployVersion(ctx context.Context, versionClient *appengine.Versio
 
 	serviceID := cmp.Or(appYAML.Service, DefaultServiceID)                       // e.g. "default"
 	serviceName := fmt.Sprintf("apps/%s/services/%s", opts.ProjectID, serviceID) // e.g. "apps/my-project/services/default"
+	if opts.ImageURL == "" {
+		objectName := fmt.Sprintf("%s-%s.zip", serviceID, opts.VersionID)
+		// Fall back to default bucket if not specified
+		opts.Bucket = cmp.Or(opts.Bucket, fmt.Sprintf("staging.%s.appspot.com", opts.ProjectID))
+		if err = upload.ToGCSZipped(ctx, storageClient, opts.Bucket, objectName, "."); err != nil {
+			return err
+		}
+		opts.SourceURL = fmt.Sprintf("https://storage.googleapis.com/%s/%s", opts.Bucket, objectName)
+	}
 
 	version, err := version.NewVersion(appYAML, opts)
 	if err != nil {

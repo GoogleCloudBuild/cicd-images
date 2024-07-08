@@ -24,6 +24,7 @@ import (
 	"github.com/GoogleCloudBuild/cicd-images/cmd/app-engine/pkg/version"
 
 	appengine "cloud.google.com/go/appengine/apiv1"
+	"cloud.google.com/go/storage"
 	"google.golang.org/api/option"
 )
 
@@ -37,11 +38,10 @@ func newDeployCommand() *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&opts.AppYAMLPath, "app-yaml", "a", "app.yaml", "Path to the app.yaml file")
-	cmd.Flags().StringVarP(&opts.ImageURL, "image", "i", "", "URL of the Artifact Registry container image to deploy")
+	cmd.Flags().StringVarP(&opts.ImageURL, "image", "i", "", "URL of the Artifact Registry container image to deploy (optional)")
 	cmd.Flags().BoolVar(&opts.Promote, "promote", true, "Promote the deployed version to receive 100% traffic")
 	cmd.Flags().StringVarP(&opts.VersionID, "version", "v", version.ID(), "Version ID (leave empty to auto-generate)")
-
-	_ = cmd.MarkFlagRequired("image")
+	cmd.Flags().StringVarP(&opts.Bucket, "bucket", "b", "", "Cloud Storage Bucket to upload source zip file (optional, ignored if deploying a container image)")
 
 	return cmd
 }
@@ -64,5 +64,15 @@ func runDeploy(cmd *cobra.Command, _ []string) error {
 		defer servicesClient.Close()
 	}
 
-	return deploy.CreateAndDeployVersion(ctx, versionClient, servicesClient, opts)
+	var storageClient *storage.Client
+	// If not deploying an image, then upload source
+	if opts.ImageURL == "" {
+		storageClient, err = storage.NewClient(ctx, option.WithUserAgent(userAgent))
+		if err != nil {
+			return fmt.Errorf("error creating storage client: %w", err)
+		}
+		defer storageClient.Close()
+	}
+
+	return deploy.CreateAndDeployVersion(ctx, versionClient, servicesClient, storageClient, opts)
 }
