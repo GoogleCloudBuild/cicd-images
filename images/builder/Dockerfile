@@ -15,37 +15,41 @@
 # limitations under the License.
 #
 
-FROM golang:1.21 as go-build
-
-COPY --from=src --chmod=755 / /src
-COPY ./ /opt/go-binaries
-
-RUN bash /src/images/installer-scripts/install-go-binaries.sh -m /opt/go-binaries/tools
-
-# Builder image
 #hadolint ignore=DL3006
-FROM base
+FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:stable-alpha
 
 USER root
 ENV USER=root \
     ENV=/etc/environment \
-    HOME=/root
+    HOME=/root \
+    DEBIAN_FRONTEND=noninteractive
 
-COPY --chmod=755 --from=go-build /go/bin/* /usr/local/bin/
-COPY --chmod=644 --from=go-build /THIRD_PARTY_NOTICES /THIRD_PARTY_NOTICES
+#hadolint ignore=DL3008
+RUN <<EOF
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        yq gnupg curl ca-certificates \
+        software-properties-common
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+EOF
 
-COPY --from=src  --chmod=755 /images/installer-scripts /opt/installer-scripts
-
-RUN bash /opt/installer-scripts/common-apt.sh
-
-# Install build tools
+# Convenience script for building on this base image.
+COPY clean-install /usr/local/bin/clean-install
+COPY installer-scripts/ /opt/installer-scripts/
 
 #hadolint ignore=DL3059
-RUN bash /opt/installer-scripts/docker.sh
-#hadolint ignore=DL3059
-RUN bash /opt/installer-scripts/git.sh -git-lfs
-#hadolint ignore=DL3059
-RUN bash /opt/installer-scripts/setup-nodejs.sh
+SHELL ["/bin/bash", "-c"]
+RUN <<EOF
+    /opt/installer-scripts/common-apt.sh
+    /opt/installer-scripts/docker.sh
+    /opt/installer-scripts/setup-nodejs.sh
+EOF
+
+# TODO: Install additional language runtimes when needed
+# RUN bash /opt/installer-scripts/setup-go.sh
+# RUN bash /opt/installer-scripts/setup-openjdk.sh
+# RUN bash /opt/installer-scripts/setup-python.sh
 
 VOLUME /workspace
 WORKDIR /workspace

@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Copyright 2023 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -11,25 +13,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-schemaVersion: 2.0.0
-commandTests:
-  - name: "NodeJS is installed"
-    command: "node"
-    args:
-      - --version
-    expectedOutput: [".*v18.*"]
-    exitCode: 0
-fileExistenceTests:
-  - name: "Docker APT source exists"
-    path: "/etc/apt/sources.list.d/docker.list"
-  - name: "Inventory of supported packages"
-    path: "/opt/installer-scripts/packages.yaml"
-metadataTest:
-  envVars:
-    - key: USER
-      value: root
-    - key: DEBIAN_FRONTEND
-      value: noninteractive
-  workdir: "/workspace"
-  user: root
-  cmd: ["/bin/bash"]
+
+set -o errexit \
+    -o nounset \
+    -o xtrace \
+    -o pipefail
+
+ . "$(dirname "$(readlink $0 -f)")"/env.sh
+
+# Only check var declaration after defaults are set
+set -o nounset
+
+apt_pkgs=$(yq -r '."common-packages"[]' $PACKAGES)
+
+clean-install $apt_pkgs

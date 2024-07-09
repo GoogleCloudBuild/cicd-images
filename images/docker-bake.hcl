@@ -271,11 +271,10 @@ target "builder" {
   dockerfile = "Dockerfile"
   context = "builder"
   contexts = {
-    base = "target:base"
     src = "../"
   }
   tags = [
-    "${REGISTRY}/builder:${TAG}",
+    "${REGISTRY}/builder:debian12",
     "${REGISTRY}/builder:latest"
   ]
 }

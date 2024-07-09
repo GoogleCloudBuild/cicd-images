@@ -64,8 +64,9 @@ update_env(){
 
 is_version_supported(){
   local version=$1
-  local key=$2
-  SUPPORTED=$(yq ".${key}.supported-versions" <$PACKAGES)
+  local section=$2
+  local key=$3
+  SUPPORTED=$(yq --arg section "${section}" --arg key "${key}" '.[$section][$key]."supported-versions"' $PACKAGES)
   is_supported=$(echo "$SUPPORTED" | grep -c "$version" || true)
   if [[ "$is_supported" -ne "1" ]]; then
     # Version is not found in 'supported-versions'

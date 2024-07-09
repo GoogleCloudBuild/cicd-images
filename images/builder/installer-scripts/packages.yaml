@@ -15,6 +15,8 @@
 common-packages:
   - bash
   - openssh-client
+  - git
+  - git-lfs
   - gawk
   - curl
   - jq
@@ -34,7 +36,7 @@ common-packages:
   - file
   - findutils
   - iproute2
-  - netcat
+  - netcat-traditional
   - shellcheck
   - sudo
   - parallel
@@ -48,7 +50,6 @@ common-packages:
   - bzip2
   - iputils-ping
   - locales
-  - p7zip-rar
   - texinfo
   - tzdata
   - xz-utils
@@ -68,22 +69,10 @@ common-packages:
 build-tools:
   docker:
     version: 25
-    sources:
-      - ./images/docker/dind
-  containerd:
-    version: 1
   docker-buildx:
     version: 0
   docker-compose:
     version: 2
-  git:
-    version: 2
-  git-lfs:
-    version: 3
-  gcloud-slim:
-    version: latest
-  gh:
-    version: latest
   maven:
     default-version: 3.9.6
     supported-versions:
@@ -106,59 +95,6 @@ build-tools:
         digest: 544c35d6bd849ae8a5ed0bcea39ba677dc40f49df7d1835561582da2009b961d
       - version: 8.6
         digest: 9631d53cf3e74bfa726893aee1f8994fee4e060c401335946dba2156f440f24c
-  pipx:
-    version:
-    - latest
-  golangci-lint:
-    version:
-    - latest
-
-catalog-steps:
-  cloud-deploy:
-    source: ./cmd/cloud-deploy
-  git-steps:
-    source: ./cmd/git-steps
-  go-steps:
-    source: ./cmd/go-steps
-  nodejs-steps:
-    source: ./cmd/nodejs-steps
-  maven-steps:
-    source: ./cmd/maven-steps
-  python-steps:
-    source: ./cmd/python-steps
-
-go-tools:
-  syft:
-    source: github.com/anchore/syft/cmd/syft
-    version: latest
-  gke-deploy:
-    source: github.com/GoogleCloudPlatform/cloud-builders/gke-deploy
-    version: latest
-  docker-credential-gcr:
-    source: github.com/GoogleCloudPlatform/docker-credential-gcr/v2
-    version: latest
-  gcs-fetcher:
-    source: github.com/GoogleCloudPlatform/cloud-builders/gcs-fetcher/cmd/gcs-fetcher
-    version: latest
-  gcs-uploader:
-    source: github.com/GoogleCloudPlatform/cloud-builders/gcs-fetcher/cmd/gcs-uploader
-    version: latest
-
-
-go-tools-not-included-yet:
-  skaffold:
-    default-versions:
-    - latest
-  kustomize:
-    default-versions:
-    - latest
-  helm:
-    default-versions:
-    - latest
-  gcrane:
-    source:
-    default-versions:
-    - latest
 
 language-runtimes:
   openjdk:

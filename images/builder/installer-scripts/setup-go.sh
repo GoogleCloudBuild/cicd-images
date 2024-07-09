@@ -22,55 +22,63 @@ set -o errexit  \
 
  . "$(dirname "$(readlink $0 -f)")"/env.sh
 
+install_dependencies(){
+  GIT=$(which git)
+  if [[ -z "$GIT" ]] || [[ ! -x "$GIT" ]]; then
+    bash git.sh
+  fi
+}
+
 # Set Default versions
-PYTHON_KEY='language-runtimes.python'
-PYTHON_VERSION=$(yq ".${PYTHON_KEY}.default-version" <$PACKAGES)
+GO_KEY='go'
+GO_VERSION=$(yq --arg key "${GO_KEY}" '."language-runtimes"[$key]."default-version"' $PACKAGES)
 
 # Override versions based on args
-# Override versions based on args
-PYTHON_VERSION=${1:-$PYTHON_VERSION}
+GO_VERSION=${1:-$GO_VERSION}
 if [[ "$#" -gt 1 ]]; then
   err_exit "$0: Unexpected args $*"
 fi
 
-export PYTHON_VERSION
+export GO_VERSION
 
-# Install python
-MINOR_VERSION=$(echo $PYTHON_VERSION | cut -d. -f1-2)
+# Install Go
+MINOR_VERSION=$(echo $GO_VERSION | cut -d. -f1-2)
 
-INSTALL_DIR="/opt/python$MINOR_VERSION"
-BIN_DIR="${INSTALL_DIR}/bin"
-
+BIN_DIR="/opt/go-$MINOR_VERSION/bin"
 
 INSTALL="false"
 if [[ ! -d $BIN_DIR ]]; then
-    is_version_supported $PYTHON_VERSION $PYTHON_KEY \
-    || err_exit "Python version $PYTHON_VERSION is not supported!"
+    is_version_supported $GO_VERSION "language-runtimes" $GO_KEY \
+    || err_exit "Go version $GO_VERSION is not supported!"
     INSTALL="true"
 fi
 
-RUNTIME_URL="https://dl.google.com/runtimes/ubuntu2204"
+RUNTIME_URL="https://go.dev/dl/"
 
 CURL_CMD="curl -fsSL -A GCPBuildpacks"
+
 if [[ "$INSTALL" == "true" ]]; then
-  VERS_URL="${RUNTIME_URL}/python/version.json"
-  FULL_VERSION=$($CURL_CMD $VERS_URL | jq '.[]' | sed -e 's/"//g' | \
-                grep "^$MINOR_VERSION" | sort -V | tail -1 )
+  VERS_URL="${RUNTIME_URL}?mode=json&include=all"
+  FULL_VERSION=$($CURL_CMD $VERS_URL | jq -r '.[] | .version' | \
+                grep "^go${MINOR_VERSION}" | sort -V | tail -1 )
+
+  #Normalize FULL_VERSION
+  FULL_VERSION=$(echo $FULL_VERSION | tr '+' '_')
   #Install required version
-  CURL_CMD="curl -fsSL -A GCPBuildpacks"
-  DOWNLOAD_FILE="python-${FULL_VERSION}.tar.gz"
-  DOWNLOAD_URL="${RUNTIME_URL}/python/${DOWNLOAD_FILE}"
+  DOWNLOAD_FILE="${FULL_VERSION}.linux-amd64.tar.gz"
+  DOWNLOAD_URL="${RUNTIME_URL}/${DOWNLOAD_FILE}"
   $CURL_CMD -o /tmp/${DOWNLOAD_FILE} $DOWNLOAD_URL
-  mkdir -p "${INSTALL_DIR}"
+  mkdir -p "/opt/go-${MINOR_VERSION}"
   tar --strip-components=1 -zxf /tmp/${DOWNLOAD_FILE} \
-      -C "${INSTALL_DIR}"
+      -C "/opt/go-${MINOR_VERSION}"
   rm /tmp/${DOWNLOAD_FILE}
 fi
-
-copy_licenses "$INSTALL_DIR"
 
 #Create links to installed binaries
 ln -s ${BIN_DIR}/* -t /usr/local/bin
 
-update_env PYTHONHOME "$INSTALL_DIR"
-update_env PATH "${BIN_DIR}:${PATH}"
+copy_licenses "$( dirname ${BIN_DIR} )"
+
+mkdir -p "${HOME}/go/src" "${HOME}/go/bin"
+
+update_env PATH "${HOME}/go/bin:${BIN_DIR}:${PATH}"

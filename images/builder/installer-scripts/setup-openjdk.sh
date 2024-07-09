@@ -47,9 +47,9 @@ requested_versions() {
 }
 
 # Set Default versions
-OPENJDK_VERSION=$(yq '.language-runtimes.openjdk.default-version' <$PACKAGES)
-MAVEN_VERSION=$(yq '.build-tools.maven.default-version' <$PACKAGES)
-GRADLE_VERSION=$(yq '.build-tools.gradle.default-version' <$PACKAGES)
+OPENJDK_VERSION=$(yq '."language-runtimes".openjdk.default-version' $PACKAGES)
+MAVEN_VERSION=$(yq '."build-tools".maven.default-version' $PACKAGES)
+GRADLE_VERSION=$(yq '."build-tools".gradle.default-version' $PACKAGES)
 
 # Override versions based on args
 requested_versions "$@"
@@ -69,7 +69,7 @@ BIN_DIR="${INSTALL_DIR}/bin"
 
 INSTALL="false"
 if [[ ! -d $BIN_DIR ]]; then
-    is_version_supported $MAJOR_VERSION 'language-runtimes.openjdk' \
+    is_version_supported $MAJOR_VERSION 'language-runtimes' 'openjdk' \
     || err_exit "OpenJDK version $OPENJDK_VERSION is not supported!"
     INSTALL="true"
 fi
@@ -111,23 +111,22 @@ update_env JRE_HOME "${INSTALL_DIR}"
 INSTALL_DIR="/opt/maven-${MAVEN_VERSION}"
 BIN_DIR="${INSTALL_DIR}/bin"
 INSTALL="false"
-MAVE_KEY="build-tools.maven"
+MAVEN_KEY="maven"
 if [[ ! -d $BIN_DIR ]]; then
-    is_version_supported "$MAVEN_VERSION" "$MAVE_KEY" \
+    is_version_supported "$MAVEN_VERSION" "build-tools" "$MAVEN_KEY" \
     || err_exit "Maven version $MAVEN_VERSION is not supported!"
     INSTALL="true"
 fi
 
 if [[ "$INSTALL" == "true" ]]; then
-  MAVEN_SHA=$( yq ".${MAVE_KEY}.supported-versions.[] | \
-                select ( .version == \"$MAVEN_VERSION\") | .digest" <$PACKAGES )
+  MAVEN_SHA=$( yq --arg key "${MAVEN_KEY}" --arg version "${MAVEN_VERSION}" '."build-tools".[$key]."supported-versions"[] | \
+                select ( .version == $version ) | .digest' $PACKAGES )
   MAVEN_BASE_URL=https://downloads.apache.org/maven/maven-3/${MAVEN_VERSION}/binaries
   curl -fsSLO --output-dir /tmp --compressed ${MAVEN_BASE_URL}/apache-maven-${MAVEN_VERSION}-bin.tar.gz
   echo "${MAVEN_SHA} /tmp/apache-maven-${MAVEN_VERSION}-bin.tar.gz" | sha512sum -c -
   curl -fsSLO --output-dir /tmp --compressed ${MAVEN_BASE_URL}/apache-maven-${MAVEN_VERSION}-bin.tar.gz.asc
-  GPG_DIGEST=$( yq ".${MAVE_KEY}.supported-versions.[] | \
-                select ( .version == \"$MAVEN_VERSION\") | .gpg" <$PACKAGES )
-
+  GPG_DIGEST=$( yq --arg key "${MAVEN_KEY}" --arg version "${MAVEN_VERSION}" '."build-tools".[$key]."supported-versions"[] | \
+                select ( .version == $version ) | .gpg' $PACKAGES )
   gpg --batch --keyserver hkps://keyserver.ubuntu.com --recv-keys $GPG_DIGEST
   gpg --batch --verify  /tmp/apache-maven-${MAVEN_VERSION}-bin.tar.gz.asc \
                         /tmp/apache-maven-${MAVEN_VERSION}-bin.tar.gz
@@ -152,17 +151,17 @@ update_env PATH "${BIN_DIR}:${PATH}"
 INSTALL_DIR="/opt/gradle-${GRADLE_VERSION}"
 BIN_DIR="${INSTALL_DIR}/bin"
 INSTALL="false"
-GRADLE_KEY="build-tools.gradle"
+GRADLE_KEY="gradle"
 if [[ ! -d $BIN_DIR ]]; then
     INSTALL="true"
-    is_version_supported "$GRADLE_VERSION" "$GRADLE_KEY" \
+    is_version_supported "$GRADLE_VERSION" "build-tools" "$GRADLE_KEY" \
     || err_exit "Gradle version $GRADLE_VERSION is not supported!"
 fi
 
 if [[ "$INSTALL" == "true" ]]; then
 
-  GRADLE_SHA=$( yq ".${GRADLE_KEY}.supported-versions.[] | \
-                select ( .version == \"$GRADLE_VERSION\") | .digest" <$PACKAGES )
+  GRADLE_SHA=$( yq --arg key "${GRADLE_KEY}" --arg version "${GRADLE_VERSION}" '."build-tools".[$key]."supported-versions"[] | \
+                select ( .version == $version ) | .digest' $PACKAGES )
   GRADLE_BASE_URL=https://services.gradle.org/distributions
 
   curl -fsSLO --output-dir /tmp --compressed ${GRADLE_BASE_URL}/gradle-${GRADLE_VERSION}-bin.zip
