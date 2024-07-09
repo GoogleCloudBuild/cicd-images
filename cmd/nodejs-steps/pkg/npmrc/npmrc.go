@@ -17,7 +17,6 @@ package npmrc
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strings"
 )
@@ -32,7 +31,7 @@ func Load(npmrcPath string) (string, error) {
 		npmrcPath = h
 	}
 
-	data, err := ioutil.ReadFile(npmrcPath)
+	data, err := os.ReadFile(npmrcPath)
 	if err != nil {
 		return "", fmt.Errorf("cannot load .npmrc file: %w", err)
 	}

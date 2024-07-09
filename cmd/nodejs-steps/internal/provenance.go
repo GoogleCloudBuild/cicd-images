@@ -17,29 +17,46 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/GoogleCloudBuild/cicd-images/internal/helper"
 )
 
 type Provenance struct {
-	Uri    string
-	Digest string
+	URI             string `json:"uri"`
+	Digest          string `json:"digest"`
+	IsBuildArtifact string `json:"isBuildArtifact"`
 }
 
-func GenerateProvenance(provenancePath, packageFileName, uri string) error {
-	digest, err := helper.ComputeDigest(packageFileName)
+type PackageJSON struct {
+	Name    string `json:"name"`
+	Version string `json:"version"`
+}
+
+func GenerateProvenance(provenancePath, repository, isBuildArtifact string) error {
+	pkg, err := parsePackageJSON()
 	if err != nil {
-		return fmt.Errorf("error computing digest for %s: %w", packageFileName, err)
+		return err
 	}
-	fmt.Printf("digest: %s uri: %s", digest, uri)
+
+	fileName := strings.ReplaceAll(pkg.Name, "@", "")
+	fileName = strings.ReplaceAll(fileName, "/", "-")
+
+	tarballName := fmt.Sprintf("%s-%s.tgz", fileName, pkg.Version)
+	uri := fmt.Sprintf("%s/%s/%s/%s", repository, pkg.Name, pkg.Version, tarballName)
+
+	digest, err := helper.ComputeDigest(tarballName)
+	if err != nil {
+		return fmt.Errorf("error computing digest for %s: %w", tarballName, err)
+	}
 
 	provenance := &Provenance{
-		Uri:    uri,
-		Digest: digest,
+		URI:             strings.TrimSpace(uri),
+		Digest:          strings.TrimSpace(digest),
+		IsBuildArtifact: strings.TrimSpace(isBuildArtifact),
 	}
 
 	file, err := json.Marshal(provenance)
-	fmt.Printf("provenance: %s", string(file[:]))
 	if err != nil {
 		return fmt.Errorf("error marshaling json %v: %w", provenance, err)
 	}
@@ -51,4 +68,20 @@ func GenerateProvenance(provenancePath, packageFileName, uri string) error {
 	}
 
 	return nil
+}
+
+func parsePackageJSON() (PackageJSON, error) {
+	// Parse package.json file to extract name & version
+	data, err := os.ReadFile("./package.json")
+	if err != nil {
+		return PackageJSON{}, fmt.Errorf("error reading package.json file: %w", err)
+	}
+
+	var pkg PackageJSON
+	err = json.Unmarshal(data, &pkg)
+	if err != nil {
+		return PackageJSON{}, fmt.Errorf("error unmarshalling package.json file: %w", err)
+	}
+
+	return pkg, nil
 }

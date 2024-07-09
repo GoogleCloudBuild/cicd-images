@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-# 
+#
 # Copyright 2023 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,25 +14,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-FROM us-docker.pkg.dev/gae-runtimes/runtimes-ubuntu2204/nodejs:18.19.1 as node-18
-FROM us-docker.pkg.dev/gae-runtimes/runtimes-ubuntu2204/nodejs:20.11.1 as node-20
+
+FROM google-go.pkg.dev/golang:1.21.11 as builder
+
+WORKDIR /src
+COPY --from=src . .
+
+RUN go mod download && \
+    go test ./cmd/nodejs-steps/... -timeout 30s && \
+    go build ./cmd/nodejs-steps
 
 # hadolint ignore=DL3006
 FROM base
 
+COPY --from=builder /src/nodejs-steps /usr/local/bin/nodejs-steps
+COPY --from=src --chmod=755 ./THIRD_PARTY_NOTICES.tar.gz /home
+
 USER root
 
-COPY --chown=nonroot --from=node-18 / /opt/node18
-COPY --chown=nonroot --from=node-20 / /opt/node20
+# Install node
+RUN apt-get update && \
+    apt-get -y upgrade && \
+    clean-install nodejs npm
 
-COPY --chown=nonroot setup_nodejs.sh /usr/local/bin/
-COPY --chown=nonroot entrypoint.sh /usr/local/bin/
+# Change to the USER specified by the base image to be used at runtime.
+USER $USER:$USER
 
-ENV GOOGLE_NODEJS_VERSION="20"
-# Default to NodeJS 20, but setup_nodejs.sh can override the version.
-ENV PATH="/opt/node${GOOGLE_NODEJS_VERSION}/bin:$PATH"
-RUN corepack enable
-
-ENTRYPOINT [ "entrypoint.sh" ]
-CMD [ "node" ]
-USER nonroot
+CMD [ "nodejs-steps" ]

@@ -21,8 +21,6 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
-	"regexp"
-	"strings"
 	"time"
 
 	"github.com/GoogleCloudBuild/cicd-images/cmd/nodejs-steps/internal"
@@ -32,19 +30,11 @@ import (
 	"github.com/spf13/pflag"
 )
 
-const (
-	RESULTS_ARG = "results-path"
-	PACK_ARG    = "pack-args"
-	PUBLISH_ARG = "publish-args"
-	VERBOSE     = "verbose"
-)
-
 // publishCmd represents the publish command
 var publishCmd = &cobra.Command{
 	Use:   "publish",
 	Short: "publish a Node package",
-	Long: `package is for packaging and pushing
-	a Node project to a GCP Artifact Registry repository.`,
+	Long:  "publish is for pushing a Node project to a GCP Artifact Registry repository.",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		publishCmdArgs, err := parsePublishArgs(cmd.Flags())
 		if err != nil {
@@ -58,55 +48,17 @@ var publishCmd = &cobra.Command{
 		ctx, cf := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cf()
 
-		// fetch Artifact Registry Token.
-		token, err := helper.GetAccessToken(ctx)
-		if err != nil {
-			return fmt.Errorf("failed to fetch Artifact Registry token: %w", err)
-		}
-		slog.Info("Successfully fetched Artifact Registry token")
-
-		// check if npmrc exists to try to authenticate with AR
-		if _, err := os.Stat(".npmrc"); err == nil {
-			if err := internal.AuthenticateNpmrcFile(token); err != nil {
-				return fmt.Errorf("failed to install dependencies: %w", err)
-			}
-		} else {
-			fmt.Println("Warning: No .netrc file detected, skipping Artifact Registry Authentication.")
+		if err := authenticateAR(ctx); err != nil {
+			return err
 		}
 
-		// Pack the node module into a tar file.
-		packCommand := append([]string{"pack"}, publishCmdArgs.packArgs...)
-		c := exec.Command("npm", packCommand...)
-		var stdout, stderr bytes.Buffer
-		c.Stdout = &stdout
-		c.Stderr = &stderr
-		err = c.Run()
-		packageName := strings.TrimSpace(stdout.String())
-		if err != nil {
-			return fmt.Errorf("error executing 'npm %s': %s\n%w", strings.Join(packCommand, " "), stderr.String(), err)
+		if err := publishPackage(); err != nil {
+			return err
 		}
-		slog.Info("Successfully packed the Node module")
 
-		// publish the tar file.
-		publishArgs := append([]string{"publish", packageName}, publishCmdArgs.publishArgs...)
-		c = exec.Command("npm", publishArgs...)
-		c.Stdout = &stdout
-		c.Stderr = &stderr
-		err = c.Run()
-		uri := strings.TrimSpace(stdout.String())
-		if err != nil {
-			return fmt.Errorf("error executing 'npm %s': %s\n%w", strings.Join(publishArgs, " "), stderr.String(), err)
-		}
-		slog.Info("Successfully published the Node module")
-		// remove first two characters of npm publish (e.g. "+  @SCOPE/package@0.0.0" ->  "@SCOPE/package@0.0.0")
-		// Define regular expression to match leading whitespace characters
-		removeWhitespace := regexp.MustCompile(`^\s+`)
-		// Replace leading whitespace with an empty string
-		uri = removeWhitespace.ReplaceAllString(uri, "")
-
-		// generate provenance and write ir into provenance json path
+		// generate provenance and write it into provenance json path
 		if publishCmdArgs.resultsPath != "" {
-			if err := internal.GenerateProvenance(publishCmdArgs.resultsPath, packageName, uri); err != nil {
+			if err := internal.GenerateProvenance(publishCmdArgs.resultsPath, publishCmdArgs.repository, publishCmdArgs.isBuildArtifact); err != nil {
 				return fmt.Errorf("failed to generate provenance: %w", err)
 			}
 			slog.Info("Successfully generated provenance")
@@ -120,44 +72,95 @@ var publishCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(publishCmd)
 
-	publishCmd.Flags().StringP(RESULTS_ARG, "", "", "Path to write the results in.")
-	publishCmd.Flags().StringP(PACK_ARG, "", "", "Extra arguments for npm pack command.")
-	publishCmd.Flags().StringP(PUBLISH_ARG, "", "", "Extra arguments for npm publish command.")
-	publishCmd.Flags().BoolP(VERBOSE, "", false, "Whether to print verbose output.")
+	publishCmd.Flags().StringP("resultsPath", "", "", "Path to write the results in.")
+	publishCmd.Flags().StringP("repository", "", "", "Artifact Registry repository to publish the package to.")
+	publishCmd.Flags().StringP("isBuildArtifact", "", "true", "A boolean flag specifying if the results should be a build artifact.")
+	publishCmd.Flags().BoolP("verbose", "", false, "Whether to print verbose output.")
 }
 
 type publishArguments struct {
-	resultsPath string
-	packArgs    []string
-	publishArgs []string
-	verbose     bool
+	resultsPath     string
+	repository      string
+	isBuildArtifact string
+	verbose         bool
 }
 
 func parsePublishArgs(f *pflag.FlagSet) (publishArguments, error) {
-	resultsPath, err := f.GetString(RESULTS_ARG)
+	resultsPath, err := f.GetString("resultsPath")
 	if err != nil {
 		return publishArguments{}, fmt.Errorf("failed to get results path: %w", err)
 	}
 
-	packArgs, err := f.GetString(PACK_ARG)
+	repository, err := f.GetString("repository")
 	if err != nil {
-		return publishArguments{}, fmt.Errorf("failed to get `npm pack` extra arguments: %w", err)
+		return publishArguments{}, fmt.Errorf("failed to get repository: %w", err)
 	}
 
-	publishArgs, err := f.GetString(PUBLISH_ARG)
+	isBuildArtifact, err := f.GetString("isBuildArtifact")
 	if err != nil {
-		return publishArguments{}, fmt.Errorf("failed to get `npm publish` extra arguments: %w", err)
+		return publishArguments{}, fmt.Errorf("failed to get isBuildArtifact flag: %w", err)
 	}
 
-	verbose, err := f.GetBool(VERBOSE)
+	verbose, err := f.GetBool("verbose")
 	if err != nil {
 		return publishArguments{}, fmt.Errorf("failed to get verbose: %w", err)
 	}
 
 	return publishArguments{
-		resultsPath: resultsPath,
-		packArgs:    strings.Fields(packArgs),
-		publishArgs: strings.Fields(publishArgs),
-		verbose:     verbose,
+		resultsPath:     resultsPath,
+		repository:      repository,
+		isBuildArtifact: isBuildArtifact,
+		verbose:         verbose,
 	}, nil
+}
+
+// Authenticate to Artifact Registry with .npmrc file.
+func authenticateAR(ctx context.Context) error {
+	// fetch Artifact Registry Token.
+	token, err := helper.GetAccessToken(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to fetch Artifact Registry token: %w", err)
+	}
+	slog.Info("Successfully fetched Artifact Registry token")
+
+	// check if npmrc exists to try to authenticate with AR
+	if _, err := os.Stat(".npmrc"); err == nil {
+		if err := internal.AuthenticateNpmrcFile(token); err != nil {
+			return fmt.Errorf("failed to authenticate npmrc file: %w", err)
+		}
+	} else {
+		slog.Info("Warning: No .npmrc file detected, creating a new one with Artifact Registry authentication.")
+		f, err := os.OpenFile(".npmrc", os.O_CREATE|os.O_WRONLY, 0o644)
+		if err != nil {
+			// Handle error opening the file
+			return fmt.Errorf("error creating .npmrc file: %w", err)
+		}
+
+		// Write configuration lines to the file
+		defer f.Close() // Close the file after writing
+		_, err = f.WriteString(`@artifact-registry:always-auth=true
+	//artifact-registry.googleapis.com:_authToken=` + token + `
+		`)
+		if err != nil {
+			// Handle error writing to the file
+			return fmt.Errorf("error writing to .npmrc file: %w", err)
+		}
+	}
+
+	slog.Info("Successfully authenticated to Artifact Registry")
+	return nil
+}
+
+// Publish node package to Artifact Registry.
+func publishPackage() error {
+	c := exec.Command("npm", "publish")
+	var stderr bytes.Buffer
+	c.Stderr = &stderr
+	err := c.Run()
+	if err != nil {
+		return fmt.Errorf("error executing 'npm publish': %s\n%w", stderr.String(), err)
+	}
+
+	slog.Info("Successfully published the Node package")
+	return nil
 }

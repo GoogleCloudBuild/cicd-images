@@ -21,7 +21,7 @@ group "default" {
       "cloud-storage",
       "cloud-run",
       "go",
-      "nodejs",
+      "nodejs-steps",
       "python-steps",
       "maven-steps",
       "builder"
@@ -228,25 +228,16 @@ target "gar-upload" {
   ]
 }
 
-target "nodejs-base" {
-  dockerfile = "Dockerfile.base"
-  context = "nodejs"
+target "nodejs-steps" {
+  dockerfile = "Dockerfile"
+  context = "nodejs-steps"
   contexts = {
     base = "target:base"
-  }
-  output = ["type=cacheonly"]
-}
-
-target "nodejs" {
-  dockerfile = "Dockerfile"
-  context = "nodejs"
-  contexts = {
-    base = "target:nodejs-base"
     src = "../"
   }
   tags = [
-    "${REGISTRY}/nodejs:${TAG}",
-    "${REGISTRY}/nodejs:latest"
+    "${REGISTRY}/nodejs-steps:${TAG}",
+    "${REGISTRY}/nodejs-steps:latest"
   ]
 }
 
