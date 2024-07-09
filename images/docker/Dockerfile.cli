@@ -15,82 +15,40 @@
 # limitations under the License.
 #
 
-# Download GCR Creds helper
 # hadolint ignore=DL3006
-FROM base as downloader
-# hadolint ignore=DL3002
-USER root
-ARG CREDS_GCR_VERSION='2.1.22'
-# hadolint ignore=DL3008,DL4006
-RUN set -eux; \
-    \
-    install -m 0755 -d /etc/apt/keyrings; \
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg ; \
-    \
-    CREDS_GCR_FILE="docker-credential-gcr_linux_amd64-${CREDS_GCR_VERSION}.tar.gz"; \
-    url="https://github.com/GoogleCloudPlatform/docker-credential-gcr/releases/download/v${CREDS_GCR_VERSION}/${CREDS_GCR_FILE}"; \
-    checksum_url="https://github.com/GoogleCloudPlatform/docker-credential-gcr/releases/download/v${CREDS_GCR_VERSION}/checksums.txt"; \
-    \
-    curl -Ls -o /tmp/docker-credential-gcr.tar.gz  $url;  \
-    \
-    CREDS_GCR_SHA=$(curl -Ls $checksum_url|grep "${CREDS_GCR_FILE}$"|awk '{print $1}'); \
-    echo "${CREDS_GCR_SHA} "'/tmp/docker-credential-gcr.tar.gz' | sha256sum -c -; \
-    \
-    tar --extract \
-    --file /tmp/docker-credential-gcr.tar.gz \
-    --directory /usr/local/bin/ \
-    --no-same-owner \
-    'docker-credential-gcr'; \
-    rm -rf /tmp/docker-credential-gcr.tar.gz /var/lib/apt/lists/*;
+FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:stable-alpha
 
-# Docker client image build
-# hadolint ignore=DL3006
-FROM base
-
-# We are going to install a number of tools as root
-# and docker image is still running as root user
-ENV USER=root
-USER $USER
-
-# Update base packages and install required packages
-RUN apt-get update && \
-    apt-get -y upgrade && \
-    rm -rf /var/lib/apt/lists/*
-
-# set versions
-ARG DOCKER_VERSION='25' \
+ARG DOCKER_VERSION='26' \
     DOCKER_BUILDX_VERSION='0' \
     DOCKER_COMPOSE_VERSION='2'
 
-ENV DOCKER_VERSION=$DOCKER_VERSION
-
-# Install Docker apt repo key
-COPY --from=downloader /etc/apt/keyrings /etc/apt/keyrings
-
-# https://github.com/docker/docker/blob/master/project/PACKAGERS.md#runtime-dependencies
-# hadolint ignore=DL4006,SC1091
-RUN set -eux; \
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+# hadolint ignore=DL3008,SC1091
+RUN <<EOF
+    apt-get update
+    apt-get upgrade -y
+    apt-get install -y --no-install-recommends \
+        ca-certificates curl
+    install -m 0755 -d /etc/apt/keyrings
+    curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
+    chmod a+r /etc/apt/keyrings/docker.asc
     echo \
-    "# Add the docker repository to Apt sources:\n" \
-    "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
-    $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
-    tee /etc/apt/sources.list.d/docker.list > /dev/null ; \
-    \
-    clean-install --no-install-suggests --no-install-recommends \
-    docker-ce-cli="5:${DOCKER_VERSION}.*" \
-    docker-compose-plugin="${DOCKER_COMPOSE_VERSION}.*" \
-    docker-buildx-plugin="${DOCKER_BUILDX_VERSION}.*" \
-    ; \
-    ln -s /usr/libexec/docker/cli-plugins/* /usr/local/bin ; \
-    docker --version; \
-    docker-compose version; \
-    docker-buildx version;
+        "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian \
+        $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+        tee /etc/apt/sources.list.d/docker.list > /dev/null
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        docker-ce-cli="5:${DOCKER_VERSION}.*" \
+        docker-buildx-plugin="${DOCKER_BUILDX_VERSION}.*" \
+        docker-compose-plugin="${DOCKER_COMPOSE_VERSION}.*"
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+    docker --version
+    docker compose version
+    docker buildx version
+EOF
 
-# Install Artifact Registry and Google Container Registry auth provider
-COPY --from=downloader /usr/local/bin/docker-credential-gcr /usr/local/bin/docker-credential-gcr
-RUN set -eux; \
-    docker-credential-gcr version \
-    docker-credential-gcr configure-docker -include-artifact-registry;
+RUN gcloud auth configure-docker -q --include-artifact-registry
 
 COPY modprobe.sh /usr/local/bin/modprobe
 COPY docker-entrypoint.sh /usr/local/bin/

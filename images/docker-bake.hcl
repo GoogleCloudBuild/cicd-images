@@ -56,11 +56,8 @@ group "tool-images" {
 target "docker-cli" {
   dockerfile = "Dockerfile.cli"
   context = "docker"
-  contexts = {
-    base = "target:base"
-  }
   tags = [
-    "${REGISTRY}/docker/cli:${TAG}",
+    "${REGISTRY}/docker/cli:debian12",
     "${REGISTRY}/docker/cli:latest",
   ]
 }
@@ -68,11 +65,8 @@ target "docker-cli" {
 target "docker-dind" {
   dockerfile = "Dockerfile.dind"
   context = "docker"
-  contexts = {
-    base = "target:docker-cli"
-  }
   tags = [
-    "${REGISTRY}/docker/dind:${TAG}",
+    "${REGISTRY}/docker/dind:debian12",
     "${REGISTRY}/docker/dind:latest"
   ]
 }

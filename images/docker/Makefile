@@ -1,5 +1,5 @@
 REGISTRY ?= us-docker.pkg.dev/gcb-catalog-release/catalog
-TAG ?= ubuntu22
+TAG ?= debian12
 
 build:
 	@echo "+ building docker images"

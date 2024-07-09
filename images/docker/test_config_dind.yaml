@@ -15,26 +15,14 @@
 
 schemaVersion: 2.0.0
 commandTests:
-  - name: "which docker"
-    command: "which"
-    args: ["docker"]
-    expectedOutput: ["/usr/bin/docker"]
-  - name: "which docker-compose"
-    command: "which"
-    args: ["docker-compose"]
-    expectedOutput: ["/usr/local/bin/docker-compose"]
-  - name: "which docker-buildx"
-    command: "which"
-    args: ["docker-buildx"]
-    expectedOutput: ["/usr/local/bin/docker-buildx"]
+  - name: "dockerd version"
+    command: "dockerd"
+    args: ["--version"]
+    expectedOutput: ["Docker version 26.*"]
+  - name: "containerd version"
+    command: "containerd"
+    args: ["--version"]
+    expectedOutput: ["containerd containerd.io 1.*"]
 fileExistenceTests:
   - name: "entrypoint"
     path: "/usr/local/bin/dockerd-entrypoint.sh"
-    shouldExist: true
-metadataTest:
-  envVars:
-    - key: USER
-      value: root
-    - key: DOCKER_VERSION
-      value: "25"
-      isRegex: true

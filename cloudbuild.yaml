@@ -58,8 +58,8 @@ steps:
       # Base Images
       - "--image=${_IMAGE_REGISTRY}/gcb-base:ubuntu22"
       # Tool Images
-      - "--image=${_IMAGE_REGISTRY}/docker/dind:ubuntu22"
-      - "--image=${_IMAGE_REGISTRY}/docker/cli:ubuntu22"
+      - "--image=${_IMAGE_REGISTRY}/docker/dind:debian12"
+      - "--image=${_IMAGE_REGISTRY}/docker/cli:debian12"
       - "--image=${_IMAGE_REGISTRY}/gar-upload:ubuntu22"
       - "--image=${_IMAGE_REGISTRY}/gcloud:ubuntu22"
       - "--image=${_IMAGE_REGISTRY}/git:ubuntu22"
@@ -81,9 +81,9 @@ images:
   - ${_IMAGE_REGISTRY}/gcb-base:latest
   - ${_IMAGE_REGISTRY}/gcb-base:ubuntu22
   - ${_IMAGE_REGISTRY}/docker/dind:latest
-  - ${_IMAGE_REGISTRY}/docker/dind:ubuntu22
+  - ${_IMAGE_REGISTRY}/docker/dind:debian12
   - ${_IMAGE_REGISTRY}/docker/cli:latest
-  - ${_IMAGE_REGISTRY}/docker/cli:ubuntu22
+  - ${_IMAGE_REGISTRY}/docker/cli:debian12
   - ${_IMAGE_REGISTRY}/gar-upload:latest
   - ${_IMAGE_REGISTRY}/gar-upload:ubuntu22
   - ${_IMAGE_REGISTRY}/gcloud:latest

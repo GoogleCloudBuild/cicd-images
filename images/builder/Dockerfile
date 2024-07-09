@@ -27,6 +27,7 @@ ENV USER=root \
 #hadolint ignore=DL3008
 RUN <<EOF
     apt-get update
+    apt-get upgrade -y
     apt-get install -y --no-install-recommends \
         yq gnupg curl ca-certificates \
         software-properties-common

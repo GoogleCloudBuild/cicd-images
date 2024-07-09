@@ -15,31 +15,35 @@
 # limitations under the License.
 #
 
-# hadolint ignore=DL3006
-FROM base
+# hadolint ignore=DL3007
+FROM marketplace.gcr.io/google/debian12:latest
 
-# set versions
-ARG DOCKER_VERSION='25' \
+ARG DOCKER_VERSION='26' \
     CONTAINERD_VERSION='1'
-ENV DOCKER_VERSION=$DOCKER_VERSION
 
-# https://github.com/docker/docker/blob/master/project/PACKAGERS.md#runtime-dependencies
-RUN set -eux; \
-    clean-install --no-install-suggests \
-    docker-ce="5:${DOCKER_VERSION}.*" \
-    containerd.io="${CONTAINERD_VERSION}.*" \
-    btrfs-progs \
-    e2fsprogs \
-    xfsprogs \
-    iptables \
-    uidmap \
-    pigz \
-    mount \
-    util-linux; \
-    dockerd --version; \
-    containerd --version; \
-    ctr --version; \
-    runc --version ;
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+# hadolint ignore=DL3008,SC1091
+RUN <<EOF
+    apt-get update
+    apt-get upgrade -y
+    apt-get install -y --no-install-recommends \
+        ca-certificates curl
+    install -m 0755 -d /etc/apt/keyrings
+    curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
+    chmod a+r /etc/apt/keyrings/docker.asc
+    echo \
+        "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian \
+        $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+        tee /etc/apt/sources.list.d/docker.list > /dev/null
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        docker-ce="5:${DOCKER_VERSION}.*" containerd.io="${CONTAINERD_VERSION}.*" \
+        btrfs-progs e2fsprogs xfsprogs iptables uidmap pigz mount util-linux
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+    dockerd --version
+    containerd --version
+EOF
 
 COPY dockerd-entrypoint.sh /usr/local/bin/
 COPY dind /usr/local/bin/dind
