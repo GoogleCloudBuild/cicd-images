@@ -73,7 +73,7 @@ steps:
       - "--image=${_IMAGE_REGISTRY}/builder:debian12"
       - "--image=${_IMAGE_REGISTRY}/go:ubuntu22"
       - "--image=${_IMAGE_REGISTRY}/nodejs-steps:ubuntu22"
-      - "--image=${_IMAGE_REGISTRY}/python:ubuntu22"
+      - "--image=${_IMAGE_REGISTRY}/python-steps:ubuntu22"
       - "--image=${_IMAGE_REGISTRY}/maven-steps:ubuntu22"
 
 # Push the images.
@@ -110,7 +110,7 @@ images:
   - ${_IMAGE_REGISTRY}/go:ubuntu22
   - ${_IMAGE_REGISTRY}/nodejs-steps:latest
   - ${_IMAGE_REGISTRY}/nodejs-steps:ubuntu22
-  - ${_IMAGE_REGISTRY}/python:latest
-  - ${_IMAGE_REGISTRY}/python:ubuntu22
+  - ${_IMAGE_REGISTRY}/python-steps:latest
+  - ${_IMAGE_REGISTRY}/python-steps:ubuntu22
   - ${_IMAGE_REGISTRY}/maven-steps:latest
   - ${_IMAGE_REGISTRY}/maven-steps:ubuntu22
