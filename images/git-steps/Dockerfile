@@ -42,4 +42,4 @@ USER $USER:$USER
 
 RUN git config --global --add safe.directory "*"
 
-ENTRYPOINT ["git"]
+ENTRYPOINT ["git-steps"]

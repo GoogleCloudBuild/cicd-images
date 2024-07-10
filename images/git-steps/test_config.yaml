@@ -36,4 +36,4 @@ metadataTest:
       value: nonroot
   workdir: "/home/nonroot"
   user: nonroot:nonroot
-  entrypoint: ["git"]
+  entrypoint: ["git-steps"]

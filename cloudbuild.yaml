@@ -61,7 +61,7 @@ steps:
       - "--image=${_IMAGE_REGISTRY}/docker/dind:debian12"
       - "--image=${_IMAGE_REGISTRY}/docker/cli:debian12"
       - "--image=${_IMAGE_REGISTRY}/gar-upload:ubuntu22"
-      - "--image=${_IMAGE_REGISTRY}/git:ubuntu22"
+      - "--image=${_IMAGE_REGISTRY}/git-steps:ubuntu22"
       - "--image=${_IMAGE_REGISTRY}/syft:ubuntu22"
       - "--image=${_IMAGE_REGISTRY}/app-engine:ubuntu22"
       - "--image=${_IMAGE_REGISTRY}/cloud-deploy:ubuntu22"
@@ -85,8 +85,8 @@ images:
   - ${_IMAGE_REGISTRY}/docker/cli:debian12
   - ${_IMAGE_REGISTRY}/gar-upload:latest
   - ${_IMAGE_REGISTRY}/gar-upload:ubuntu22
-  - ${_IMAGE_REGISTRY}/git:latest
-  - ${_IMAGE_REGISTRY}/git:ubuntu22
+  - ${_IMAGE_REGISTRY}/git-steps:latest
+  - ${_IMAGE_REGISTRY}/git-steps:ubuntu22
   - ${_IMAGE_REGISTRY}/syft:latest
   - ${_IMAGE_REGISTRY}/syft:ubuntu22
   - ${_IMAGE_REGISTRY}/app-engine:latest

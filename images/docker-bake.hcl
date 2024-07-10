@@ -12,7 +12,7 @@ group "default" {
       "docker-cli",
       "docker-dind",
       "gar-upload",
-      "git",
+      "git-steps",
       "gke-deploy",
       "syft",
       "cloud-deploy",
@@ -54,16 +54,16 @@ target "docker-dind" {
   ]
 }
 
-target "git" {
+target "git-steps" {
     dockerfile = "Dockerfile"
-    context = "git"
+    context = "git-steps"
     contexts = {
       base = "target:base"
       src = "../"
     }
     tags = [
-      "${REGISTRY}/git:${TAG}",
-      "${REGISTRY}/git:latest",
+      "${REGISTRY}/git-steps:${TAG}",
+      "${REGISTRY}/git-steps:latest",
     ]
 }
 
