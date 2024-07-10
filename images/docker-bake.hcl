@@ -12,7 +12,6 @@ group "default" {
       "docker-cli",
       "docker-dind",
       "gar-upload",
-      "gcloud",
       "git",
       "gke-deploy",
       "syft",
@@ -37,22 +36,6 @@ target "base" {
   ]
 }
 
-group "tool-images" {
-    targets = [
-      "app-engine",
-      "docker-cli",
-      "docker-dind",
-      "gar-upload",
-      "gcloud",
-      "git",
-      "gke-deploy",
-      "syft",
-      "cloud-deploy",
-      "cloud-storage",
-      "cloud-run"
-    ]
-}
-
 target "docker-cli" {
   dockerfile = "Dockerfile.cli"
   context = "docker"
@@ -69,18 +52,6 @@ target "docker-dind" {
     "${REGISTRY}/docker/dind:debian12",
     "${REGISTRY}/docker/dind:latest"
   ]
-}
-
-target "gcloud" {
-    dockerfile = "Dockerfile"
-    context = "gcloud"
-    contexts = {
-      base = "target:base"
-    }
-    tags = [
-      "${REGISTRY}/gcloud:${TAG}",
-      "${REGISTRY}/gcloud:latest"
-    ]
 }
 
 target "git" {
