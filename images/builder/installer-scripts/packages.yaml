@@ -16,7 +16,6 @@ common-packages:
   - bash
   - openssh-client
   - git
-  - git-lfs
   - gawk
   - curl
   - jq
