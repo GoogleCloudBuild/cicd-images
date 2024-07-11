@@ -15,37 +15,47 @@
 # limitations under the License.
 #
 
-# hadolint ignore=DL3007
-FROM marketplace.gcr.io/google/debian12:latest
+# hadolint ignore=DL3006
+FROM base
+
+USER root
+ENV USER=root \
+    HOME=/root
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 ARG DOCKER_VERSION='26' \
     CONTAINERD_VERSION='1'
-
-SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 # hadolint ignore=DL3008,SC1091
 RUN <<EOF
-    apt-get update
-    apt-get upgrade -y
-    apt-get install -y --no-install-recommends \
-        ca-certificates curl
     install -m 0755 -d /etc/apt/keyrings
-    curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
     chmod a+r /etc/apt/keyrings/docker.asc
     echo \
-        "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian \
+        "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
         $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
         tee /etc/apt/sources.list.d/docker.list > /dev/null
-    apt-get update
-    apt-get install -y --no-install-recommends \
+    clean-install \
         docker-ce="5:${DOCKER_VERSION}.*" containerd.io="${CONTAINERD_VERSION}.*" \
         btrfs-progs e2fsprogs xfsprogs iptables uidmap pigz mount util-linux
-    apt-get clean
-    rm -rf /var/lib/apt/lists/*
     dockerd --version
     containerd --version
 EOF
 
+ARG DOCKER_CREDENTIAL_GCR_VERSION=2.1.22
+ARG DOCKER_CREDENTIAL_GCR_CHECKSUM=443e897dc383d69e55e6dbcb13802f4ec88444848612e83f0381df2ddd721694
+RUN <<EOF
+    curl -L -o /tmp/docker-credential-gcr_linux_amd64-${DOCKER_CREDENTIAL_GCR_VERSION}.tar.gz \
+        "https://github.com/GoogleCloudPlatform/docker-credential-gcr/releases/download/v${DOCKER_CREDENTIAL_GCR_VERSION}/docker-credential-gcr_linux_amd64-${DOCKER_CREDENTIAL_GCR_VERSION}.tar.gz"
+    echo ${DOCKER_CREDENTIAL_GCR_CHECKSUM} /tmp/docker-credential-gcr_linux_amd64-${DOCKER_CREDENTIAL_GCR_VERSION}.tar.gz | sha256sum -c - && \
+    tar -xvzf /tmp/docker-credential-gcr_linux_amd64-${DOCKER_CREDENTIAL_GCR_VERSION}.tar.gz && \
+    mv docker-credential-gcr /usr/local/bin/docker-credential-gcr && \
+    chmod +x /usr/local/bin/docker-credential-gcr && \
+    rm /tmp/docker-credential-gcr_linux_amd64-${DOCKER_CREDENTIAL_GCR_VERSION}.tar.gz
+EOF
+
 COPY dockerd-entrypoint.sh /usr/local/bin/
+COPY docker-entrypoint.sh /usr/local/bin/
 COPY dind /usr/local/bin/dind
 
 RUN set -eux; \

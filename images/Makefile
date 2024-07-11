@@ -1,5 +1,5 @@
 REGISTRY ?= us-docker.pkg.dev/gcb-catalog-release/catalog
-TAG ?= ubuntu22
+TAG ?= ubuntu24
 SUBDIRS = base app-engine cloud-deploy cloud-storage cloud-run cloud-function docker gar-upload git-steps gke-deploy go nodejs-steps maven-steps python-steps builder
 
 build:

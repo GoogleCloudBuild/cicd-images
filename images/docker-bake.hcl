@@ -2,14 +2,13 @@ variable "REGISTRY" {
   default = "us-docker.pkg.dev/gcb-catalog-release/catalog"
 }
 variable "TAG" {
-  default = "ubuntu22"
+  default = "ubuntu24"
 }
 
 group "default" {
     targets = [
       "base",
       "app-engine",
-      "docker-cli",
       "docker-dind",
       "gar-upload",
       "git-steps",
@@ -35,20 +34,27 @@ target "base" {
   ]
 }
 
-target "docker-cli" {
-  dockerfile = "Dockerfile.cli"
-  context = "docker"
+target "builder" {
+  dockerfile = "Dockerfile"
+  context = "builder"
+  contexts = {
+    base = "target:base"
+    src = "../"
+  }
   tags = [
-    "${REGISTRY}/docker/cli:debian12",
-    "${REGISTRY}/docker/cli:latest",
+    "${REGISTRY}/builder:${TAG}",
+    "${REGISTRY}/builder:latest"
   ]
 }
 
 target "docker-dind" {
-  dockerfile = "Dockerfile.dind"
+  dockerfile = "Dockerfile"
   context = "docker"
+  contexts = {
+    base = "target:base"
+  }
   tags = [
-    "${REGISTRY}/docker/dind:debian12",
+    "${REGISTRY}/docker/dind:${TAG}",
     "${REGISTRY}/docker/dind:latest"
   ]
 }
@@ -215,17 +221,5 @@ target "python-steps" {
   tags = [
     "${REGISTRY}/python-steps:${TAG}",
     "${REGISTRY}/python-steps:latest"
-  ]
-}
-
-target "builder" {
-  dockerfile = "Dockerfile"
-  context = "builder"
-  contexts = {
-    src = "../"
-  }
-  tags = [
-    "${REGISTRY}/builder:debian12",
-    "${REGISTRY}/builder:latest"
   ]
 }

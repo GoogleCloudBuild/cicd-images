@@ -31,11 +31,11 @@ DOCKER_COMPOSE_VERSION=$(yq '."build-tools"."docker-compose".version' $PACKAGES)
 
 install -m 0755 -d /etc/apt/keyrings;
 DOCKER_GPG_KEY=/etc/apt/keyrings/docker.gpg
-DOCKER_GPG_KEY_URL="https://download.docker.com/linux/debian/gpg"
+DOCKER_GPG_KEY_URL="https://download.docker.com/linux/ubuntu/gpg"
 curl -fsSL  $DOCKER_GPG_KEY_URL | gpg --dearmor -o $DOCKER_GPG_KEY
 
 ARCH=$(dpkg --print-architecture)
-DOCKER_APT_URL="https://download.docker.com/linux/debian"
+DOCKER_APT_URL="https://download.docker.com/linux/ubuntu"
 echo -e \
   "# Add the docker repository to Apt sources:\n" \
   "deb [arch=$ARCH signed-by=$DOCKER_GPG_KEY] $DOCKER_APT_URL \
@@ -52,8 +52,5 @@ ln -fs /usr/libexec/docker/cli-plugins/* /usr/local/bin
 docker --version
 docker-compose version
 docker-buildx version
-
-## Configure AR/GCR credentials helper
-gcloud auth configure-docker -q --include-artifact-registry
 
 

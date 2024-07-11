@@ -1,5 +1,5 @@
 REGISTRY ?= us-docker.pkg.dev/gcb-catalog-release/catalog
-TAG ?= ubuntu22
+TAG ?= ubuntu24
 
 build:
 	@echo "+ building gar-upload image"

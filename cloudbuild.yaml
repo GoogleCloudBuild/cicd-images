@@ -55,56 +55,51 @@ steps:
       - build
     args:
       - "--on_demand"
-      # Base Images
-      - "--image=${_IMAGE_REGISTRY}/gcb-base:ubuntu22"
-      # Tool Images
-      - "--image=${_IMAGE_REGISTRY}/docker/dind:debian12"
-      - "--image=${_IMAGE_REGISTRY}/docker/cli:debian12"
-      - "--image=${_IMAGE_REGISTRY}/gar-upload:ubuntu22"
-      - "--image=${_IMAGE_REGISTRY}/git-steps:ubuntu22"
-      - "--image=${_IMAGE_REGISTRY}/app-engine:ubuntu22"
-      - "--image=${_IMAGE_REGISTRY}/cloud-deploy:ubuntu22"
-      - "--image=${_IMAGE_REGISTRY}/cloud-storage:ubuntu22"
-      - "--image=${_IMAGE_REGISTRY}/cloud-run:ubuntu22"
-      - "--image=${_IMAGE_REGISTRY}/cloud-function:ubuntu22"
-      - "--image=${_IMAGE_REGISTRY}/gke-deploy:ubuntu22"
-      - "--image=${_IMAGE_REGISTRY}/builder:debian12"
-      - "--image=${_IMAGE_REGISTRY}/go:ubuntu22"
-      - "--image=${_IMAGE_REGISTRY}/nodejs-steps:ubuntu22"
-      - "--image=${_IMAGE_REGISTRY}/python-steps:ubuntu22"
-      - "--image=${_IMAGE_REGISTRY}/maven-steps:ubuntu22"
+      - "--image=${_IMAGE_REGISTRY}/gcb-base:ubuntu24"
+      - "--image=${_IMAGE_REGISTRY}/docker/dind:ubuntu24"
+      - "--image=${_IMAGE_REGISTRY}/gar-upload:ubuntu24"
+      - "--image=${_IMAGE_REGISTRY}/git-steps:ubuntu24"
+      - "--image=${_IMAGE_REGISTRY}/app-engine:ubuntu24"
+      - "--image=${_IMAGE_REGISTRY}/cloud-deploy:ubuntu24"
+      - "--image=${_IMAGE_REGISTRY}/cloud-storage:ubuntu24"
+      - "--image=${_IMAGE_REGISTRY}/cloud-run:ubuntu24"
+      - "--image=${_IMAGE_REGISTRY}/cloud-function:ubuntu24"
+      - "--image=${_IMAGE_REGISTRY}/gke-deploy:ubuntu24"
+      - "--image=${_IMAGE_REGISTRY}/builder:ubuntu24"
+      - "--image=${_IMAGE_REGISTRY}/go:ubuntu24"
+      - "--image=${_IMAGE_REGISTRY}/nodejs-steps:ubuntu24"
+      - "--image=${_IMAGE_REGISTRY}/python-steps:ubuntu24"
+      - "--image=${_IMAGE_REGISTRY}/maven-steps:ubuntu24"
 
 # Push the images.
 images:
   - ${_IMAGE_REGISTRY}/gcb-base:latest
-  - ${_IMAGE_REGISTRY}/gcb-base:ubuntu22
+  - ${_IMAGE_REGISTRY}/gcb-base:ubuntu24
   - ${_IMAGE_REGISTRY}/docker/dind:latest
-  - ${_IMAGE_REGISTRY}/docker/dind:debian12
-  - ${_IMAGE_REGISTRY}/docker/cli:latest
-  - ${_IMAGE_REGISTRY}/docker/cli:debian12
+  - ${_IMAGE_REGISTRY}/docker/dind:ubuntu24
   - ${_IMAGE_REGISTRY}/gar-upload:latest
-  - ${_IMAGE_REGISTRY}/gar-upload:ubuntu22
+  - ${_IMAGE_REGISTRY}/gar-upload:ubuntu24
   - ${_IMAGE_REGISTRY}/git-steps:latest
-  - ${_IMAGE_REGISTRY}/git-steps:ubuntu22
+  - ${_IMAGE_REGISTRY}/git-steps:ubuntu24
   - ${_IMAGE_REGISTRY}/app-engine:latest
-  - ${_IMAGE_REGISTRY}/app-engine:ubuntu22
+  - ${_IMAGE_REGISTRY}/app-engine:ubuntu24
   - ${_IMAGE_REGISTRY}/cloud-deploy:latest
-  - ${_IMAGE_REGISTRY}/cloud-deploy:ubuntu22
+  - ${_IMAGE_REGISTRY}/cloud-deploy:ubuntu24
   - ${_IMAGE_REGISTRY}/cloud-storage:latest
-  - ${_IMAGE_REGISTRY}/cloud-storage:ubuntu22
+  - ${_IMAGE_REGISTRY}/cloud-storage:ubuntu24
   - ${_IMAGE_REGISTRY}/cloud-run:latest
-  - ${_IMAGE_REGISTRY}/cloud-run:ubuntu22
+  - ${_IMAGE_REGISTRY}/cloud-run:ubuntu24
   - ${_IMAGE_REGISTRY}/cloud-function:latest
-  - ${_IMAGE_REGISTRY}/cloud-function:ubuntu22
+  - ${_IMAGE_REGISTRY}/cloud-function:ubuntu24
   - ${_IMAGE_REGISTRY}/gke-deploy:latest
-  - ${_IMAGE_REGISTRY}/gke-deploy:ubuntu22
+  - ${_IMAGE_REGISTRY}/gke-deploy:ubuntu24
   - ${_IMAGE_REGISTRY}/builder:latest
-  - ${_IMAGE_REGISTRY}/builder:debian12
+  - ${_IMAGE_REGISTRY}/builder:ubuntu24
   - ${_IMAGE_REGISTRY}/go:latest
-  - ${_IMAGE_REGISTRY}/go:ubuntu22
+  - ${_IMAGE_REGISTRY}/go:ubuntu24
   - ${_IMAGE_REGISTRY}/nodejs-steps:latest
-  - ${_IMAGE_REGISTRY}/nodejs-steps:ubuntu22
+  - ${_IMAGE_REGISTRY}/nodejs-steps:ubuntu24
   - ${_IMAGE_REGISTRY}/python-steps:latest
-  - ${_IMAGE_REGISTRY}/python-steps:ubuntu22
+  - ${_IMAGE_REGISTRY}/python-steps:ubuntu24
   - ${_IMAGE_REGISTRY}/maven-steps:latest
-  - ${_IMAGE_REGISTRY}/maven-steps:ubuntu22
+  - ${_IMAGE_REGISTRY}/maven-steps:ubuntu24

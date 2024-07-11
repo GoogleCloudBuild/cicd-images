@@ -15,9 +15,9 @@
 # limitations under the License.
 #
 
-# Adopted from https://github.com/kubernetes/release/blob/master/images/build/debian-base/bullseye/Dockerfile.build
+# Adopted from https://github.com/kubernetes/release/blob/master/images/build/debian-base/bookworm/Dockerfile.build
 # hadolint ignore=DL3007
-FROM gcr.io/cloud-marketplace/google/ubuntu2204:latest
+FROM marketplace.gcr.io/google/ubuntu2404:latest
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -32,6 +32,18 @@ RUN apt-get update && \
     apt-get upgrade -y && \
     rm -rf /var/lib/apt/lists/*
 
+# Remove unnecessary packages.
+RUN dpkg --purge --force-remove-essential \
+    e2fsprogs \
+    libss2 \
+    libcom-err2 \
+    libext2fs2 \
+    logsave \
+    ncurses-base \
+    ncurses-bin \
+    tzdata \
+    && apt-get autoremove --purge -y
+
 # No-op stubs replace some unnecessary binaries that may be depended on in the install process (in
 # particular we don't run an init process).
 WORKDIR /usr/local/bin
@@ -40,20 +52,7 @@ RUN touch noop && \
     ln -s noop runlevel && \
     ln -s noop invoke-rc.d && \
     ln -s noop update-rc.d
-
 WORKDIR /
-
-# Hold required packages to avoid breaking the installation of packages
-RUN apt-mark hold apt gpgv adduser passwd libsemanage-common libsemanage2 libcap2 && \
-    apt-get purge -y --allow-remove-essential \
-    e2fsprogs \
-    libmount1 \
-    libsmartcols1 \
-    libblkid1 \
-    libss2 \
-    ncurses-base \
-    ncurses-bin \
-    util-linux
 
 # Install common packages needed by CICD processes.
 RUN clean-install \
@@ -68,12 +67,9 @@ RUN clean-install \
     unzip
 
 # Cleanup cached and unnecessary files.
-# Keep copyright notices and licenses available under /usr/share/copyrights.tar.gz.
 RUN apt-get autoremove -y && \
     apt-get clean -y && \
-    tar -czf /usr/share/copyrights.tar.gz /usr/share/common-licenses /usr/share/doc/*/copyright && \
     rm -rf \
-    /usr/share/doc \
     /usr/share/man \
     /usr/share/info \
     /usr/share/locale \

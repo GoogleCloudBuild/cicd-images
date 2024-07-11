@@ -1,5 +1,5 @@
 REGISTRY ?= us-docker.pkg.dev/gcb-catalog-release/catalog
-TAG ?= debian12
+TAG ?= ubuntu24
 
 build:
 	@echo "+ building generic builder image"

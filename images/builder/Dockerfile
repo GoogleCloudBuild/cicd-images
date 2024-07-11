@@ -16,28 +16,21 @@
 #
 
 #hadolint ignore=DL3006
-FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:stable-alpha
+FROM base
 
 USER root
 ENV USER=root \
     ENV=/etc/environment \
-    HOME=/root \
-    DEBIAN_FRONTEND=noninteractive
-
-#hadolint ignore=DL3008
-RUN <<EOF
-    apt-get update
-    apt-get upgrade -y
-    apt-get install -y --no-install-recommends \
-        yq gnupg curl ca-certificates \
-        software-properties-common
-    apt-get clean
-    rm -rf /var/lib/apt/lists/*
-EOF
+    HOME=/root
 
 # Convenience script for building on this base image.
-COPY clean-install /usr/local/bin/clean-install
 COPY installer-scripts/ /opt/installer-scripts/
+
+RUN <<EOF
+    clean-install \
+        software-properties-common \
+        yq
+EOF
 
 #hadolint ignore=DL3059
 SHELL ["/bin/bash", "-c"]
