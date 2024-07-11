@@ -14,7 +14,6 @@ group "default" {
       "gar-upload",
       "git-steps",
       "gke-deploy",
-      "syft",
       "cloud-deploy",
       "cloud-function",
       "cloud-storage",
@@ -77,19 +76,6 @@ target "gke-deploy" {
     tags = [
       "${REGISTRY}/gke-deploy:${TAG}",
       "${REGISTRY}/gke-deploy:latest"
-    ]
-}
-
-target "syft" {
-    dockerfile = "Dockerfile"
-    context = "syft"
-    contexts = {
-      base = "target:base"
-      src = "../"
-    }
-    tags = [
-      "${REGISTRY}/syft:${TAG}",
-      "${REGISTRY}/syft:latest"
     ]
 }
 
