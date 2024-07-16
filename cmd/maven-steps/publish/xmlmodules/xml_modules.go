@@ -37,10 +37,10 @@ type Server struct {
 }
 
 type Configuration struct {
-	HttpConfiguration HttpConfiguration `xml:"httpConfiguration"`
+	HTTPConfiguration HTTPConfiguration `xml:"httpConfiguration"`
 }
 
-type HttpConfiguration struct {
+type HTTPConfiguration struct {
 	Get  bool      `xml:"get>usePreemptive"`
 	Head bool      `xml:"head>usePreemptive"`
 	Put  PutParams `xml:"put>params"`

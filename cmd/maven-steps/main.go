@@ -18,13 +18,46 @@ import (
 	"context"
 	"os"
 	"time"
+
+	"github.com/GoogleCloudBuild/cicd-images/cmd/maven-steps/publish"
+	"github.com/spf13/cobra"
 )
 
 func main() {
-	ctx := context.Background()
-	ctx, cf := context.WithTimeout(ctx, 30*time.Second)
-	defer cf()
-	if err := Execute(ctx); err != nil {
+	rootCmd := &cobra.Command{
+		Use: "maven-steps",
+	}
+
+	publishCmd := &cobra.Command{
+		Use:   "publish",
+		Short: "Publish a maven artifact",
+		Long:  "Publish a maven artifact to Artifact Registry & generate maven artifact results.",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			publishArgs, err := publish.ParseArgs(cmd.Flags())
+			if err != nil {
+				return err
+			}
+
+			ctx, cf := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cf()
+			if err := publish.Execute(ctx, publishArgs); err != nil {
+				return err
+			}
+
+			return nil
+		},
+	}
+	publishCmd.Flags().String("repository", "", "URL of the Artifact Registry repository.")
+	publishCmd.Flags().String("artifactPath", "", "The path to the packaged file.")
+	publishCmd.Flags().String("artifactId", "", "The name of the package file created from the build step.")
+	publishCmd.Flags().String("groupId", "", "ID to uniquely identify the project across all Maven projects.")
+	publishCmd.Flags().String("version", "", "The version for the application.")
+	publishCmd.Flags().Bool("verbose", false, "Whether to print verbose output.")
+	publishCmd.Flags().String("isBuildArtifact", "true", "If the results should be a build artifact.")
+	publishCmd.Flags().String("resultsPath", "", "Path to write the results in.")
+
+	rootCmd.AddCommand(publishCmd)
+	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
 }

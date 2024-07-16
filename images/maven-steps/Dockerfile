@@ -40,4 +40,4 @@ RUN apt-get update && \
 # Change to the USER specified by the base image to be used at runtime.
 USER $USER:$USER
 
-CMD [ "java" ]
+CMD [ "maven-steps" ]

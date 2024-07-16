@@ -28,3 +28,8 @@ commandTests:
     command: "which"
     args: ["java"]
     expectedOutput: ["/usr/bin/java"]
+
+metadataTest:
+  workdir: "/home/nonroot"
+  user: nonroot:nonroot
+  cmd: ["maven-steps"]
