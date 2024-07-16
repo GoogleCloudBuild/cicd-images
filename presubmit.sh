@@ -18,6 +18,8 @@ set -eu
 
 make install-tools
 
+mv ~/go/bin/golangci-lint /usr/bin/golangci-lint
+
 # Run pre-commit hooks
 make pre-commit
 
