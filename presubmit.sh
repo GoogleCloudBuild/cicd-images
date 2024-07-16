@@ -16,6 +16,8 @@
 # TODO(kmonty): Move this to the Makefile so it's easier to know how to run locally too.
 set -eu
 
+make install-tools
+
 # Run pre-commit hooks
 make pre-commit
 
