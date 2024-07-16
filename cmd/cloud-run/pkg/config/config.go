@@ -17,4 +17,5 @@ package config
 type DeployOptions struct {
 	Service string
 	Image   string
+	Source  string
 }

@@ -4,6 +4,7 @@ go 1.21.0
 
 require (
 	cloud.google.com/go/appengine v1.8.7
+	cloud.google.com/go/cloudbuild v1.16.0
 	cloud.google.com/go/deploy v1.17.2
 	cloud.google.com/go/functions v1.16.2
 	cloud.google.com/go/longrunning v0.5.6

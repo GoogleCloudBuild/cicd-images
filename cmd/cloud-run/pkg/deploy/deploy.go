@@ -21,8 +21,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GoogleCloudBuild/cicd-images/cmd/cloud-run/config"
-	"github.com/GoogleCloudBuild/cicd-images/cmd/cloud-run/utils"
+	"github.com/GoogleCloudBuild/cicd-images/cmd/cloud-run/pkg/config"
+	"github.com/GoogleCloudBuild/cicd-images/cmd/cloud-run/pkg/utils"
 
 	"google.golang.org/api/googleapi"
 	"google.golang.org/api/run/v1"

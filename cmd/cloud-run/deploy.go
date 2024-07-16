@@ -15,7 +15,9 @@
 package main
 
 import (
-	"github.com/GoogleCloudBuild/cicd-images/cmd/cloud-run/config"
+	cloudbuild "cloud.google.com/go/cloudbuild/apiv1/v2"
+	"github.com/GoogleCloudBuild/cicd-images/cmd/cloud-run/pkg/build"
+	"github.com/GoogleCloudBuild/cicd-images/cmd/cloud-run/pkg/config"
 	"github.com/GoogleCloudBuild/cicd-images/cmd/cloud-run/pkg/deploy"
 
 	"github.com/spf13/cobra"
@@ -33,15 +35,41 @@ func NewDeployCmd() *cobra.Command {
 	}
 	deployCmd.Flags().StringVar(&opts.Image, "image", "", "The image to deployService")
 	deployCmd.Flags().StringVar(&opts.Service, "service", "", "The service name to deployService")
+	deployCmd.Flags().StringVar(&opts.Source, "source", ".", "The source directory to deployService")
 
-	_ = deployCmd.MarkFlagRequired("image")
 	_ = deployCmd.MarkFlagRequired("service")
-
+	deployCmd.MarkFlagsOneRequired(
+		"image",
+		"source",
+	)
+	deployCmd.MarkFlagsMutuallyExclusive(
+		"image",
+		"source",
+	)
 	return deployCmd
 }
 
 func deployService(cmd *cobra.Command, _ []string) error {
 	ctx := cmd.Context()
+
+	cloudbuildClient, err := cloudbuild.NewClient(ctx)
+	if err != nil {
+		return err
+	}
+	defer cloudbuildClient.Close()
+	if opts.Image == "" {
+		// Source deploy is implemented as a combination of image build
+		// and image deploy, same as gcloud.
+		opts.Image, err = build.Run(ctx, cloudbuildClient, build.Options{
+			ProjectID: projectID,
+			Region:    region,
+			Service:   opts.Service,
+			Source:    opts.Source,
+		})
+		if err != nil {
+			return err
+		}
+	}
 
 	runService, err := run.NewService(ctx, option.WithUserAgent(userAgent))
 	if err != nil {

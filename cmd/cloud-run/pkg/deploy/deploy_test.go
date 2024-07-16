@@ -23,7 +23,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/GoogleCloudBuild/cicd-images/cmd/cloud-run/config"
+	"github.com/GoogleCloudBuild/cicd-images/cmd/cloud-run/pkg/config"
 
 	"github.com/google/go-cmp/cmp"
 	"google.golang.org/api/googleapi"
