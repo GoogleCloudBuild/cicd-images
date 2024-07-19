@@ -26,12 +26,13 @@ import (
 
 	"github.com/GoogleCloudBuild/cicd-images/internal/helper"
 	"github.com/GoogleCloudBuild/cicd-images/internal/logger"
-	"github.com/package-url/packageurl-go"
 	"github.com/spf13/pflag"
 )
 
-// Matches the following filename format: <name>-<version>.<extension>.
-var filenameRegex = regexp.MustCompile(`^(?P<name>[a-zA-Z0-9_\-]+)-(?P<version>[0-9a-zA-Z._\-+]+)\.(tar\.gz|whl)$`)
+var (
+	filenameRegex    = regexp.MustCompile(`^(?P<name>[a-zA-Z0-9_\-]+)-(?P<version>[0-9a-zA-Z._\-+]+)\.(tar\.gz|whl)$`) // Matches the following filename format: <name>-<version>.<extension>.
+	projectNameRegex = regexp.MustCompile(`(.*)\-[0-9]+\.[0-9]+.*`)
+)
 
 type ProvenanceOutput struct {
 	URI             string `json:"uri"`
@@ -41,8 +42,8 @@ type ProvenanceOutput struct {
 
 // Arguments represents the arguments passed to the publish command.
 type Arguments struct {
-	ArtifactRegistryURL           string
-	ArtifactDir                   string
+	Repository                    string
+	Paths                         []string
 	SourceDistributionResultsPath string
 	WheelDistributionResultsPath  string
 	IsBuildArtifact               string
@@ -51,17 +52,20 @@ type Arguments struct {
 
 // ParseArgs parses the arguments passed to the publish command.
 func ParseArgs(f *pflag.FlagSet) (Arguments, error) {
-	artifactRegistryURL, err := f.GetString("artifactRegistryUrl")
+	repository, err := f.GetString("repository")
 	if err != nil {
-		return Arguments{}, fmt.Errorf("failed to get artifactRegistryURL: %w", err)
+		return Arguments{}, fmt.Errorf("failed to get repository: %w", err)
 	}
-	artifactRegistryURL, err = ensureHTTPSByDefault(artifactRegistryURL)
+	repository, err = ensureHTTPSByDefault(repository)
 	if err != nil {
-		return Arguments{}, fmt.Errorf("failed to ensure artifactRegistryURL is https: %w", err)
+		return Arguments{}, fmt.Errorf("failed to ensure repository is https: %w", err)
 	}
-	artifactDir, err := f.GetString("artifactDir")
+	paths, err := f.GetStringSlice("paths")
 	if err != nil {
-		return Arguments{}, fmt.Errorf("failed to get artifacPath: %w", err)
+		return Arguments{}, fmt.Errorf("failed to get paths: %w", err)
+	}
+	if err := validatePaths(paths); err != nil {
+		return Arguments{}, fmt.Errorf("paths are invalid: %w", err)
 	}
 	sourceDistributionResultsPath, err := f.GetString("sourceDistributionResultsPath")
 	if err != nil {
@@ -81,8 +85,8 @@ func ParseArgs(f *pflag.FlagSet) (Arguments, error) {
 	}
 
 	return Arguments{
-		ArtifactRegistryURL:           artifactRegistryURL,
-		ArtifactDir:                   artifactDir,
+		Repository:                    repository,
+		Paths:                         paths,
 		SourceDistributionResultsPath: sourceDistributionResultsPath,
 		WheelDistributionResultsPath:  wheelDistributionResultsPath,
 		IsBuildArtifact:               isBuildArtifact,
@@ -99,63 +103,51 @@ func Execute(ctx context.Context, runner helper.CommandRunner, args Arguments) e
 		return err
 	}
 
-	slog.Info("Publishing python artifact")
-	if err := pushPythonArtifact(runner, args, gcpToken); err != nil {
-		return fmt.Errorf("failed to push python artifact: %w", err)
+	slog.Info("Pushing python artifacts to artifact registry")
+	for _, path := range args.Paths {
+		if err := pushPythonArtifact(runner, args, path, gcpToken); err != nil {
+			return fmt.Errorf("failed to push python artifacts: %w", err)
+		}
 	}
+	slog.Info("Successfully pushed python artifacts to artifact registry")
 
-	if err := generateResults(args.ArtifactDir, args); err != nil {
+	slog.Info("Generating build results")
+	if err := generateResults(args); err != nil {
 		return fmt.Errorf("failed to generate provenance: %w", err)
 	}
+	slog.Info("Successfully generated build results")
 
-	slog.Info("Successfully published artifact")
 	return nil
 }
 
-func pushPythonArtifact(runner helper.CommandRunner, args Arguments, gcpToken string) error {
-	slog.Info("Pushing python artifact to artifact registry")
-	if args.ArtifactRegistryURL == "" {
+// Publish the python artifact to Artifact Registry.
+func pushPythonArtifact(runner helper.CommandRunner, args Arguments, path, gcpToken string) error {
+	if args.Repository == "" {
 		return fmt.Errorf("artifactRegistryURL is required")
 	}
 
 	commands := []string{
 		"-m", "twine", "upload",
-		"--repository-url", args.ArtifactRegistryURL,
+		"--repository-url", args.Repository,
 		"--username", "oauth2accesstoken",
 		"--password", gcpToken,
-		args.ArtifactDir + "/*",
-	}
-	if err := runner.Run("python3", commands...); err != nil {
-		return fmt.Errorf("failed to push python artifacts: %w", err)
+		path,
 	}
 
-	slog.Info("Successfully pushed python artifact to artifact registry")
+	if err := runner.Run("python3", commands...); err != nil {
+		return fmt.Errorf("failed to push python artifact: %w", err)
+	}
+
 	return nil
 }
 
-func generateResults(distDir string, args Arguments) error {
-	slog.Info("Generating build results")
-	files, err := os.ReadDir(distDir)
-	if err != nil {
-		return fmt.Errorf("error reading dist directory: %w", err)
-	}
-
-	if len(files) == 0 {
-		return fmt.Errorf("no files found in dist directory")
-	}
-
-	for _, file := range files {
-		if file.IsDir() {
-			continue
-		}
-
-		uri, err := generateURI(args.ArtifactRegistryURL, file.Name())
+// Generate results for provenance.
+func generateResults(args Arguments) error {
+	for _, file := range args.Paths {
+		uri := generateURI(args.Repository, file)
+		digest, err := helper.ComputeDigest(file)
 		if err != nil {
-			return fmt.Errorf("error generating URI for %s: %w", file.Name(), err)
-		}
-		digest, err := helper.ComputeDigest(filepath.Join(distDir, file.Name()))
-		if err != nil {
-			return fmt.Errorf("error computing digest for %s: %w", file.Name(), err)
+			return fmt.Errorf("error computing digest for %s: %w", file, err)
 		}
 
 		outputData := ProvenanceOutput{
@@ -171,9 +163,9 @@ func generateResults(distDir string, args Arguments) error {
 
 		var outputPath string
 		switch {
-		case strings.HasSuffix(file.Name(), ".tar.gz"):
+		case strings.HasSuffix(file, ".tar.gz"):
 			outputPath = args.SourceDistributionResultsPath
-		case strings.HasSuffix(file.Name(), ".whl"):
+		case strings.HasSuffix(file, ".whl"):
 			outputPath = args.WheelDistributionResultsPath
 		default:
 			continue
@@ -183,32 +175,21 @@ func generateResults(distDir string, args Arguments) error {
 			return fmt.Errorf("file already exists at %s", outputPath)
 		}
 
-		err = os.WriteFile(outputPath, output, 0444)
+		err = os.WriteFile(outputPath, output, 0o600)
 		if err != nil {
 			return fmt.Errorf("error writing to %s: %w", outputPath, err)
 		}
 	}
 
-	slog.Info("Successfully generated build results")
 	return nil
 }
 
-func generateURI(artifactRegistryURL, fileName string) (string, error) {
-	// Matches the following filename format: <name>-<version>.<extension>.
-	matches := filenameRegex.FindStringSubmatch(fileName)
-	if matches == nil || len(matches) < 4 {
-		return "", fmt.Errorf("invalid filename format: %s", fileName)
-	}
-	packageName := matches[1]
-	packageVersion := matches[2]
+func generateURI(repository, filePath string) string {
+	fileName := filepath.Base(filePath) // extract file name
+	projectName := projectNameRegex.FindStringSubmatch(fileName)[1]
 
-	parsedURL, err := url.Parse(artifactRegistryURL)
-	if err != nil {
-		return "", fmt.Errorf("error parsing artifactRegistryURL: %w", err)
-	}
-
-	purl := packageurl.NewPackageURL(parsedURL.Host, parsedURL.Path, packageName, packageVersion, packageurl.Qualifiers{}, "")
-	return purl.ToString(), nil
+	uri := fmt.Sprintf("%s/%s/%s", repository, projectName, fileName)
+	return uri
 }
 
 // ensureHTTPSByDefault ensures that the given registry URL has a https scheme.
@@ -232,4 +213,31 @@ func ensureHTTPSByDefault(registryURL string) (string, error) {
 	}
 
 	return parsedURL.String(), nil
+}
+
+// Check the paths are for valid artifacts.
+func validatePaths(paths []string) error {
+	if len(paths) == 0 {
+		return fmt.Errorf("'paths' parameter is empty")
+	}
+
+	for _, path := range paths {
+		// check if file or dir
+		fileInfo, err := os.Stat(path)
+		if err != nil {
+			return fmt.Errorf("error describing path in 'paths' array: %w", err)
+		}
+
+		if fileInfo.IsDir() {
+			return fmt.Errorf("invalid file path: %s", path)
+		}
+		fileName := filepath.Base(path)
+		// Matches the following filename format: <name>-<version>.<extension>.
+		matches := filenameRegex.FindStringSubmatch(fileName)
+		if matches == nil || len(matches) < 4 {
+			return fmt.Errorf("invalid filename format: %s", fileName)
+		}
+	}
+
+	return nil
 }

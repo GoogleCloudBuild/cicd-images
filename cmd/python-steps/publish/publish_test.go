@@ -15,6 +15,7 @@ package publish
 
 import (
 	"fmt"
+	"os"
 	"reflect"
 	"strings"
 	"testing"
@@ -43,57 +44,91 @@ func (m *mockCommandRunner) Run(cmd string, args ...string) error {
 }
 
 func TestPushPythonArtifact(t *testing.T) {
-	runner := &mockCommandRunner{
-		ExpectedCommands: []string{"python3", "-m", "twine", "upload", "--repository-url", "foo-url", "--username", "oauth2accesstoken", "--password", "foo-token", "dist/*"},
+	testCases := []struct {
+		name            string
+		path            string
+		expectedCommand []string
+	}{
+		{
+			name:            "Successful for source distribution",
+			path:            "dist/my-pkg.tar.gz",
+			expectedCommand: []string{"python3", "-m", "twine", "upload", "--repository-url", "foo-url", "--username", "oauth2accesstoken", "--password", "foo-token", "dist/my-pkg.tar.gz"},
+		},
+		{
+			name:            "Successful for wheel distribution",
+			path:            "dist/my-pkg.whl",
+			expectedCommand: []string{"python3", "-m", "twine", "upload", "--repository-url", "foo-url", "--username", "oauth2accesstoken", "--password", "foo-token", "dist/my-pkg.whl"},
+		},
 	}
 	args := Arguments{
-		ArtifactRegistryURL: "foo-url",
-		ArtifactDir:         "dist",
+		Repository: "foo-url",
 	}
 	gcpToken := "foo-token"
 
-	if err := pushPythonArtifact(runner, args, gcpToken); err != nil {
-		t.Errorf("unexpected error: %v", err)
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			runner := &mockCommandRunner{ExpectedCommands: test.expectedCommand}
+			if err := pushPythonArtifact(runner, args, test.path, gcpToken); err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+		})
 	}
 }
 
 func TestGenerateUri(t *testing.T) {
 	testCases := []struct {
-		name                string
-		artifactRegistryURL string
-		filename            string
-		expectedUri         string
-		expectedError       string // Partial error string to check if error occurs
+		name          string
+		repository    string
+		filePath      string
+		expectedURI   string
+		expectedError string // Partial error string to check if error occurs
 	}{
 		{
-			name:                "Successful for source distribution",
-			artifactRegistryURL: "http://foo.com/ar-repo",
-			filename:            "foo-8.0.0.tar.gz",
-			expectedUri:         "pkg:foo.com/ar-repo/foo@8.0.0",
+			name:        "Successful for source distribution",
+			repository:  "http://foo.com/ar-repo",
+			filePath:    "/workspace/source/dist/foo-8.0.0.tar.gz",
+			expectedURI: "http://foo.com/ar-repo/foo/foo-8.0.0.tar.gz",
 		},
 		{
-			name:                "Successful for wheel distribution",
-			artifactRegistryURL: "http://foo.com/ar-repo",
-			filename:            "foo-8.0.0.whl",
-			expectedUri:         "pkg:foo.com/ar-repo/foo@8.0.0",
-		},
-		{
-			name:                "Failed for unknown distribution",
-			artifactRegistryURL: "http://foo.com/ar-repo",
-			filename:            "foo-8.0.0.egg",
-			expectedError:       "invalid filename format",
-		},
-		{
-			name:                "Failed to parse artifact registry url",
-			artifactRegistryURL: "http://foo.com/ar-repo%",
-			filename:            "foo-8.0.0.tar.gz",
-			expectedError:       "error parsing artifactRegistryURL",
+			name:        "Successful for wheel distribution",
+			repository:  "http://foo.com/ar-repo",
+			filePath:    "/workspace/source/dist/foo-8.0.0.whl",
+			expectedURI: "http://foo.com/ar-repo/foo/foo-8.0.0.whl",
 		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			uri, err := generateURI(test.artifactRegistryURL, test.filename)
+			uri := generateURI(test.repository, test.filePath)
+
+			if uri != test.expectedURI {
+				t.Errorf("uri mismatch: got '%s', expected '%s'", uri, test.expectedURI)
+			}
+		})
+	}
+}
+
+func TestEnsureHTTPSByDefault(t *testing.T) {
+	testCases := []struct {
+		name          string
+		repository    string
+		expectedURI   string
+		expectedError string // Partial error string to check if error occurs
+	}{
+		{
+			name:        "Valid repository url",
+			repository:  "http://foo.com/ar-repo",
+			expectedURI: "http://foo.com/ar-repo",
+		},
+		{
+			name:          "Invalid repository url",
+			repository:    "http://foo.com/ar-repo%",
+			expectedError: "invalid URL",
+		},
+	}
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			uri, err := ensureHTTPSByDefault(test.repository)
 
 			if test.expectedError != "" {
 				if err == nil {
@@ -105,8 +140,67 @@ func TestGenerateUri(t *testing.T) {
 				if err != nil {
 					t.Fatalf("unexpected error: %v", err)
 				}
-				if uri != test.expectedUri {
-					t.Errorf("uri mismatch: got '%s', expected '%s'", uri, test.expectedUri)
+				if uri != test.expectedURI {
+					t.Errorf("uri mismatch: got '%s', expected '%s'", uri, test.expectedURI)
+				}
+			}
+		})
+	}
+}
+
+func TestValidatePaths(t *testing.T) {
+	testCases := []struct {
+		name          string
+		filename      string
+		expectedError string // Partial error string to check if error occurs
+	}{
+		{
+			name:     "Valid source distribution",
+			filename: "foo-8.0.0.tar.gz",
+		},
+		{
+			name:     "Valid wheel distribution",
+			filename: "foo-8.0.0.whl",
+		},
+		{
+			name:          "Invalid distribution format",
+			filename:      "foo-8.0.0.egg",
+			expectedError: "invalid filename format",
+		},
+		{
+			name:          "Invalid file path",
+			filename:      "",
+			expectedError: "invalid file path",
+		},
+	}
+	tmpdir := t.TempDir()
+
+	for _, test := range testCases {
+		var filePaths []string
+		if test.filename != "" {
+			// Create temporary files for testing
+			tmpfile, err := os.CreateTemp(tmpdir, "*"+test.filename)
+			if err != nil {
+				t.Errorf("Error creating temporary file: %v", err)
+			}
+			defer tmpfile.Close()
+			filePaths = []string{tmpfile.Name()}
+		} else {
+			filePaths = []string{tmpdir}
+		}
+
+		t.Run(test.name, func(t *testing.T) {
+			err := validatePaths(filePaths)
+
+			if test.expectedError != "" {
+				if err == nil {
+					t.Fatal("expected an error, but got nil")
+				} else if !strings.Contains(err.Error(), test.expectedError) {
+					t.Fatalf("error message mismatch: got '%s', expected to contain '%s'", err.Error(), test.expectedError)
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
 				}
 			}
 		})
