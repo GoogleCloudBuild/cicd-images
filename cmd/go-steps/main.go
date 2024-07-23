@@ -1,119 +1,57 @@
-//  Copyright 2023 Google LLC
+// Copyright 2024 Google LLC All Rights Reserved.
 //
-//  Licensed under the Apache License, Version 2.0 (the "License");
-//  you may not use this file except in compliance with the License.
-//  You may obtain a copy of the License at
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-//     https://www.apache.org/licenses/LICENSE-2.0
+//    http://www.apache.org/licenses/LICENSE-2.0
 //
-//  Unless required by applicable law or agreed to in writing, software
-//  distributed under the License is distributed on an "AS IS" BASIS,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-//  See the License for the specific language governing permissions and
-//  limitations under the License.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package main
 
 import (
-	"context"
 	"fmt"
-	"log"
 	"os"
-	"regexp"
-	"strings"
-	"time"
 
-	helper "github.com/GoogleCloudBuild/cicd-images/internal/helper"
-	"github.com/GoogleCloudPlatform/artifact-registry-go-tools/pkg/netrc"
-	"github.com/pkg/errors"
-)
-
-const (
-	defaultProxy      = "https://proxy.golang.org,direct"
-	arToolsCommand    = "run github.com/GoogleCloudPlatform/artifact-registry-go-tools/cmd/auth@latest"
-	repositoryPattern = `([^/,]+)-go\.pkg\.dev`
+	"github.com/GoogleCloudBuild/cicd-images/cmd/go-steps/publish"
+	"github.com/spf13/cobra"
 )
 
 func main() {
-	// Authenticate with Artifact Registry.
-	goproxy := os.Getenv("GOPROXY")
-	if strings.Contains(goproxy, "go.pkg.dev") {
-		err := authenticateArtifactRegistry(goproxy)
-		if err != nil {
-			log.Println(err)
-		}
-	}
-}
+	rootCmd := &cobra.Command{Use: "go-steps"}
 
-// authenticateArtifactRegistry authenticates to Artifact Registry by running an auth tool binary
-func authenticateArtifactRegistry(goproxy string) error {
-	location, err := extractLocation(goproxy)
-	if err != nil {
-		log.Fatalf("Error: %s", err)
-	}
+	publishCmd := &cobra.Command{
+		Use:   "publish",
+		Short: "Publish a go module to Artifact Registry.",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			publishArgs, err := publish.ParseArgs(cmd.Flags())
+			if err != nil {
+				return err
+			}
 
-	// Add location to .netrcfile
-	err = addLocations(location)
-	if err != nil {
-		return fmt.Errorf("error: Could not authenticate to Artifact Registry: %w", err)
+			if err := publish.Execute(publishArgs); err != nil {
+				return err
+			}
+			return nil
+		},
 	}
+	publishCmd.Flags().String("project", "", "The Google Cloud project ID.")
+	publishCmd.Flags().String("repository", "", "Name of Artifact Registry repository to publish the module to.")
+	publishCmd.Flags().String("location", "", "The location of the repository.")
+	publishCmd.Flags().String("modulePath", "", "The module path of the Go modules. See https://go.dev/ref/mod#module-path.")
+	publishCmd.Flags().String("version", "", "The semantic version of the module in the form vX.Y.Z where X is the major version, Y is the minor version, and Z is the patch version. See https://pkg.go.dev/golang.org/x/mod/semver.")
+	publishCmd.Flags().Bool("verbose", false, "Whether to print verbose output.")
+	publishCmd.Flags().String("isBuildArtifact", "true", "A boolean flag specifying if the results should be a build artifact.")
+	publishCmd.Flags().String("resultsPath", "", "Path to write the results in.")
 
-	// Refresh token
-	err = refreshToken()
-	if err != nil {
-		return fmt.Errorf("error: Could not refresh Artifact Registry token: %w", err)
+	rootCmd.AddCommand(publishCmd)
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Fprintln(os.Stderr, "error executing 'go-steps': %w", err)
+		os.Exit(1)
 	}
-
-	return nil
-}
-
-// extractLocation returns the repository location from a provided string.
-func extractLocation(str string) (string, error) {
-	pattern := regexp.MustCompile(repositoryPattern)
-	match := pattern.FindStringSubmatch(str)
-	if match != nil {
-		return match[1], nil
-	} else {
-		return "", errors.New("Could not get location from proxy. please include a proxy with the format: https://{LOCATION}-go.pkg.dev/foo/baz")
-	}
-}
-
-func refreshToken() error {
-	ctx, cf := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cf()
-
-	p, config, err := netrc.Load()
-	if err != nil {
-		return err
-	}
-
-	token, err := helper.GetAccessToken(ctx)
-	if err != nil {
-		return err
-	}
-
-	config = netrc.Refresh(config, token)
-	if err := netrc.Save(config, p); err != nil {
-		return err
-	}
-	return nil
-}
-
-func addLocations(locations string) error {
-	if locations == "" {
-		return fmt.Errorf("-locations is required")
-	}
-	ll := strings.Split(locations, ",")
-	p, config, err := netrc.Load()
-	if err != nil {
-		return err
-	}
-	newCfg, err := netrc.AddConfigs(ll, config, "%s-go.pkg.dev", "")
-	if err != nil {
-		return err
-	}
-	if err := netrc.Save(newCfg, p); err != nil {
-		return err
-	}
-	return nil
 }

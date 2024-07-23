@@ -66,7 +66,7 @@ steps:
       - "--image=${_IMAGE_REGISTRY}/cloud-function:ubuntu24"
       - "--image=${_IMAGE_REGISTRY}/gke-deploy:ubuntu24"
       - "--image=${_IMAGE_REGISTRY}/builder:ubuntu24"
-      - "--image=${_IMAGE_REGISTRY}/go:ubuntu24"
+      - "--image=${_IMAGE_REGISTRY}/go-steps:ubuntu24"
       - "--image=${_IMAGE_REGISTRY}/nodejs-steps:ubuntu24"
       - "--image=${_IMAGE_REGISTRY}/python-steps:ubuntu24"
       - "--image=${_IMAGE_REGISTRY}/maven-steps:ubuntu24"
@@ -95,8 +95,8 @@ images:
   - ${_IMAGE_REGISTRY}/gke-deploy:ubuntu24
   - ${_IMAGE_REGISTRY}/builder:latest
   - ${_IMAGE_REGISTRY}/builder:ubuntu24
-  - ${_IMAGE_REGISTRY}/go:latest
-  - ${_IMAGE_REGISTRY}/go:ubuntu24
+  - ${_IMAGE_REGISTRY}/go-steps:latest
+  - ${_IMAGE_REGISTRY}/go-steps:ubuntu24
   - ${_IMAGE_REGISTRY}/nodejs-steps:latest
   - ${_IMAGE_REGISTRY}/nodejs-steps:ubuntu24
   - ${_IMAGE_REGISTRY}/python-steps:latest

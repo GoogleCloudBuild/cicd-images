@@ -18,7 +18,6 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/googleapis/google-cloud-go-testing v0.0.0-20210719221736-1c9a4c676720
 	github.com/inhies/go-bytesize v0.0.0-20220417184213-4913239db9cf
-	github.com/package-url/packageurl-go v0.1.2
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/pflag v1.0.5
@@ -26,6 +25,7 @@ require (
 	github.com/stretchr/testify v1.9.0
 	github.com/whilp/git-urls v1.0.0
 	github.com/yargevad/filepathx v1.0.0
+	golang.org/x/mod v0.18.0
 	golang.org/x/oauth2 v0.21.0
 	google.golang.org/api v0.182.0
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240528184218-531527333157

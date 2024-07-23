@@ -1,6 +1,6 @@
-#!/usr/bin/env sh
-
-# Copyright 2023 Google LLC
+# syntax=docker/dockerfile:1
+#
+# Copyright 2024 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,7 +13,23 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
 
-. setup_go.sh
+FROM google-go.pkg.dev/golang:1.21.11 as builder
 
-exec "$@"
+WORKDIR /src
+COPY --from=src . .
+
+RUN go mod download && \
+    go test ./cmd/go-steps/... -timeout 30s && \
+    go build ./cmd/go-steps
+
+# hadolint ignore=DL3006
+FROM base
+
+COPY --from=builder /src/go-steps /usr/local/bin/go-steps
+COPY --from=src --chmod=755 ./THIRD_PARTY_NOTICES.tar.gz /home
+
+USER $USER:$USER
+
+CMD [ "go-steps" ]

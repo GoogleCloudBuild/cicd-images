@@ -3,9 +3,9 @@ TAG ?= ubuntu24
 
 build:
 	@echo "+ building go images"
-	cd .. && docker buildx bake go
+	cd .. && docker buildx bake go-steps
 
 test:
-	container-structure-test test --image ${REGISTRY}/go:${TAG} --config test_config.yaml
+	container-structure-test test --image ${REGISTRY}/go-steps:${TAG} --config test_config.yaml
 
 .PHONY: build test

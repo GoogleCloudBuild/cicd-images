@@ -17,7 +17,7 @@ group "default" {
       "cloud-function",
       "cloud-storage",
       "cloud-run",
-      "go",
+      "go-steps",
       "nodejs-steps",
       "python-steps",
       "maven-steps",
@@ -85,25 +85,16 @@ target "gke-deploy" {
     ]
 }
 
-target "go-base" {
-  dockerfile = "Dockerfile.base"
-  context = "go"
+target "go-steps" {
+  dockerfile = "Dockerfile"
+  context = "go-steps"
   contexts = {
     base = "target:base"
-  }
-  output = ["type=cacheonly"]
-}
-
-target "go" {
-  dockerfile = "Dockerfile"
-  context = "go"
-  contexts = {
-    base = "target:go-base"
     src = "../"
   }
   tags = [
-    "${REGISTRY}/go:${TAG}",
-    "${REGISTRY}/go:latest"
+    "${REGISTRY}/go-steps:${TAG}",
+    "${REGISTRY}/go-steps:latest"
   ]
 }
 
