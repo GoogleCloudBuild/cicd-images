@@ -14,9 +14,11 @@ set -e
 tar_filename="THIRD_PARTY_NOTICES.tar.gz"
 
 # Run on main module directory. directory
-if [[ $(git diff --name-only HEAD | grep -q "./go.mod") ]] || [[ ! -f "$tar_filename" ]]; then
+if [[ "$(git diff --name-only HEAD | grep -q "go.mod")" ]] || [[ ! -f "$tar_filename" ]]; then
+    if [[ -f "$tar_filename" ]]; then
+        rm $tar_filename
+    fi
     echo "Creating $tar_filename..."
-    rm $tar_filename
     go-licenses check ./...
     go-licenses save ./... --save_path=./THIRD_PARTY_NOTICES
     go-licenses report ./... > ./THIRD_PARTY_NOTICES/licenses.csv
