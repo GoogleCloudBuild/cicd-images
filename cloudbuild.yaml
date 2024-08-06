@@ -56,7 +56,7 @@ steps:
     args:
       - "--on_demand"
       - "--image=${_IMAGE_REGISTRY}/gcb-base:ubuntu24"
-      - "--image=${_IMAGE_REGISTRY}/docker/dind:ubuntu24"
+      - "--image=${_IMAGE_REGISTRY}/docker/dind:deprecated-public-image-ubuntu24"
       - "--image=${_IMAGE_REGISTRY}/gar-upload:ubuntu24"
       - "--image=${_IMAGE_REGISTRY}/git-steps:ubuntu24"
       - "--image=${_IMAGE_REGISTRY}/app-engine:ubuntu24"
@@ -75,8 +75,8 @@ steps:
 images:
   - ${_IMAGE_REGISTRY}/gcb-base:latest
   - ${_IMAGE_REGISTRY}/gcb-base:ubuntu24
-  - ${_IMAGE_REGISTRY}/docker/dind:latest
-  - ${_IMAGE_REGISTRY}/docker/dind:ubuntu24
+  - ${_IMAGE_REGISTRY}/docker/dind:deprecated-public-image-latest
+  - ${_IMAGE_REGISTRY}/docker/dind:deprecated-public-image-ubuntu24
   - ${_IMAGE_REGISTRY}/gar-upload:latest
   - ${_IMAGE_REGISTRY}/gar-upload:ubuntu24
   - ${_IMAGE_REGISTRY}/git-steps:latest
