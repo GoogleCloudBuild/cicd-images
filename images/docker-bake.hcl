@@ -54,8 +54,8 @@ target "docker-dind" {
     base = "target:base"
   }
   tags = [
-    "${REGISTRY}/docker/dind:${TAG}",
-    "${REGISTRY}/docker/dind:latest"
+    "${REGISTRY}/docker/dind:deprecated-public-image-${TAG}",
+    "${REGISTRY}/docker/dind:deprecated-public-image-latest"
   ]
 }
 
