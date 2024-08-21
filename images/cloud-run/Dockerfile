@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 
-FROM google-go.pkg.dev/golang:1.21.11 as builder
+FROM google-go.pkg.dev/golang:1.22.4 as builder
 
 WORKDIR /src
 COPY --from=src . .
