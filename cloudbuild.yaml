@@ -58,7 +58,7 @@ steps:
       - "--image=${_IMAGE_REGISTRY}/gcb-base:ubuntu24"
       - "--image=${_IMAGE_REGISTRY}/docker/dind:deprecated-public-image-ubuntu24"
       - "--image=${_IMAGE_REGISTRY}/gar-upload:ubuntu24"
-      - "--image=${_IMAGE_REGISTRY}/git-steps:ubuntu24"
+      - "--image=${_IMAGE_REGISTRY}/git-steps:deprecated-public-image-ubuntu24"
       - "--image=${_IMAGE_REGISTRY}/app-engine:ubuntu24"
       - "--image=${_IMAGE_REGISTRY}/cloud-deploy:ubuntu24"
       - "--image=${_IMAGE_REGISTRY}/cloud-storage:ubuntu24"
@@ -66,10 +66,10 @@ steps:
       - "--image=${_IMAGE_REGISTRY}/cloud-function:ubuntu24"
       - "--image=${_IMAGE_REGISTRY}/gke-deploy:ubuntu24"
       - "--image=${_IMAGE_REGISTRY}/builder:ubuntu24"
-      - "--image=${_IMAGE_REGISTRY}/go-steps:ubuntu24"
-      - "--image=${_IMAGE_REGISTRY}/nodejs-steps:ubuntu24"
-      - "--image=${_IMAGE_REGISTRY}/python-steps:ubuntu24"
-      - "--image=${_IMAGE_REGISTRY}/maven-steps:ubuntu24"
+      - "--image=${_IMAGE_REGISTRY}/go-steps:deprecated-public-image-ubuntu24"
+      - "--image=${_IMAGE_REGISTRY}/nodejs-steps:deprecated-public-image-ubuntu24"
+      - "--image=${_IMAGE_REGISTRY}/python-steps:deprecated-public-image-ubuntu24"
+      - "--image=${_IMAGE_REGISTRY}/maven-steps:deprecated-public-image-ubuntu24"
 
 # Push the images.
 images:
@@ -79,8 +79,8 @@ images:
   - ${_IMAGE_REGISTRY}/docker/dind:deprecated-public-image-ubuntu24
   - ${_IMAGE_REGISTRY}/gar-upload:latest
   - ${_IMAGE_REGISTRY}/gar-upload:ubuntu24
-  - ${_IMAGE_REGISTRY}/git-steps:latest
-  - ${_IMAGE_REGISTRY}/git-steps:ubuntu24
+  - ${_IMAGE_REGISTRY}/git-steps:deprecated-public-image-latest
+  - ${_IMAGE_REGISTRY}/git-steps:deprecated-public-image-ubuntu24
   - ${_IMAGE_REGISTRY}/app-engine:latest
   - ${_IMAGE_REGISTRY}/app-engine:ubuntu24
   - ${_IMAGE_REGISTRY}/cloud-deploy:latest
@@ -95,11 +95,11 @@ images:
   - ${_IMAGE_REGISTRY}/gke-deploy:ubuntu24
   - ${_IMAGE_REGISTRY}/builder:latest
   - ${_IMAGE_REGISTRY}/builder:ubuntu24
-  - ${_IMAGE_REGISTRY}/go-steps:latest
-  - ${_IMAGE_REGISTRY}/go-steps:ubuntu24
-  - ${_IMAGE_REGISTRY}/nodejs-steps:latest
-  - ${_IMAGE_REGISTRY}/nodejs-steps:ubuntu24
-  - ${_IMAGE_REGISTRY}/python-steps:latest
-  - ${_IMAGE_REGISTRY}/python-steps:ubuntu24
-  - ${_IMAGE_REGISTRY}/maven-steps:latest
-  - ${_IMAGE_REGISTRY}/maven-steps:ubuntu24
+  - ${_IMAGE_REGISTRY}/go-steps:deprecated-public-image-latest
+  - ${_IMAGE_REGISTRY}/go-steps:deprecated-public-image-ubuntu24
+  - ${_IMAGE_REGISTRY}/nodejs-steps:deprecated-public-image-latest
+  - ${_IMAGE_REGISTRY}/nodejs-steps:deprecated-public-image-ubuntu24
+  - ${_IMAGE_REGISTRY}/python-steps:deprecated-public-image-latest
+  - ${_IMAGE_REGISTRY}/python-steps:deprecated-public-image-ubuntu24
+  - ${_IMAGE_REGISTRY}/maven-steps:deprecated-public-image-latest
+  - ${_IMAGE_REGISTRY}/maven-steps:deprecated-public-image-ubuntu24

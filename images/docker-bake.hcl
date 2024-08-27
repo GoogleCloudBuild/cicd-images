@@ -67,8 +67,8 @@ target "git-steps" {
       src = "../"
     }
     tags = [
-      "${REGISTRY}/git-steps:${TAG}",
-      "${REGISTRY}/git-steps:latest",
+      "${REGISTRY}/git-steps:deprecated-public-image-${TAG}",
+      "${REGISTRY}/git-steps:deprecated-public-image-latest",
     ]
 }
 
@@ -93,8 +93,8 @@ target "go-steps" {
     src = "../"
   }
   tags = [
-    "${REGISTRY}/go-steps:${TAG}",
-    "${REGISTRY}/go-steps:latest"
+    "${REGISTRY}/go-steps:deprecated-public-image-${TAG}",
+    "${REGISTRY}/go-steps:deprecated-public-image-latest"
   ]
 }
 
@@ -184,8 +184,8 @@ target "nodejs-steps" {
     src = "../"
   }
   tags = [
-    "${REGISTRY}/nodejs-steps:${TAG}",
-    "${REGISTRY}/nodejs-steps:latest"
+    "${REGISTRY}/nodejs-steps:deprecated-public-image-${TAG}",
+    "${REGISTRY}/nodejs-steps:deprecated-public-image-latest"
   ]
 }
 
@@ -197,8 +197,8 @@ target "maven-steps" {
     src = "../"
   }
   tags = [
-    "${REGISTRY}/maven-steps:${TAG}",
-    "${REGISTRY}/maven-steps:latest"
+    "${REGISTRY}/maven-steps:deprecated-public-image-${TAG}",
+    "${REGISTRY}/maven-steps:deprecated-public-image-latest"
   ]
 }
 
@@ -210,7 +210,7 @@ target "python-steps" {
     src = "../"
   }
   tags = [
-    "${REGISTRY}/python-steps:${TAG}",
-    "${REGISTRY}/python-steps:latest"
+    "${REGISTRY}/python-steps:deprecated-public-image-${TAG}",
+    "${REGISTRY}/python-steps:deprecated-public-image-latest"
   ]
 }

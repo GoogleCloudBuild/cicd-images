@@ -1,5 +1,5 @@
 REGISTRY ?= us-docker.pkg.dev/gcb-catalog-release/catalog
-TAG ?= ubuntu24
+TAG ?= deprecated-public-image-ubuntu24
 
 build:
 	@echo "+ building python images"
