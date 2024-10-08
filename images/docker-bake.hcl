@@ -4,6 +4,9 @@ variable "REGISTRY" {
 variable "TAG" {
   default = "ubuntu24"
 }
+variable "TAG_DEBIAN" {
+  default = "debian12"
+}
 
 group "default" {
     targets = [
@@ -11,6 +14,7 @@ group "default" {
       "app-engine",
       "docker-dind",
       "gar-upload",
+      "gcb-internal",
       "git-steps",
       "gke-deploy",
       "cloud-deploy",
@@ -31,6 +35,15 @@ target "base" {
   tags = [
     "${REGISTRY}/gcb-base:${TAG}",
     "${REGISTRY}/gcb-base:latest"
+  ]
+}
+
+target "gcb-internal" {
+  dockerfile= "Dockerfile"
+  context = "gcb-internal"
+  tags = [
+    "${REGISTRY}/gcb-internal:${TAG_DEBIAN}",
+    "${REGISTRY}/gcb-internal:latest"
   ]
 }
 
