@@ -16,7 +16,6 @@ package publish
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
@@ -80,37 +79,6 @@ func TestExecuteUpload(t *testing.T) {
 	t.Run("execute upload", func(t *testing.T) {
 		if err := executeUpload(ctx, resourceName, zipFile, gmService, opService); err != nil {
 			t.Fatalf("Expected no errors, but got %v", err)
-		}
-	})
-}
-
-func TestGenerateProvenance(t *testing.T) {
-	tmpdir := t.TempDir()
-	filePath := createTestGoModule(t, tmpdir)
-	args := Arguments{
-		Project:         "test-project",
-		Repository:      "test-repository",
-		Location:        "test-location",
-		ModulePath:      "github.com/test/module/path",
-		Version:         "v0.0.0",
-		Verbose:         false,
-		IsBuildArtifact: "true",
-		ResultsPath:     filepath.Join(tmpdir, "results.txt"),
-	}
-
-	t.Run("generate provenance", func(t *testing.T) {
-		if err := generateProvenance(args, filePath); err != nil {
-			t.Fatalf("Expected no errors, but got %v", err)
-		}
-
-		data, err := os.ReadFile(args.ResultsPath)
-		if err != nil {
-			t.Fatalf("error reading results file: %v", err)
-		}
-
-		results := &Provenance{}
-		if err := json.Unmarshal(data, results); err != nil {
-			t.Fatalf("error unmarshalling json: %v", err)
 		}
 	})
 }

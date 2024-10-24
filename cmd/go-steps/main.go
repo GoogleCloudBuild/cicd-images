@@ -45,9 +45,6 @@ func main() {
 	publishCmd.Flags().String("location", "", "The location of the repository.")
 	publishCmd.Flags().String("modulePath", "", "The module path of the Go modules. See https://go.dev/ref/mod#module-path.")
 	publishCmd.Flags().String("version", "", "The semantic version of the module in the form vX.Y.Z where X is the major version, Y is the minor version, and Z is the patch version. See https://pkg.go.dev/golang.org/x/mod/semver.")
-	publishCmd.Flags().Bool("verbose", false, "Whether to print verbose output.")
-	publishCmd.Flags().String("isBuildArtifact", "true", "A boolean flag specifying if the results should be a build artifact.")
-	publishCmd.Flags().String("resultsPath", "", "Path to write the results in.")
 
 	rootCmd.AddCommand(publishCmd)
 	if err := rootCmd.Execute(); err != nil {

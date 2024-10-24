@@ -16,16 +16,12 @@ package publish
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"log/slog"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/GoogleCloudBuild/cicd-images/internal/helper"
-	"github.com/GoogleCloudBuild/cicd-images/internal/logger"
 	"github.com/spf13/pflag"
 	"golang.org/x/mod/module"
 	"golang.org/x/mod/zip"
@@ -41,14 +37,11 @@ const (
 )
 
 type Arguments struct {
-	Project         string
-	Repository      string
-	Location        string
-	ModulePath      string
-	Version         string
-	Verbose         bool
-	IsBuildArtifact string
-	ResultsPath     string
+	Project    string
+	Repository string
+	Location   string
+	ModulePath string
+	Version    string
 }
 
 type Provenance struct {
@@ -79,54 +72,27 @@ func ParseArgs(f *pflag.FlagSet) (Arguments, error) {
 	if err != nil {
 		return Arguments{}, fmt.Errorf("failed to get version: %w", err)
 	}
-	verbose, err := f.GetBool("verbose")
-	if err != nil {
-		return Arguments{}, fmt.Errorf("failed to get verbose: %w", err)
-	}
-	isBuildArtifact, err := f.GetString("isBuildArtifact")
-	if err != nil {
-		return Arguments{}, fmt.Errorf("failed to get isBuildArtifact: %w", err)
-	}
-	resultsPath, err := f.GetString("resultsPath")
-	if err != nil {
-		return Arguments{}, fmt.Errorf("failed to get resultsPath: %w", err)
-	}
 
 	return Arguments{
-		Project:         project,
-		Repository:      repository,
-		Location:        location,
-		ModulePath:      modulePath,
-		Version:         version,
-		Verbose:         verbose,
-		IsBuildArtifact: isBuildArtifact,
-		ResultsPath:     resultsPath,
+		Project:    project,
+		Repository: repository,
+		Location:   location,
+		ModulePath: modulePath,
+		Version:    version,
 	}, nil
 }
 
 // Execute is the entrypoint for the publish command execution.
 func Execute(args Arguments) error {
-	logger.SetupLogger(args.Verbose)
-
-	slog.Info("Packaging Go module")
 	filePath, err := packageModule(args, source)
 	if err != nil {
 		return err
 	}
 	defer os.RemoveAll(filepath.Dir(filePath))
-	slog.Info("Successfully packaged Go module")
 
-	slog.Info("Uploading Go module")
 	if err := uploadModule(args, filePath); err != nil {
 		return err
 	}
-	slog.Info("Successfully uploaded Go module")
-
-	slog.Info("Generating results for provenance")
-	if err := generateProvenance(args, filePath); err != nil {
-		return err
-	}
-	slog.Info("Successfully generated results for provenance")
 
 	return nil
 }
@@ -244,35 +210,7 @@ func executeUpload(ctx context.Context, resourceName string, zipFile *os.File, g
 			return ctx.Err()
 		case <-time.After(3 * time.Second):
 			// Continue polling
-			slog.Info("Waiting for upload to complete.")
 		}
-	}
-
-	return nil
-}
-
-// Generate provenance for the Go module published to Artifact Registry.
-func generateProvenance(args Arguments, filePath string) error {
-	uri := fmt.Sprintf("https://%s-go.pkg.dev/%s/%s/%s/%s", args.Location, args.Project, args.Repository, args.ModulePath, args.Version)
-
-	digest, err := helper.ComputeDigest(filePath)
-	if err != nil {
-		return fmt.Errorf("error getting digest: %w", err)
-	}
-
-	provenance := &Provenance{
-		URI:             strings.TrimSpace(uri),
-		Digest:          strings.TrimSpace(digest),
-		IsBuildArtifact: strings.TrimSpace(args.IsBuildArtifact),
-	}
-
-	file, err := json.Marshal(provenance)
-	if err != nil {
-		return fmt.Errorf("error marshaling json %v: %w", provenance, err)
-	}
-	// Write provenance as json file in path
-	if err := os.WriteFile(args.ResultsPath, file, 0o600); err != nil {
-		return fmt.Errorf("error writing results into %s: %w", args.ResultsPath, err)
 	}
 
 	return nil
