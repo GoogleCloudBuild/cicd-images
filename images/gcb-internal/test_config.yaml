@@ -54,4 +54,11 @@ commandTests:
     command: "which"
     args: ["mvn"]
     expectedOutput: ["/usr/bin/mvn"]
-
+  - name: "which twine"
+    command: "which"
+    args: ["twine"]
+    expectedOutput: ["/usr/bin/twine"]
+  - name: "keyring exists"
+    command: "sh"
+    args: ["-c", "keyring --list-backends | grep keyrings.gauth.GooglePythonAuth"]
+    exitCode: 0

@@ -48,7 +48,9 @@ RUN <<EOF
     apt-get install -y --no-install-recommends \
         xxd \
         nodejs npm \
-        maven
+        maven \
+        twine python3-pip
+    pip install keyrings.google-artifactregistry-auth==1.1.2 --break-system-packages --no-cache-dir
 EOF
 
 COPY --from=builder /src/go-steps /usr/local/bin/go-steps
