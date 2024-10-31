@@ -28,8 +28,8 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
-// TODO (@zhangquan): Refactor tests to tests public-facing methods
-// TODO (@zhangquan): Improve tests coverage
+// TODO (@zhangquan): Refactor tests to tests public-facing methods.
+// TODO (@zhangquan): Improve tests coverage.
 func TestCreateCloudDeployRelease(t *testing.T) {
 	// setup
 	flags := &config.ReleaseConfiguration{
@@ -157,7 +157,7 @@ func TestValidateSupportedSkaffoldVersion_Success(t *testing.T) {
 	}{
 		{
 			name:            "valid skaffold version",
-			skaffoldVersion: "2.8",
+			skaffoldVersion: "2.13",
 		}, {
 			name:            "skaffold version not found",
 			skaffoldVersion: "skaffold_preview",
@@ -172,7 +172,6 @@ func TestValidateSupportedSkaffoldVersion_Success(t *testing.T) {
 			t.Errorf("unexpected error calling validateSupportedSkaffoldVersion(): %s", err)
 		}
 	}
-
 }
 
 func TestValidateSupportedSkaffoldVersion_Failed(t *testing.T) {
