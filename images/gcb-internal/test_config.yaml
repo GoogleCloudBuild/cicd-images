@@ -38,4 +38,20 @@ commandTests:
     command: "which"
     args: ["base64"]
     expectedOutput: ["/usr/bin/base64"]
+  - name: "which go-steps"
+    command: "which"
+    args: ["go-steps"]
+    expectedOutput: ["/usr/local/bin/go-steps"]
+  - name: "which nodejs"
+    command: "which"
+    args: ["nodejs"]
+    expectedOutput: ["/usr/bin/nodejs"]
+  - name: "which npm"
+    command: "which"
+    args: ["npm"]
+    expectedOutput: ["/usr/bin/npm"]
+  - name: "which maven"
+    command: "which"
+    args: ["mvn"]
+    expectedOutput: ["/usr/bin/mvn"]
 

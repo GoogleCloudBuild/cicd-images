@@ -41,6 +41,9 @@ target "base" {
 target "gcb-internal" {
   dockerfile= "Dockerfile"
   context = "gcb-internal"
+  contexts = {
+    src = "../"
+  }
   tags = [
     "${REGISTRY}/gcb-internal:${TAG_DEBIAN}",
     "${REGISTRY}/gcb-internal:latest"

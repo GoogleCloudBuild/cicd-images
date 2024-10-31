@@ -15,10 +15,41 @@
 # limitations under the License.
 #
 
+# Install go-steps binary
 # hadolint ignore=DL3007
-FROM gcr.io/cloud-marketplace/google/debian12:latest
+FROM gcr.io/cloud-marketplace/google/debian12:latest as builder
+
+ENV GOPATH=$HOME/go
+ENV PATH=$PATH:$GOROOT/bin:$GOPATH/bin
 
 # hadolint ignore=DL3008
 RUN apt-get update -y && \
     apt-get -y upgrade && \
-    apt-get install -y --no-install-recommends xxd
+    apt-get install -y --no-install-recommends ca-certificates golang git
+
+# Get version Go 1.22.4
+RUN go install golang.org/dl/go1.22.4@latest && \
+    go1.22.4 download
+
+WORKDIR /src
+COPY --from=src . .
+
+RUN go1.22.4 mod download && \
+    go1.22.4 test ./cmd/go-steps/... -timeout 30s && \
+    go1.22.4 build ./cmd/go-steps
+
+# hadolint ignore=DL3007
+FROM gcr.io/cloud-marketplace/google/debian12:latest
+
+# hadolint ignore=DL3008
+RUN <<EOF
+    apt-get update -y
+    apt-get -y upgrade
+    apt-get install -y --no-install-recommends \
+        xxd \
+        nodejs npm \
+        maven
+EOF
+
+COPY --from=builder /src/go-steps /usr/local/bin/go-steps
+
