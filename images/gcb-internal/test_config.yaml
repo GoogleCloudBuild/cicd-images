@@ -62,3 +62,7 @@ commandTests:
     command: "sh"
     args: ["-c", "keyring --list-backends | grep keyrings.gauth.GooglePythonAuth"]
     exitCode: 0
+  - name: "which git"
+    command: "which"
+    args: ["git"]
+    expectedOutput: ["/usr/bin/git"]

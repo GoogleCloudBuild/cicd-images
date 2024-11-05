@@ -49,7 +49,8 @@ RUN <<EOF
         xxd \
         nodejs npm \
         maven \
-        twine python3-pip
+        twine python3-pip \
+        git ca-certificates
     pip install keyrings.google-artifactregistry-auth==1.1.2 --break-system-packages --no-cache-dir
 EOF
 
