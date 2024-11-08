@@ -1,6 +1,6 @@
 module github.com/GoogleCloudBuild/cicd-images
 
-go 1.21.0
+go 1.21
 
 require (
 	cloud.google.com/go/appengine v1.8.7
