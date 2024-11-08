@@ -15,7 +15,6 @@
 # limitations under the License.
 #
 
-# Install go-steps binary
 # hadolint ignore=DL3007
 FROM gcr.io/cloud-marketplace/google/debian12:latest as builder
 
@@ -34,9 +33,16 @@ RUN go install golang.org/dl/go1.22.4@latest && \
 WORKDIR /src
 COPY --from=src . .
 
+# Build go-steps binary
 RUN go1.22.4 mod download && \
     go1.22.4 test ./cmd/go-steps/... -timeout 30s && \
     go1.22.4 build ./cmd/go-steps
+
+# Build gcs-fetcher binary
+RUN <<EOF
+    go1.22.4 get github.com/GoogleCloudPlatform/cloud-builders/gcs-fetcher/cmd/gcs-fetcher
+    go1.22.4 build -o gcs-fetcher github.com/GoogleCloudPlatform/cloud-builders/gcs-fetcher/cmd/gcs-fetcher
+EOF
 
 # hadolint ignore=DL3007
 FROM gcr.io/cloud-marketplace/google/debian12:latest
@@ -55,4 +61,4 @@ RUN <<EOF
 EOF
 
 COPY --from=builder /src/go-steps /usr/local/bin/go-steps
-
+COPY --from=builder /src/gcs-fetcher /usr/local/bin/gcs-fetcher

@@ -66,3 +66,7 @@ commandTests:
     command: "which"
     args: ["git"]
     expectedOutput: ["/usr/bin/git"]
+  - name: "which gcs-fetcher"
+    command: "which"
+    args: ["gcs-fetcher"]
+    expectedOutput: ["/usr/local/bin/gcs-fetcher"]
