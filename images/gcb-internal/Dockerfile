@@ -47,6 +47,9 @@ EOF
 # hadolint ignore=DL3007
 FROM gcr.io/cloud-marketplace/google/debian12:latest
 
+WORKDIR /src
+COPY --from=builder /src/images/gcb-internal/requirements.txt .
+
 # hadolint ignore=DL3008
 RUN <<EOF
     apt-get update -y
@@ -57,7 +60,7 @@ RUN <<EOF
         maven \
         twine python3-pip \
         git ca-certificates
-    pip install keyrings.google-artifactregistry-auth==1.1.2 --break-system-packages --no-cache-dir
+    pip install --break-system-packages --no-cache-dir --require-hashes -r requirements.txt
 EOF
 
 COPY --from=builder /src/go-steps /usr/local/bin/go-steps
