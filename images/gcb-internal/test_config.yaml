@@ -70,3 +70,19 @@ commandTests:
     command: "which"
     args: ["gcs-fetcher"]
     expectedOutput: ["/usr/local/bin/gcs-fetcher"]
+  - name: "which gsutil"
+    command: "which"
+    args: ["gsutil"]
+    expectedOutput: ["/root/.local/bin/gsutil"]
+  - name: "boto config exists"
+    command: "ls"
+    args: ["/etc/boto.cfg"]
+    expectedOutput: ["/etc/boto.cfg"]
+  - name: "which tar"
+    command: "which"
+    args: ["tar"]
+    expectedOutput: ["/usr/bin/tar"]
+  - name: "which unzip"
+    command: "which"
+    args: ["unzip"]
+    expectedOutput: ["/usr/bin/unzip"]

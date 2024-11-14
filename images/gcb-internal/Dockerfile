@@ -46,11 +46,15 @@ EOF
 
 # hadolint ignore=DL3007
 FROM gcr.io/cloud-marketplace/google/debian12:latest
+WORKDIR /
 
-WORKDIR /src
+# Update path for gsutil command
+ENV PATH=$PATH:/root/.local/bin
+
+# Packages to be installed by pip
 COPY --from=builder /src/images/gcb-internal/requirements.txt .
 
-# hadolint ignore=DL3008
+# hadolint ignore=DL3008, DL3013
 RUN <<EOF
     apt-get update -y
     apt-get -y upgrade
@@ -58,10 +62,18 @@ RUN <<EOF
         xxd \
         nodejs npm \
         maven \
-        twine python3-pip \
-        git ca-certificates
+        twine python3-pip pipx\
+        git ca-certificates \
+        tar unzip
     pip install --break-system-packages --no-cache-dir --require-hashes -r requirements.txt
+    pipx install gsutil
 EOF
+
+RUN rm requirements.txt
+
+# Create config file for gsutil to access credentials from metadata server
+RUN echo "[GoogleCompute]" >> /etc/boto.cfg && \
+    echo "service_account = default"  >> /etc/boto.cfg
 
 COPY --from=builder /src/go-steps /usr/local/bin/go-steps
 COPY --from=builder /src/gcs-fetcher /usr/local/bin/gcs-fetcher
