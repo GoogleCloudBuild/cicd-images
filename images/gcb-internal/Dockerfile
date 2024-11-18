@@ -59,6 +59,7 @@ RUN <<EOF
     apt-get update -y
     apt-get -y upgrade
     apt-get install -y --no-install-recommends \
+        docker.io \
         xxd \
         nodejs npm \
         maven \

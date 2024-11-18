@@ -86,3 +86,7 @@ commandTests:
     command: "which"
     args: ["unzip"]
     expectedOutput: ["/usr/bin/unzip"]
+  - name: "which docker"
+    command: "which"
+    args: ["docker"]
+    expectedOutput: ["/usr/bin/docker"]
