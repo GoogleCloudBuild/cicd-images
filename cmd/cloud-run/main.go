@@ -14,14 +14,14 @@
 
 package main
 
-import "os"
+import (
+	"log"
+	"os"
+)
 
 func main() {
-	root := NewCloudRunCmd()
-	root.AddCommand(NewDeployCmd())
-
-	err := root.Execute()
-	if err != nil {
+	if err := Execute(); err != nil {
+		log.Printf("Error: %v\n", err)
 		os.Exit(1)
 	}
 }

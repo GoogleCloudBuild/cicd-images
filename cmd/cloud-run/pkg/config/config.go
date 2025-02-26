@@ -18,4 +18,17 @@ type DeployOptions struct {
 	Service string
 	Image   string
 	Source  string
+
+	// Environment variables configuration
+	EnvVars       map[string]string // Environment variables to set
+	EnvVarsFile   string            // Path to YAML file with environment variables
+	RemoveEnvVars []string          // Environment variables to remove
+	UpdateEnvVars map[string]string // Environment variables to update
+	ClearEnvVars  bool              // Whether to clear all environment variables
+
+	// Secrets configuration
+	Secrets       map[string]string // Secrets to set (key=SECRET_NAME:VERSION)
+	RemoveSecrets []string          // Secrets to remove
+	UpdateSecrets map[string]string // Secrets to update
+	ClearSecrets  bool              // Whether to clear all secrets
 }

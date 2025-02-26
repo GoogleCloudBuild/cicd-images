@@ -31,11 +31,74 @@ func NewDeployCmd() *cobra.Command {
 	var deployCmd = &cobra.Command{
 		Use:   "deploy",
 		Short: "Create or update a Cloud Run service",
-		RunE:  deployService,
+		Long: `Deploy creates a new Cloud Run service or updates an existing one.
+
+You can deploy from a container image or source code:
+- From container image: Use --image flag
+- From source code: Use --source flag (defaults to current directory)
+
+Environment Variables:
+- --set-env-vars KEY=VALUE     Set environment variables (removes existing ones)
+- --env-vars-file FILE         Load environment variables from a YAML file
+- --remove-env-vars KEY        Remove specific environment variables
+- --update-env-vars KEY=VALUE  Update or add new environment variables
+- --clear-env-vars            Remove all environment variables
+
+Secrets:
+- --set-secrets KEY=SECRET:VERSION    Set secrets (removes existing ones)
+  For mounted volumes: /path/to/mount=SECRET:VERSION
+  For env vars: ENV_VAR=SECRET:VERSION
+- --remove-secrets KEY        Remove specific secrets
+- --update-secrets KEY=VALUE  Update or add new secrets
+- --clear-secrets            Remove all secrets
+
+Examples:
+  # Deploy from container image
+  cloud-run deploy --project-id=my-project --region=us-central1 --service=myapp --image=gcr.io/myproject/myapp:v1
+
+  # Deploy from source code
+  cloud-run deploy --project-id=my-project --region=us-central1 --service=myapp --source=./src
+
+  # Set environment variables
+  cloud-run deploy --service=myapp --set-env-vars=DB_HOST=localhost,DB_PORT=5432
+
+  # Mount a secret as a volume
+  cloud-run deploy --service=myapp --set-secrets=/secrets/api/key=mysecret:latest
+
+  # Set a secret as an environment variable
+  cloud-run deploy --service=myapp --set-secrets=API_KEY=mysecret:1`,
+		RunE: deployService,
 	}
-	deployCmd.Flags().StringVar(&opts.Image, "image", "", "The image to deployService")
-	deployCmd.Flags().StringVar(&opts.Service, "service", "", "The service name to deployService")
-	deployCmd.Flags().StringVar(&opts.Source, "source", ".", "The source directory to deployService")
+	deployCmd.Flags().StringVar(&opts.Image, "image", "", "The container image to deploy (e.g., gcr.io/project/image:tag)")
+	deployCmd.Flags().StringVar(&opts.Service, "service", "", "The name of the Cloud Run service to create or update")
+	deployCmd.Flags().StringVar(&opts.Source, "source", ".", "The source directory to deploy from")
+
+	deployCmd.Flags().StringToStringVar(&opts.EnvVars, "set-env-vars", nil, "List of key-value pairs to set as environment variables (removes existing ones)")
+	deployCmd.Flags().StringVar(&opts.EnvVarsFile, "env-vars-file", "", "Path to a local YAML file with environment variable definitions")
+	deployCmd.Flags().StringSliceVar(&opts.RemoveEnvVars, "remove-env-vars", nil, "List of environment variables to remove")
+	deployCmd.Flags().StringToStringVar(&opts.UpdateEnvVars, "update-env-vars", nil, "List of key-value pairs to update or add as environment variables")
+	deployCmd.Flags().BoolVar(&opts.ClearEnvVars, "clear-env-vars", false, "Remove all environment variables")
+
+	deployCmd.Flags().StringToStringVar(&opts.Secrets, "set-secrets", nil, "List of key-value pairs to set as secrets (removes existing ones)")
+	deployCmd.Flags().StringSliceVar(&opts.RemoveSecrets, "remove-secrets", nil, "List of secrets to remove")
+	deployCmd.Flags().StringToStringVar(&opts.UpdateSecrets, "update-secrets", nil, "List of key-value pairs to update or add as secrets")
+	deployCmd.Flags().BoolVar(&opts.ClearSecrets, "clear-secrets", false, "Remove all secrets")
+
+	// Flag validations
+	// Only one of these env var flags can be used at a time, but all are optional
+	if deployCmd.Flags().Lookup("set-env-vars").Changed ||
+		deployCmd.Flags().Lookup("update-env-vars").Changed ||
+		deployCmd.Flags().Lookup("clear-env-vars").Changed ||
+		deployCmd.Flags().Lookup("env-vars-file").Changed {
+		deployCmd.MarkFlagsMutuallyExclusive("set-env-vars", "update-env-vars", "clear-env-vars", "env-vars-file")
+	}
+
+	// Only one of these secret flags can be used at a time, but all are optional
+	if deployCmd.Flags().Lookup("set-secrets").Changed ||
+		deployCmd.Flags().Lookup("update-secrets").Changed ||
+		deployCmd.Flags().Lookup("clear-secrets").Changed {
+		deployCmd.MarkFlagsMutuallyExclusive("set-secrets", "update-secrets", "clear-secrets")
+	}
 
 	_ = deployCmd.MarkFlagRequired("service")
 	deployCmd.MarkFlagsOneRequired(

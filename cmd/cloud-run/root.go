@@ -18,23 +18,35 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var projectID string
-var region string
+var (
+	projectID string
+	region    string
+	userAgent string
 
-var userAgent string
-
-func NewCloudRunCmd() *cobra.Command {
-	var rootCmd = &cobra.Command{
+	rootCmd = &cobra.Command{
 		Use:   "cloud-run",
-		Short: "a CLI tool to use Cloud Run",
+		Short: "A CLI tool to deploy and manage Cloud Run services",
+		Long: `cloud-run is a command-line tool for deploying and managing Google Cloud Run services.
+It provides a streamlined interface for common Cloud Run operations with support for:
+- Deploying from container images or source code
+- Managing environment variables
+- Handling secrets (as environment variables or mounted volumes)
+- Updating existing services`,
 	}
+)
 
-	rootCmd.PersistentFlags().StringVar(&region, "region", "", "The cloud services or jobs region")
-	rootCmd.PersistentFlags().StringVar(&projectID, "project-id", "", "The GCP project id")
-	rootCmd.PersistentFlags().StringVar(&userAgent, "google-apis-user-agent", "", "The user-agent to be applied when calling Google APIs")
+func init() {
+	rootCmd.PersistentFlags().StringVar(&projectID, "project-id", "", "The Google Cloud project ID where the service will be deployed")
+	rootCmd.PersistentFlags().StringVar(&region, "region", "", "The Google Cloud region where the service will be deployed (e.g., us-central1)")
+	rootCmd.PersistentFlags().StringVar(&userAgent, "google-apis-user-agent", "", "Custom user agent string for Google API calls")
 
-	_ = rootCmd.MarkPersistentFlagRequired("region")
 	_ = rootCmd.MarkPersistentFlagRequired("project-id")
+	_ = rootCmd.MarkPersistentFlagRequired("region")
 
-	return rootCmd
+	// Add commands
+	rootCmd.AddCommand(NewDeployCmd())
+}
+
+func Execute() error {
+	return rootCmd.Execute()
 }
