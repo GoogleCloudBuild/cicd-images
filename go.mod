@@ -1,4 +1,4 @@
-module github.com/GoogleCloudBuild/cicd-images
+module github.com/dijarvrella/cicd-images
 
 go 1.21
 
