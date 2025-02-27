@@ -517,10 +517,6 @@ func updateWithOptions(service *runv1.Service, opts config.DeployOptions) {
 	}
 
 	// Set the default URL setting
-	if service.Metadata.Annotations == nil {
-		service.Metadata.Annotations = make(map[string]string)
-	}
-
 	if !opts.DefaultURL {
 		service.Metadata.Annotations["run.googleapis.com/launch-stage"] = "BETA"
 		service.Metadata.Annotations["run.googleapis.com/default-url"] = "disabled"
@@ -982,9 +978,11 @@ func updateServiceWithOptionsV2(service *run.GoogleCloudRunV2Service, opts confi
 
 	// The default URL setting in V2 API
 	if !opts.DefaultURL {
+		service.LaunchStage = "BETA"
 		service.DefaultUriDisabled = true
 		log.Println("Disabling the default URL")
 	} else {
+		service.LaunchStage = ""
 		service.DefaultUriDisabled = false
 		log.Println("Enabling the default URL")
 	}
@@ -1160,9 +1158,11 @@ func buildServiceDefinitionV2(projectID string, opts config.DeployOptions) *run.
 
 	// The default URL setting in V2 API
 	if !opts.DefaultURL {
+		service.LaunchStage = "BETA"
 		service.DefaultUriDisabled = true
 		log.Println("Disabling the default URL")
 	} else {
+		service.LaunchStage = ""
 		service.DefaultUriDisabled = false
 		log.Println("Enabling the default URL")
 	}
