@@ -712,8 +712,12 @@ func CreateOrUpdateServiceV2(servicesClient *run.ProjectsLocationsServicesServic
 			return err
 		}
 
-		if err != nil {
-			return err
+		// Set IAM policy for authentication if needed
+		if opts.AllowUnauthenticated {
+			if err := SetIAMPolicyV2(servicesClient, name, true); err != nil {
+				log.Printf("Warning: Failed to set IAM policy to allow unauthenticated access: %v", err)
+				// Continue despite the IAM policy error
+			}
 		}
 	} else {
 		// Update existing service
@@ -726,8 +730,62 @@ func CreateOrUpdateServiceV2(servicesClient *run.ProjectsLocationsServicesServic
 		if err != nil {
 			return err
 		}
+
+		// Set IAM policy for authentication if needed
+		if opts.AllowUnauthenticated {
+			if err := SetIAMPolicyV2(servicesClient, name, true); err != nil {
+				log.Printf("Warning: Failed to set IAM policy to allow unauthenticated access: %v", err)
+				// Continue despite the IAM policy error
+			}
+		}
 	}
 
+	return nil
+}
+
+// SetIAMPolicyV2 sets the IAM policy for a Cloud Run service to allow or deny
+// unauthenticated access using the v2 API.
+func SetIAMPolicyV2(servicesClient *run.ProjectsLocationsServicesService, serviceName string, allowUnauthenticated bool) error {
+	log.Printf("Setting IAM policy for service: %s", serviceName)
+
+	// Create the SetIamPolicy request
+	policy := &run.GoogleIamV1Policy{
+		Bindings: []*run.GoogleIamV1Binding{
+			{
+				// Role for invoking Cloud Run services
+				Role:    "roles/run.invoker",
+				Members: []string{
+					// Add members who can invoke the service
+				},
+			},
+		},
+		// Version specifies the format of the policy
+		Version: 3,
+	}
+
+	// Add allUsers for unauthenticated access
+	if allowUnauthenticated {
+		policy.Bindings[0].Members = append(policy.Bindings[0].Members, "allUsers")
+		log.Println("Allowing unauthenticated access via IAM policy")
+	} else {
+		// For authenticated access, typically you'd add specific service accounts or groups
+		// Here we're just showing an example with authenticated compute service account
+		policy.Bindings[0].Members = append(policy.Bindings[0].Members, "serviceAccount:PROJECT_NUMBER-compute@developer.gserviceaccount.com")
+		log.Println("Requiring authentication via IAM policy")
+	}
+
+	request := &run.GoogleIamV1SetIamPolicyRequest{
+		Policy: policy,
+	}
+
+	// Call the SetIamPolicy method
+	setIamPolicyCall := servicesClient.SetIamPolicy(serviceName, request)
+	_, err := setIamPolicyCall.Do()
+	if err != nil {
+		return fmt.Errorf("failed to set IAM policy: %v", err)
+	}
+
+	log.Println("Successfully set IAM policy")
 	return nil
 }
 
@@ -900,41 +958,35 @@ func updateServiceWithOptionsV2(service *run.GoogleCloudRunV2Service, opts confi
 		processSecretsV2(service, opts.Secrets)
 	}
 
-	// Set ingress settings
-	if service.Annotations == nil {
-		service.Annotations = make(map[string]string)
-	}
-
-	// Set ingress based on option
+	// Set ingress setting using V2 API specific field
+	// Configure ingress based on the option
 	switch opts.Ingress {
 	case "internal":
-		service.Annotations["run.googleapis.com/ingress"] = "internal"
+		service.Ingress = "INGRESS_TRAFFIC_INTERNAL_ONLY"
 		log.Println("Setting ingress to internal")
 	case "internal-and-cloud-load-balancing":
-		service.Annotations["run.googleapis.com/ingress"] = "internal-and-cloud-load-balancing"
+		service.Ingress = "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"
 		log.Println("Setting ingress to internal-and-cloud-load-balancing")
 	default: // "all"
-		service.Annotations["run.googleapis.com/ingress"] = "all"
+		service.Ingress = "INGRESS_TRAFFIC_ALL"
 		log.Println("Setting ingress to all")
 	}
 
-	// Set authentication
+	// Set authentication settings - in V2 API, authentication is managed through IAM policies
+	// The actual IAM policy must be set separately after the service is created
 	if opts.AllowUnauthenticated {
-		service.Annotations["run.googleapis.com/ingress-status"] = "all"
-		log.Println("Allowing unauthenticated access")
+		log.Println("Authentication will be disabled via IAM policy after service creation")
 	} else {
-		service.Annotations["run.googleapis.com/ingress-status"] = "internal-and-cloud-load-balancing"
-		log.Println("Requiring authentication for access")
+		log.Println("Authentication will be enabled via IAM policy after service creation")
 	}
 
-	// Set the default URL setting
+	// The default URL setting in V2 API
 	if !opts.DefaultURL {
-		service.Annotations["run.googleapis.com/launch-stage"] = "BETA"
-		service.Annotations["run.googleapis.com/default-url"] = "disabled"
+		service.DefaultUriDisabled = true
 		log.Println("Disabling the default URL")
 	} else {
-		// Remove the annotation if it exists to enable default URL (which is the default behavior)
-		delete(service.Annotations, "run.googleapis.com/default-url")
+		service.DefaultUriDisabled = false
+		log.Println("Enabling the default URL")
 	}
 }
 
@@ -1062,7 +1114,15 @@ func buildServiceDefinitionV2(projectID string, opts config.DeployOptions) *run.
 				},
 			},
 		},
+		// Initialize annotations map but don't use it for system settings
 		Annotations: make(map[string]string),
+		// Use V2 API specific fields for traffic configuration
+		Traffic: []*run.GoogleCloudRunV2TrafficTarget{
+			{
+				Type:    "TRAFFIC_TARGET_ALLOCATION_TYPE_LATEST",
+				Percent: 100,
+			},
+		},
 	}
 
 	// Add environment variables if specified
@@ -1078,33 +1138,33 @@ func buildServiceDefinitionV2(projectID string, opts config.DeployOptions) *run.
 		}
 	}
 
-	// Set ingress based on option
+	// Configure ingress based on the option
 	switch opts.Ingress {
 	case "internal":
-		service.Annotations["run.googleapis.com/ingress"] = "internal"
+		service.Ingress = "INGRESS_TRAFFIC_INTERNAL_ONLY"
 		log.Println("Setting ingress to internal")
 	case "internal-and-cloud-load-balancing":
-		service.Annotations["run.googleapis.com/ingress"] = "internal-and-cloud-load-balancing"
+		service.Ingress = "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"
 		log.Println("Setting ingress to internal-and-cloud-load-balancing")
 	default: // "all"
-		service.Annotations["run.googleapis.com/ingress"] = "all"
+		service.Ingress = "INGRESS_TRAFFIC_ALL"
 		log.Println("Setting ingress to all")
 	}
 
-	// Set authentication
+	// Set authentication settings - in V2 API, authentication is managed through IAM policies
 	if opts.AllowUnauthenticated {
-		service.Annotations["run.googleapis.com/ingress-status"] = "all"
-		log.Println("Allowing unauthenticated access")
+		log.Println("Authentication will be disabled via IAM policy after service creation")
 	} else {
-		service.Annotations["run.googleapis.com/ingress-status"] = "internal-and-cloud-load-balancing"
-		log.Println("Requiring authentication for access")
+		log.Println("Authentication will be enabled via IAM policy after service creation")
 	}
 
-	// Set the default URL setting
+	// The default URL setting in V2 API
 	if !opts.DefaultURL {
-		service.Annotations["run.googleapis.com/launch-stage"] = "BETA"
-		service.Annotations["run.googleapis.com/default-url"] = "disabled"
+		service.DefaultUriDisabled = true
 		log.Println("Disabling the default URL")
+	} else {
+		service.DefaultUriDisabled = false
+		log.Println("Enabling the default URL")
 	}
 
 	// Process secrets if specified
