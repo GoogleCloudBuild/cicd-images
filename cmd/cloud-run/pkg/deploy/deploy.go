@@ -506,6 +506,21 @@ func updateWithOptions(service *run.Service, opts config.DeployOptions) {
 		service.Metadata.Annotations["run.googleapis.com/ingress-status"] = "internal-and-cloud-load-balancing"
 		log.Println("Requiring authentication for access")
 	}
+
+	// Set the default URL setting
+	if service.Metadata.Annotations == nil {
+		service.Metadata.Annotations = make(map[string]string)
+	}
+
+	if !opts.DefaultURL {
+		service.Metadata.Annotations["run.googleapis.com/launch-stage"] = "BETA"
+		service.Metadata.Annotations["run.googleapis.com/default-url"] = "disabled"
+		log.Println("Disabling the default URL")
+	} else {
+		// Remove the annotation if it exists to enable default URL (which is the default behavior)
+		delete(service.Metadata.Annotations, "run.googleapis.com/default-url")
+		log.Println("Enabling the default URL")
+	}
 }
 
 // buildServiceDefinition creates a new Cloud Run Service object based on the
@@ -635,6 +650,15 @@ func buildServiceDefinition(projectID string, opts config.DeployOptions) run.Ser
 	} else {
 		rService.Metadata.Annotations["run.googleapis.com/ingress-status"] = "internal-and-cloud-load-balancing"
 		log.Println("Requiring authentication for access")
+	}
+
+	// Set the default URL setting
+	if !opts.DefaultURL {
+		rService.Metadata.Annotations["run.googleapis.com/launch-stage"] = "BETA"
+		rService.Metadata.Annotations["run.googleapis.com/default-url"] = "disabled"
+		log.Println("Disabling the default URL")
+	} else {
+		log.Println("Enabling the default URL (default behavior)")
 	}
 
 	return rService

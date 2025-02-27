@@ -35,4 +35,5 @@ type DeployOptions struct {
 	// Access and traffic configuration
 	AllowUnauthenticated bool   // Whether to allow unauthenticated access (if false, --no-allow-unauthenticated)
 	Ingress              string // Ingress setting: all, internal, or internal-and-cloud-load-balancing
+	DefaultURL           bool   // Whether to use the default URL (if false, --no-default-url)
 }

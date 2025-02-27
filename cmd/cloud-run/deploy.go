@@ -56,6 +56,8 @@ Access and Traffic Configuration:
 - --allow-unauthenticated      Allow unauthenticated access to the service
 - --no-allow-unauthenticated   Require authentication for access to the service
 - --ingress TYPE               Set the ingress traffic settings (all, internal, internal-and-cloud-load-balancing)
+- --default-url                Use the default URL for the service (default)
+- --no-default-url             Disable the default URL for the service
 
 Examples:
   # Deploy from container image
@@ -95,6 +97,7 @@ Examples:
 	// Add access and traffic configuration flags
 	deployCmd.Flags().BoolVar(&opts.AllowUnauthenticated, "allow-unauthenticated", true, "Allow unauthenticated access to the service")
 	deployCmd.Flags().StringVar(&opts.Ingress, "ingress", "all", "Set the ingress traffic settings (all, internal, internal-and-cloud-load-balancing)")
+	deployCmd.Flags().BoolVar(&opts.DefaultURL, "default-url", true, "Use the default URL for the service")
 
 	// Flag validations
 	// Only one of these env var flags can be used at a time, but all are optional
