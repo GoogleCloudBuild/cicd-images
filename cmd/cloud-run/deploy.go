@@ -16,9 +16,9 @@ package main
 
 import (
 	cloudbuild "cloud.google.com/go/cloudbuild/apiv1/v2"
-	"github.com/GoogleCloudBuild/cicd-images/cmd/cloud-run/pkg/build"
-	"github.com/GoogleCloudBuild/cicd-images/cmd/cloud-run/pkg/config"
-	"github.com/GoogleCloudBuild/cicd-images/cmd/cloud-run/pkg/deploy"
+	"github.com/dijarvrella/cicd-images/cmd/cloud-run/pkg/build"
+	"github.com/dijarvrella/cicd-images/cmd/cloud-run/pkg/config"
+	"github.com/dijarvrella/cicd-images/cmd/cloud-run/pkg/deploy"
 
 	"github.com/spf13/cobra"
 	"google.golang.org/api/option"

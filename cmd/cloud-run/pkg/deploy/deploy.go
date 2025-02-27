@@ -23,8 +23,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GoogleCloudBuild/cicd-images/cmd/cloud-run/pkg/config"
-	"github.com/GoogleCloudBuild/cicd-images/cmd/cloud-run/pkg/utils"
+	"github.com/dijarvrella/cicd-images/cmd/cloud-run/pkg/config"
+	"github.com/dijarvrella/cicd-images/cmd/cloud-run/pkg/utils"
 
 	"google.golang.org/api/googleapi"
 	"google.golang.org/api/run/v1"
@@ -106,6 +106,47 @@ func WaitForServiceReady(ctx context.Context, runAPIClient *run.APIService, proj
 	return nil
 }
 
+// parseSecretReference parses a secret reference in the format projects/PROJECT_ID/secrets/SECRET_NAME/versions/VERSION
+// or in the format SECRET_NAME:VERSION
+// and returns the secret name and version
+func parseSecretReference(secretRef string) (secretName, version string) {
+	log.Printf("Parsing secret reference: %s", secretRef)
+
+	// Check if it's in the format projects/PROJECT_ID/secrets/SECRET_NAME/versions/VERSION
+	if strings.Contains(secretRef, "projects/") && strings.Contains(secretRef, "/secrets/") {
+		parts := strings.Split(secretRef, "/secrets/")
+		if len(parts) == 2 {
+			// Get everything up to the /versions/ part if it exists
+			secretVersionParts := strings.Split(parts[1], "/versions/")
+			secretName = secretVersionParts[0]
+
+			// Handle version
+			if len(secretVersionParts) >= 2 {
+				version = secretVersionParts[1]
+			} else {
+				version = "latest" // Default to latest if not specified
+			}
+
+			log.Printf("Parsed from project format - Secret name: %s, Version: %s", secretName, version)
+			return
+		}
+	}
+
+	// Fall back to simpler parsing (SECRET_NAME:VERSION)
+	parts := strings.Split(secretRef, ":")
+	if len(parts) >= 1 {
+		secretName = parts[0]
+		if len(parts) >= 2 {
+			version = parts[1]
+		} else {
+			version = "latest" // Default to latest if not specified
+		}
+	}
+
+	log.Printf("Parsed from simple format - Secret name: %s, Version: %s", secretName, version)
+	return
+}
+
 // updateWithOptions updates the image and configuration of an existing Cloud Run Service object
 // based on the provided config.DeployOptions.
 func updateWithOptions(service *run.Service, opts config.DeployOptions) {
@@ -167,149 +208,261 @@ func updateWithOptions(service *run.Service, opts config.DeployOptions) {
 
 	// Handle secrets
 	if opts.ClearSecrets {
-		container.EnvFrom = nil
+		// Clear secret environment variables
+		if container.Env != nil {
+			// Filter out any secret-referenced env vars
+			newEnv := make([]*run.EnvVar, 0, len(container.Env))
+			for _, env := range container.Env {
+				if env.ValueFrom == nil || env.ValueFrom.SecretKeyRef == nil {
+					newEnv = append(newEnv, env)
+				}
+			}
+			container.Env = newEnv
+		}
+
+		// Clear volume mounts and volumes
 		container.VolumeMounts = nil
 		service.Spec.Template.Spec.Volumes = nil
 	} else if opts.Secrets != nil && len(opts.Secrets) > 0 {
-		container.EnvFrom = make([]*run.EnvFromSource, 0)
+		// Clear existing secret-referenced env vars
+		if container.Env != nil {
+			newEnv := make([]*run.EnvVar, 0, len(container.Env))
+			for _, env := range container.Env {
+				if env.ValueFrom == nil || env.ValueFrom.SecretKeyRef == nil {
+					newEnv = append(newEnv, env)
+				}
+			}
+			container.Env = newEnv
+		} else {
+			container.Env = make([]*run.EnvVar, 0)
+		}
+
+		// Clear existing volume mounts and volumes
 		container.VolumeMounts = make([]*run.VolumeMount, 0)
 		service.Spec.Template.Spec.Volumes = make([]*run.Volume, 0)
 
+		// Add new secrets
 		for k, v := range opts.Secrets {
 			if k[0] == '/' {
 				// Mount secret as volume
 				mountPath := k
-				secretName := v[:strings.Index(v, ":")]
-				version := v[strings.Index(v, ":")+1:]
+				secretName, version := parseSecretReference(v)
 
-				container.VolumeMounts = append(container.VolumeMounts, &run.VolumeMount{
-					Name:      secretName,
-					MountPath: mountPath,
-				})
+				// Only proceed if we have a valid secretName
+				if secretName != "" {
+					container.VolumeMounts = append(container.VolumeMounts, &run.VolumeMount{
+						Name:      secretName,
+						MountPath: mountPath,
+					})
 
-				service.Spec.Template.Spec.Volumes = append(service.Spec.Template.Spec.Volumes, &run.Volume{
-					Name: secretName,
-					Secret: &run.SecretVolumeSource{
-						SecretName: secretName,
-						Items: []*run.KeyToPath{{
-							Key:  version,
-							Path: filepath.Base(mountPath),
-						}},
-					},
-				})
-			} else {
-				// Set as environment variable
-				container.EnvFrom = append(container.EnvFrom, &run.EnvFromSource{
-					SecretRef: &run.SecretEnvSource{
-						LocalObjectReference: &run.LocalObjectReference{
-							Name: v[:strings.Index(v, ":")],
+					service.Spec.Template.Spec.Volumes = append(service.Spec.Template.Spec.Volumes, &run.Volume{
+						Name: secretName,
+						Secret: &run.SecretVolumeSource{
+							SecretName: secretName,
+							Items: []*run.KeyToPath{{
+								Key:  version,
+								Path: filepath.Base(mountPath),
+							}},
 						},
-					},
-				})
+					})
+				}
+			} else {
+				// Set as environment variable using ValueFrom
+				secretName, version := parseSecretReference(v)
+
+				// Only proceed if we have a valid secretName
+				if secretName != "" {
+					log.Printf("Adding secret env var %s with secret %s and version %s", k, secretName, version)
+
+					// Use direct struct initialization to avoid null JSON fields
+					envVar := &run.EnvVar{
+						Name: k,
+						// Ensure Value is explicitly empty string, not null
+						Value: "",
+						ValueFrom: &run.EnvVarSource{
+							SecretKeyRef: &run.SecretKeySelector{
+								Key: version,
+								LocalObjectReference: &run.LocalObjectReference{
+									Name: secretName,
+								},
+							},
+						},
+					}
+
+					// Add to environment variables
+					container.Env = append(container.Env, envVar)
+
+					// Log the resulting structure to verify it's set correctly
+					log.Printf("Secret reference set: Name=%s, Key=%s",
+						secretName, version)
+				}
 			}
 		}
 	} else {
 		if opts.RemoveSecrets != nil && len(opts.RemoveSecrets) > 0 {
-			// Remove specified secrets
-			if container.EnvFrom != nil {
-				newEnvFrom := make([]*run.EnvFromSource, 0, len(container.EnvFrom))
-				for _, envFrom := range container.EnvFrom {
-					if envFrom.SecretRef != nil {
-						shouldKeep := true
+			// Remove specified secrets from environment variables
+			if container.Env != nil {
+				newEnv := make([]*run.EnvVar, 0, len(container.Env))
+				for _, env := range container.Env {
+					shouldKeep := true
+					if env.ValueFrom != nil && env.ValueFrom.SecretKeyRef != nil {
+						secretName := env.ValueFrom.SecretKeyRef.LocalObjectReference.Name
 						for _, remove := range opts.RemoveSecrets {
-							if envFrom.SecretRef.LocalObjectReference.Name == remove {
+							if secretName == remove {
 								shouldKeep = false
 								break
 							}
 						}
-						if shouldKeep {
-							newEnvFrom = append(newEnvFrom, envFrom)
-						}
-					} else {
-						newEnvFrom = append(newEnvFrom, envFrom)
+					}
+					if shouldKeep {
+						newEnv = append(newEnv, env)
 					}
 				}
-				container.EnvFrom = newEnvFrom
+				container.Env = newEnv
+			}
+
+			// Remove specified secrets from volume mounts and volumes
+			if container.VolumeMounts != nil {
+				newVolumeMounts := make([]*run.VolumeMount, 0, len(container.VolumeMounts))
+				for _, mount := range container.VolumeMounts {
+					shouldKeep := true
+					for _, remove := range opts.RemoveSecrets {
+						if mount.Name == remove {
+							shouldKeep = false
+							break
+						}
+					}
+					if shouldKeep {
+						newVolumeMounts = append(newVolumeMounts, mount)
+					}
+				}
+				container.VolumeMounts = newVolumeMounts
+			}
+
+			if service.Spec.Template.Spec.Volumes != nil {
+				newVolumes := make([]*run.Volume, 0, len(service.Spec.Template.Spec.Volumes))
+				for _, vol := range service.Spec.Template.Spec.Volumes {
+					shouldKeep := true
+					for _, remove := range opts.RemoveSecrets {
+						if vol.Name == remove {
+							shouldKeep = false
+							break
+						}
+					}
+					if shouldKeep {
+						newVolumes = append(newVolumes, vol)
+					}
+				}
+				service.Spec.Template.Spec.Volumes = newVolumes
 			}
 		}
+
 		if opts.UpdateSecrets != nil && len(opts.UpdateSecrets) > 0 {
 			// Update or add new secrets
 			for k, v := range opts.UpdateSecrets {
 				if k[0] == '/' {
 					// Mount secret as volume
 					mountPath := k
-					secretName := v[:strings.Index(v, ":")]
-					version := v[strings.Index(v, ":")+1:]
+					secretName, version := parseSecretReference(v)
 
-					// Update existing volume mount or add new one
-					found := false
-					if container.VolumeMounts != nil {
-						for _, mount := range container.VolumeMounts {
-							if mount.MountPath == mountPath {
-								mount.Name = secretName
-								found = true
-								break
+					// Only proceed if we have a valid secretName
+					if secretName != "" {
+						// Update existing volume mount or add new one
+						found := false
+						if container.VolumeMounts != nil {
+							for _, mount := range container.VolumeMounts {
+								if mount.MountPath == mountPath {
+									mount.Name = secretName
+									found = true
+									break
+								}
 							}
 						}
-					}
-					if !found {
-						if container.VolumeMounts == nil {
-							container.VolumeMounts = make([]*run.VolumeMount, 0)
+						if !found {
+							if container.VolumeMounts == nil {
+								container.VolumeMounts = make([]*run.VolumeMount, 0)
+							}
+							container.VolumeMounts = append(container.VolumeMounts, &run.VolumeMount{
+								Name:      secretName,
+								MountPath: mountPath,
+							})
 						}
-						container.VolumeMounts = append(container.VolumeMounts, &run.VolumeMount{
-							Name:      secretName,
-							MountPath: mountPath,
-						})
-					}
 
-					// Update existing volume or add new one
-					found = false
-					if service.Spec.Template.Spec.Volumes != nil {
-						for _, vol := range service.Spec.Template.Spec.Volumes {
-							if vol.Name == secretName {
-								vol.Secret.SecretName = secretName
-								vol.Secret.Items[0].Key = version
-								found = true
-								break
+						// Update existing volume or add new one
+						found = false
+						if service.Spec.Template.Spec.Volumes != nil {
+							for _, vol := range service.Spec.Template.Spec.Volumes {
+								if vol.Name == secretName {
+									vol.Secret.SecretName = secretName
+									vol.Secret.Items[0].Key = version
+									found = true
+									break
+								}
 							}
 						}
-					}
-					if !found {
-						if service.Spec.Template.Spec.Volumes == nil {
-							service.Spec.Template.Spec.Volumes = make([]*run.Volume, 0)
+						if !found {
+							if service.Spec.Template.Spec.Volumes == nil {
+								service.Spec.Template.Spec.Volumes = make([]*run.Volume, 0)
+							}
+							service.Spec.Template.Spec.Volumes = append(service.Spec.Template.Spec.Volumes, &run.Volume{
+								Name: secretName,
+								Secret: &run.SecretVolumeSource{
+									SecretName: secretName,
+									Items: []*run.KeyToPath{{
+										Key:  version,
+										Path: filepath.Base(mountPath),
+									}},
+								},
+							})
 						}
-						service.Spec.Template.Spec.Volumes = append(service.Spec.Template.Spec.Volumes, &run.Volume{
-							Name: secretName,
-							Secret: &run.SecretVolumeSource{
-								SecretName: secretName,
-								Items: []*run.KeyToPath{{
-									Key:  version,
-									Path: filepath.Base(mountPath),
-								}},
-							},
-						})
 					}
 				} else {
-					// Set as environment variable
-					if container.EnvFrom == nil {
-						container.EnvFrom = make([]*run.EnvFromSource, 0)
-					}
-					found := false
-					for _, envFrom := range container.EnvFrom {
-						if envFrom.SecretRef != nil && envFrom.SecretRef.LocalObjectReference.Name == k {
-							envFrom.SecretRef.LocalObjectReference.Name = v[:strings.Index(v, ":")]
-							found = true
-							break
+					// Set as environment variable using ValueFrom
+					secretName, version := parseSecretReference(v)
+
+					// Only proceed if we have a valid secretName
+					if secretName != "" {
+						// Check if the environment variable already exists
+						found := false
+						if container.Env != nil {
+							for _, env := range container.Env {
+								if env.Name == k {
+									if env.ValueFrom == nil {
+										env.Value = ""
+										env.ValueFrom = &run.EnvVarSource{
+											SecretKeyRef: &run.SecretKeySelector{
+												Key: version,
+												LocalObjectReference: &run.LocalObjectReference{
+													Name: secretName,
+												},
+											},
+										}
+									} else if env.ValueFrom.SecretKeyRef != nil {
+										env.ValueFrom.SecretKeyRef.Key = version
+										env.ValueFrom.SecretKeyRef.LocalObjectReference.Name = secretName
+									}
+									found = true
+									break
+								}
+							}
 						}
-					}
-					if !found {
-						container.EnvFrom = append(container.EnvFrom, &run.EnvFromSource{
-							SecretRef: &run.SecretEnvSource{
-								LocalObjectReference: &run.LocalObjectReference{
-									Name: v[:strings.Index(v, ":")],
+
+						if !found {
+							if container.Env == nil {
+								container.Env = make([]*run.EnvVar, 0)
+							}
+							container.Env = append(container.Env, &run.EnvVar{
+								Name: k,
+								ValueFrom: &run.EnvVarSource{
+									SecretKeyRef: &run.SecretKeySelector{
+										Key: version,
+										LocalObjectReference: &run.LocalObjectReference{
+											Name: secretName,
+										},
+									},
 								},
-							},
-						})
+							})
+						}
 					}
 				}
 			}
@@ -331,12 +484,18 @@ func buildServiceDefinition(projectID string, opts config.DeployOptions) run.Ser
 				Value: v,
 			})
 		}
+	} else {
+		// Initialize an empty env array to avoid null in JSON
+		container.Env = make([]*run.EnvVar, 0)
 	}
 
 	// Set secrets if provided and not empty
 	var volumes []*run.Volume
 	if opts.Secrets != nil && len(opts.Secrets) > 0 {
-		container.EnvFrom = make([]*run.EnvFromSource, 0)
+		// Make sure Env is initialized
+		if container.Env == nil {
+			container.Env = make([]*run.EnvVar, 0)
+		}
 		container.VolumeMounts = make([]*run.VolumeMount, 0)
 		volumes = make([]*run.Volume, 0)
 
@@ -344,37 +503,59 @@ func buildServiceDefinition(projectID string, opts config.DeployOptions) run.Ser
 			if k[0] == '/' {
 				// Mount secret as volume
 				mountPath := k
-				secretName := v[:strings.Index(v, ":")]
-				version := v[strings.Index(v, ":")+1:]
+				secretName, version := parseSecretReference(v)
 
-				container.VolumeMounts = append(container.VolumeMounts, &run.VolumeMount{
-					Name:      secretName,
-					MountPath: mountPath,
-				})
+				// Only proceed if we have a valid secretName
+				if secretName != "" {
+					container.VolumeMounts = append(container.VolumeMounts, &run.VolumeMount{
+						Name:      secretName,
+						MountPath: mountPath,
+					})
 
-				volumes = append(volumes, &run.Volume{
-					Name: secretName,
-					Secret: &run.SecretVolumeSource{
-						SecretName: secretName,
-						Items: []*run.KeyToPath{{
-							Key:  version,
-							Path: filepath.Base(mountPath),
-						}},
-					},
-				})
-			} else {
-				// Set as environment variable
-				container.EnvFrom = append(container.EnvFrom, &run.EnvFromSource{
-					SecretRef: &run.SecretEnvSource{
-						LocalObjectReference: &run.LocalObjectReference{
-							Name: v[:strings.Index(v, ":")],
+					volumes = append(volumes, &run.Volume{
+						Name: secretName,
+						Secret: &run.SecretVolumeSource{
+							SecretName: secretName,
+							Items: []*run.KeyToPath{{
+								Key:  version,
+								Path: filepath.Base(mountPath),
+							}},
 						},
-					},
-				})
+					})
+				}
+			} else {
+				// Set as environment variable using ValueFrom
+				secretName, version := parseSecretReference(v)
+
+				// Only proceed if we have a valid secretName
+				if secretName != "" {
+					log.Printf("Building service: Adding secret env var %s with secret %s and version %s", k, secretName, version)
+
+					// Use explicit field initialization to avoid null values in JSON
+					container.Env = append(container.Env, &run.EnvVar{
+						Name: k,
+						ValueFrom: &run.EnvVarSource{
+							SecretKeyRef: &run.SecretKeySelector{
+								Key: version,
+								LocalObjectReference: &run.LocalObjectReference{
+									Name: secretName,
+								},
+							},
+						},
+					})
+
+					// Log the resulting structure to verify it's set correctly
+					log.Printf("Secret reference set for new service: Name=%s, Key=%s",
+						secretName, version)
+
+					// Additional debug to see exactly what we're sending
+					container.Env[len(container.Env)-1].Value = "" // Ensure value is empty string, not null
+				}
 			}
 		}
 	}
 
+	// Create the service
 	rService := run.Service{
 		ApiVersion: "serving.knative.dev/v1",
 		Kind:       "Service",
