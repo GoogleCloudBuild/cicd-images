@@ -20,6 +20,10 @@ import (
 	"github.com/dijarvrella/cicd-images/cmd/cloud-run/pkg/config"
 	"github.com/dijarvrella/cicd-images/cmd/cloud-run/pkg/deploy"
 
+	"fmt"
+	"log"
+	"unicode"
+
 	"github.com/spf13/cobra"
 	"google.golang.org/api/option"
 	"google.golang.org/api/run/v2"
@@ -149,6 +153,13 @@ Examples:
 func deployService(cmd *cobra.Command, _ []string) error {
 	ctx := cmd.Context()
 
+	// Add more robust validation for service name to ensure it meets Cloud Run requirements
+	if !isValidServiceName(opts.Service) {
+		return fmt.Errorf("invalid service name: %s. Service names must contain only lowercase letters, numbers, and hyphens, must begin with a letter, cannot end with a hyphen, and must be less than 50 characters", opts.Service)
+	}
+
+	log.Printf("Service name validation passed for: %s", opts.Service)
+
 	cloudbuildClient, err := cloudbuild.NewClient(ctx)
 	if err != nil {
 		return err
@@ -176,9 +187,45 @@ func deployService(cmd *cobra.Command, _ []string) error {
 
 	servicesClient := run.NewProjectsLocationsServicesService(runService)
 
+	log.Printf("Using service name: %s", opts.Service)
 	err = deploy.CreateOrUpdateServiceV2(servicesClient, projectID, region, opts)
 	if err != nil {
 		return err
 	}
 	return deploy.WaitForServiceReadyV2(ctx, servicesClient, projectID, region, opts.Service)
+}
+
+// isValidServiceName validates that a service name meets Cloud Run requirements:
+// - Only lowercase letters, numbers, and hyphens
+// - Must begin with a letter
+// - Cannot end with a hyphen
+// - Must be less than 50 characters
+func isValidServiceName(name string) bool {
+	if len(name) == 0 || len(name) >= 50 {
+		log.Printf("Service name validation failed: length check. Name: %s, Length: %d", name, len(name))
+		return false
+	}
+
+	// Must start with a letter
+	if !unicode.IsLetter(rune(name[0])) {
+		log.Printf("Service name validation failed: must start with a letter. Name: %s", name)
+		return false
+	}
+
+	// Cannot end with a hyphen
+	if name[len(name)-1] == '-' {
+		log.Printf("Service name validation failed: cannot end with hyphen. Name: %s", name)
+		return false
+	}
+
+	// Only lowercase letters, numbers, and hyphens allowed
+	for i, r := range name {
+		if !unicode.IsLower(r) && !unicode.IsDigit(r) && r != '-' {
+			log.Printf("Service name validation failed: invalid character at position %d: '%c'. Name: %s", i, r, name)
+			return false
+		}
+	}
+
+	log.Printf("Service name validation successful for: %s", name)
+	return true
 }

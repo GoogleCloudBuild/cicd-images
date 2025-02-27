@@ -108,10 +108,18 @@ func WaitForServiceReady(ctx context.Context, runAPIClient *runv1.APIService, pr
 }
 
 // parseSecretReference parses a secret reference in the format projects/PROJECT_ID/secrets/SECRET_NAME/versions/VERSION
-// or in the format SECRET_NAME:VERSION
+// or the simpler format SECRET_NAME:VERSION
 // and returns the secret name and version
 func parseSecretReference(secretRef string) (secretName, version string) {
 	log.Printf("Parsing secret reference: %s", secretRef)
+
+	// Remove any whitespace
+	secretRef = strings.TrimSpace(secretRef)
+
+	// Handle empty input
+	if secretRef == "" {
+		return "", "latest"
+	}
 
 	// Check if it's in the format projects/PROJECT_ID/secrets/SECRET_NAME/versions/VERSION
 	if strings.Contains(secretRef, "projects/") && strings.Contains(secretRef, "/secrets/") {
@@ -691,8 +699,18 @@ func CreateOrUpdateServiceV2(servicesClient *run.ProjectsLocationsServicesServic
 		log.Printf("Creating a new service %s\n", opts.Service)
 		service := buildServiceDefinitionV2(projectID, opts)
 
+		// IMPORTANT: Do not set the Name field directly in the service object
+		// The API will extract the service_id from the parent path
 		createCall := servicesClient.Create(parent, service)
-		_, err = createCall.Do()
+
+		// Set the service ID explicitly as a parameter rather than in the body
+		// This ensures the right format is used for the V2 API
+		log.Printf("Using service ID: %s for Cloud Run V2 API", opts.Service)
+		_, err = createCall.ServiceId(opts.Service).Do()
+		if err != nil {
+			log.Printf("Error creating service: %v", err)
+			return err
+		}
 
 		if err != nil {
 			return err
@@ -929,14 +947,30 @@ func processSecretsV2(service *run.GoogleCloudRunV2Service, secrets map[string]s
 
 	container := service.Template.Containers[0]
 
+	// Initialize env array if nil
+	if container.Env == nil {
+		container.Env = make([]*run.GoogleCloudRunV2EnvVar, 0)
+	}
+
 	// Process each secret
 	for key, secretRef := range secrets {
 		secretName, version := parseSecretReference(secretRef)
+
+		// Make sure we have valid values
+		if secretName == "" {
+			log.Printf("Warning: Invalid secret reference format for key %s: %s. Expected format: SECRET:VERSION", key, secretRef)
+			continue
+		}
 
 		// Check if it's a volume mount (path starts with /)
 		if strings.HasPrefix(key, "/") {
 			// Create volume if it doesn't exist
 			volumeName := fmt.Sprintf("secret-volume-%s", secretName)
+
+			// Initialize volumes array if nil
+			if service.Template.Volumes == nil {
+				service.Template.Volumes = make([]*run.GoogleCloudRunV2Volume, 0)
+			}
 
 			// Find or create the volume
 			var volume *run.GoogleCloudRunV2Volume
@@ -961,6 +995,11 @@ func processSecretsV2(service *run.GoogleCloudRunV2Service, secrets map[string]s
 					},
 				}
 				service.Template.Volumes = append(service.Template.Volumes, volume)
+			}
+
+			// Initialize volume mounts array if nil
+			if container.VolumeMounts == nil {
+				container.VolumeMounts = make([]*run.GoogleCloudRunV2VolumeMount, 0)
 			}
 
 			// Create volume mount
@@ -1013,6 +1052,8 @@ func processSecretsV2(service *run.GoogleCloudRunV2Service, secrets map[string]s
 
 // buildServiceDefinitionV2 creates a new Cloud Run service definition using the v2 API
 func buildServiceDefinitionV2(projectID string, opts config.DeployOptions) *run.GoogleCloudRunV2Service {
+	// Create a new service without setting the Name field
+	// The Name will be properly set by the API based on the parent and serviceId parameters
 	service := &run.GoogleCloudRunV2Service{
 		Template: &run.GoogleCloudRunV2RevisionTemplate{
 			Containers: []*run.GoogleCloudRunV2Container{
