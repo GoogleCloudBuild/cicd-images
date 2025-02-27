@@ -22,7 +22,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"google.golang.org/api/option"
-	"google.golang.org/api/run/v1"
+	"google.golang.org/api/run/v2"
 )
 
 var opts config.DeployOptions
@@ -76,7 +76,10 @@ Examples:
   cloud-run deploy --service=myapp --set-secrets=API_KEY=mysecret:1
 
   # Deploy internal service requiring authentication
-  cloud-run deploy --service=myapp --image=gcr.io/myproject/myapp:v1 --no-allow-unauthenticated --ingress internal`,
+  cloud-run deploy --service=myapp --image=gcr.io/myproject/myapp:v1 --no-allow-unauthenticated --ingress internal
+
+  # Deploy service without a default URL
+  cloud-run deploy --service=myapp --image=gcr.io/myproject/myapp:v1 --no-default-url`,
 		RunE: deployService,
 	}
 	deployCmd.Flags().StringVar(&opts.Image, "image", "", "The container image to deploy (e.g., gcr.io/project/image:tag)")
@@ -97,7 +100,23 @@ Examples:
 	// Add access and traffic configuration flags
 	deployCmd.Flags().BoolVar(&opts.AllowUnauthenticated, "allow-unauthenticated", true, "Allow unauthenticated access to the service")
 	deployCmd.Flags().StringVar(&opts.Ingress, "ingress", "all", "Set the ingress traffic settings (all, internal, internal-and-cloud-load-balancing)")
+
+	// Add both --default-url and --no-default-url flags as mutually exclusive
 	deployCmd.Flags().BoolVar(&opts.DefaultURL, "default-url", true, "Use the default URL for the service")
+	deployCmd.Flags().Bool("no-default-url", false, "Disable the default URL for the service")
+
+	// Link the no-default-url flag to DefaultURL
+	deployCmd.PreRunE = func(cmd *cobra.Command, args []string) error {
+		noDefaultURL, _ := cmd.Flags().GetBool("no-default-url")
+		if noDefaultURL {
+			opts.DefaultURL = false
+		}
+
+		// Mark flags as mutually exclusive
+		deployCmd.MarkFlagsMutuallyExclusive("default-url", "no-default-url")
+
+		return nil
+	}
 
 	// Flag validations
 	// Only one of these env var flags can be used at a time, but all are optional
@@ -149,13 +168,17 @@ func deployService(cmd *cobra.Command, _ []string) error {
 		}
 	}
 
+	// Create a Cloud Run v2 service client
 	runService, err := run.NewService(ctx, option.WithUserAgent(userAgent))
 	if err != nil {
 		return err
 	}
-	err = deploy.CreateOrUpdateService(runService, projectID, region, opts)
+
+	servicesClient := run.NewProjectsLocationsServicesService(runService)
+
+	err = deploy.CreateOrUpdateServiceV2(servicesClient, projectID, region, opts)
 	if err != nil {
 		return err
 	}
-	return deploy.WaitForServiceReady(ctx, runService, projectID, region, opts.Service)
+	return deploy.WaitForServiceReadyV2(ctx, servicesClient, projectID, region, opts.Service)
 }

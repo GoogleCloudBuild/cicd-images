@@ -27,13 +27,14 @@ import (
 	"github.com/dijarvrella/cicd-images/cmd/cloud-run/pkg/utils"
 
 	"google.golang.org/api/googleapi"
-	"google.golang.org/api/run/v1"
+	runv1 "google.golang.org/api/run/v1"
+	"google.golang.org/api/run/v2"
 )
 
 // CreateOrUpdateService deploys a service to Cloud run. If the service
 // doesn't exist, it creates a new one. If the service exists, it updates the
 // existing service with the config.DeployOptions.
-func CreateOrUpdateService(runAPIClient *run.APIService, projectID, region string, opts config.DeployOptions) error {
+func CreateOrUpdateService(runAPIClient *runv1.APIService, projectID, region string, opts config.DeployOptions) error {
 	parent := fmt.Sprintf("projects/%s/locations/%s", projectID, region)
 	resourceName := fmt.Sprintf("%s/services/%s", parent, opts.Service)
 	log.Printf("Deploying container to Cloud Run service [%s] in project [%s] region [%s]\n", opts.Service, projectID, region)
@@ -66,7 +67,7 @@ func CreateOrUpdateService(runAPIClient *run.APIService, projectID, region strin
 
 // WaitForServiceReady waits for a Cloud Run service to reach a ready state
 // by polling its status.
-func WaitForServiceReady(ctx context.Context, runAPIClient *run.APIService, projectID, region, service string) error {
+func WaitForServiceReady(ctx context.Context, runAPIClient *runv1.APIService, projectID, region, service string) error {
 	resourceName := fmt.Sprintf("projects/%s/locations/%s/services/%s", projectID, region, service)
 	if err := utils.PollWithInterval(ctx, time.Minute*2, time.Second, func() (bool, error) {
 		runService, err := runAPIClient.Projects.Locations.Services.Get(resourceName).Do()
@@ -149,7 +150,7 @@ func parseSecretReference(secretRef string) (secretName, version string) {
 
 // updateWithOptions updates the image and configuration of an existing Cloud Run Service object
 // based on the provided config.DeployOptions.
-func updateWithOptions(service *run.Service, opts config.DeployOptions) {
+func updateWithOptions(service *runv1.Service, opts config.DeployOptions) {
 	service.Spec.Template.Spec.Containers[0].Image = opts.Image
 
 	// Handle environment variables
@@ -157,9 +158,9 @@ func updateWithOptions(service *run.Service, opts config.DeployOptions) {
 	if opts.ClearEnvVars {
 		container.Env = nil
 	} else if opts.EnvVars != nil && len(opts.EnvVars) > 0 {
-		container.Env = make([]*run.EnvVar, 0, len(opts.EnvVars))
+		container.Env = make([]*runv1.EnvVar, 0, len(opts.EnvVars))
 		for k, v := range opts.EnvVars {
-			container.Env = append(container.Env, &run.EnvVar{
+			container.Env = append(container.Env, &runv1.EnvVar{
 				Name:  k,
 				Value: v,
 			})
@@ -167,7 +168,7 @@ func updateWithOptions(service *run.Service, opts config.DeployOptions) {
 	} else {
 		if opts.RemoveEnvVars != nil && len(opts.RemoveEnvVars) > 0 && container.Env != nil {
 			// Remove specified environment variables
-			newEnv := make([]*run.EnvVar, 0, len(container.Env))
+			newEnv := make([]*runv1.EnvVar, 0, len(container.Env))
 			for _, env := range container.Env {
 				shouldKeep := true
 				for _, remove := range opts.RemoveEnvVars {
@@ -185,7 +186,7 @@ func updateWithOptions(service *run.Service, opts config.DeployOptions) {
 		if opts.UpdateEnvVars != nil && len(opts.UpdateEnvVars) > 0 {
 			// Update or add new environment variables
 			if container.Env == nil {
-				container.Env = make([]*run.EnvVar, 0, len(opts.UpdateEnvVars))
+				container.Env = make([]*runv1.EnvVar, 0, len(opts.UpdateEnvVars))
 			}
 			for k, v := range opts.UpdateEnvVars {
 				found := false
@@ -197,7 +198,7 @@ func updateWithOptions(service *run.Service, opts config.DeployOptions) {
 					}
 				}
 				if !found {
-					container.Env = append(container.Env, &run.EnvVar{
+					container.Env = append(container.Env, &runv1.EnvVar{
 						Name:  k,
 						Value: v,
 					})
@@ -211,7 +212,7 @@ func updateWithOptions(service *run.Service, opts config.DeployOptions) {
 		// Clear secret environment variables
 		if container.Env != nil {
 			// Filter out any secret-referenced env vars
-			newEnv := make([]*run.EnvVar, 0, len(container.Env))
+			newEnv := make([]*runv1.EnvVar, 0, len(container.Env))
 			for _, env := range container.Env {
 				if env.ValueFrom == nil || env.ValueFrom.SecretKeyRef == nil {
 					newEnv = append(newEnv, env)
@@ -226,7 +227,7 @@ func updateWithOptions(service *run.Service, opts config.DeployOptions) {
 	} else if opts.Secrets != nil && len(opts.Secrets) > 0 {
 		// Clear existing secret-referenced env vars
 		if container.Env != nil {
-			newEnv := make([]*run.EnvVar, 0, len(container.Env))
+			newEnv := make([]*runv1.EnvVar, 0, len(container.Env))
 			for _, env := range container.Env {
 				if env.ValueFrom == nil || env.ValueFrom.SecretKeyRef == nil {
 					newEnv = append(newEnv, env)
@@ -234,12 +235,12 @@ func updateWithOptions(service *run.Service, opts config.DeployOptions) {
 			}
 			container.Env = newEnv
 		} else {
-			container.Env = make([]*run.EnvVar, 0)
+			container.Env = make([]*runv1.EnvVar, 0)
 		}
 
 		// Clear existing volume mounts and volumes
-		container.VolumeMounts = make([]*run.VolumeMount, 0)
-		service.Spec.Template.Spec.Volumes = make([]*run.Volume, 0)
+		container.VolumeMounts = make([]*runv1.VolumeMount, 0)
+		service.Spec.Template.Spec.Volumes = make([]*runv1.Volume, 0)
 
 		// Add new secrets
 		for k, v := range opts.Secrets {
@@ -250,16 +251,16 @@ func updateWithOptions(service *run.Service, opts config.DeployOptions) {
 
 				// Only proceed if we have a valid secretName
 				if secretName != "" {
-					container.VolumeMounts = append(container.VolumeMounts, &run.VolumeMount{
+					container.VolumeMounts = append(container.VolumeMounts, &runv1.VolumeMount{
 						Name:      secretName,
 						MountPath: mountPath,
 					})
 
-					service.Spec.Template.Spec.Volumes = append(service.Spec.Template.Spec.Volumes, &run.Volume{
+					service.Spec.Template.Spec.Volumes = append(service.Spec.Template.Spec.Volumes, &runv1.Volume{
 						Name: secretName,
-						Secret: &run.SecretVolumeSource{
+						Secret: &runv1.SecretVolumeSource{
 							SecretName: secretName,
-							Items: []*run.KeyToPath{{
+							Items: []*runv1.KeyToPath{{
 								Key:  version,
 								Path: filepath.Base(mountPath),
 							}},
@@ -275,19 +276,19 @@ func updateWithOptions(service *run.Service, opts config.DeployOptions) {
 					log.Printf("Adding secret env var %s with secret %s and version %s", k, secretName, version)
 
 					// Create a properly initialized SecretKeySelector with all required fields
-					secretKeyRef := &run.SecretKeySelector{
+					secretKeyRef := &runv1.SecretKeySelector{
 						Key:  version,
 						Name: secretName,
-						LocalObjectReference: &run.LocalObjectReference{
+						LocalObjectReference: &runv1.LocalObjectReference{
 							Name: secretName,
 						},
 					}
 
 					// Use direct struct initialization to avoid null JSON fields
-					envVar := &run.EnvVar{
+					envVar := &runv1.EnvVar{
 						Name:  k,
 						Value: "",
-						ValueFrom: &run.EnvVarSource{
+						ValueFrom: &runv1.EnvVarSource{
 							SecretKeyRef: secretKeyRef,
 						},
 					}
@@ -305,7 +306,7 @@ func updateWithOptions(service *run.Service, opts config.DeployOptions) {
 		if opts.RemoveSecrets != nil && len(opts.RemoveSecrets) > 0 {
 			// Remove specified secrets from environment variables
 			if container.Env != nil {
-				newEnv := make([]*run.EnvVar, 0, len(container.Env))
+				newEnv := make([]*runv1.EnvVar, 0, len(container.Env))
 				for _, env := range container.Env {
 					shouldKeep := true
 					if env.ValueFrom != nil && env.ValueFrom.SecretKeyRef != nil {
@@ -326,7 +327,7 @@ func updateWithOptions(service *run.Service, opts config.DeployOptions) {
 
 			// Remove specified secrets from volume mounts and volumes
 			if container.VolumeMounts != nil {
-				newVolumeMounts := make([]*run.VolumeMount, 0, len(container.VolumeMounts))
+				newVolumeMounts := make([]*runv1.VolumeMount, 0, len(container.VolumeMounts))
 				for _, mount := range container.VolumeMounts {
 					shouldKeep := true
 					for _, remove := range opts.RemoveSecrets {
@@ -343,7 +344,7 @@ func updateWithOptions(service *run.Service, opts config.DeployOptions) {
 			}
 
 			if service.Spec.Template.Spec.Volumes != nil {
-				newVolumes := make([]*run.Volume, 0, len(service.Spec.Template.Spec.Volumes))
+				newVolumes := make([]*runv1.Volume, 0, len(service.Spec.Template.Spec.Volumes))
 				for _, vol := range service.Spec.Template.Spec.Volumes {
 					shouldKeep := true
 					for _, remove := range opts.RemoveSecrets {
@@ -383,9 +384,9 @@ func updateWithOptions(service *run.Service, opts config.DeployOptions) {
 						}
 						if !found {
 							if container.VolumeMounts == nil {
-								container.VolumeMounts = make([]*run.VolumeMount, 0)
+								container.VolumeMounts = make([]*runv1.VolumeMount, 0)
 							}
-							container.VolumeMounts = append(container.VolumeMounts, &run.VolumeMount{
+							container.VolumeMounts = append(container.VolumeMounts, &runv1.VolumeMount{
 								Name:      secretName,
 								MountPath: mountPath,
 							})
@@ -405,13 +406,13 @@ func updateWithOptions(service *run.Service, opts config.DeployOptions) {
 						}
 						if !found {
 							if service.Spec.Template.Spec.Volumes == nil {
-								service.Spec.Template.Spec.Volumes = make([]*run.Volume, 0)
+								service.Spec.Template.Spec.Volumes = make([]*runv1.Volume, 0)
 							}
-							service.Spec.Template.Spec.Volumes = append(service.Spec.Template.Spec.Volumes, &run.Volume{
+							service.Spec.Template.Spec.Volumes = append(service.Spec.Template.Spec.Volumes, &runv1.Volume{
 								Name: secretName,
-								Secret: &run.SecretVolumeSource{
+								Secret: &runv1.SecretVolumeSource{
 									SecretName: secretName,
-									Items: []*run.KeyToPath{{
+									Items: []*runv1.KeyToPath{{
 										Key:  version,
 										Path: filepath.Base(mountPath),
 									}},
@@ -432,11 +433,11 @@ func updateWithOptions(service *run.Service, opts config.DeployOptions) {
 								if env.Name == k {
 									if env.ValueFrom == nil {
 										env.Value = ""
-										env.ValueFrom = &run.EnvVarSource{
-											SecretKeyRef: &run.SecretKeySelector{
+										env.ValueFrom = &runv1.EnvVarSource{
+											SecretKeyRef: &runv1.SecretKeySelector{
 												Key:  version,
 												Name: secretName,
-												LocalObjectReference: &run.LocalObjectReference{
+												LocalObjectReference: &runv1.LocalObjectReference{
 													Name: secretName,
 												},
 											},
@@ -454,15 +455,15 @@ func updateWithOptions(service *run.Service, opts config.DeployOptions) {
 
 						if !found {
 							if container.Env == nil {
-								container.Env = make([]*run.EnvVar, 0)
+								container.Env = make([]*runv1.EnvVar, 0)
 							}
-							container.Env = append(container.Env, &run.EnvVar{
+							container.Env = append(container.Env, &runv1.EnvVar{
 								Name: k,
-								ValueFrom: &run.EnvVarSource{
-									SecretKeyRef: &run.SecretKeySelector{
+								ValueFrom: &runv1.EnvVarSource{
+									SecretKeyRef: &runv1.SecretKeySelector{
 										Key:  version,
 										Name: secretName,
-										LocalObjectReference: &run.LocalObjectReference{
+										LocalObjectReference: &runv1.LocalObjectReference{
 											Name: secretName,
 										},
 									},
@@ -525,32 +526,32 @@ func updateWithOptions(service *run.Service, opts config.DeployOptions) {
 
 // buildServiceDefinition creates a new Cloud Run Service object based on the
 // provided projectID and DeployOptions.
-func buildServiceDefinition(projectID string, opts config.DeployOptions) run.Service {
-	container := &run.Container{Image: opts.Image}
+func buildServiceDefinition(projectID string, opts config.DeployOptions) runv1.Service {
+	container := &runv1.Container{Image: opts.Image}
 
 	// Set environment variables if provided and not empty
 	if opts.EnvVars != nil && len(opts.EnvVars) > 0 {
-		container.Env = make([]*run.EnvVar, 0, len(opts.EnvVars))
+		container.Env = make([]*runv1.EnvVar, 0, len(opts.EnvVars))
 		for k, v := range opts.EnvVars {
-			container.Env = append(container.Env, &run.EnvVar{
+			container.Env = append(container.Env, &runv1.EnvVar{
 				Name:  k,
 				Value: v,
 			})
 		}
 	} else {
 		// Initialize an empty env array to avoid null in JSON
-		container.Env = make([]*run.EnvVar, 0)
+		container.Env = make([]*runv1.EnvVar, 0)
 	}
 
 	// Set secrets if provided and not empty
-	var volumes []*run.Volume
+	var volumes []*runv1.Volume
 	if opts.Secrets != nil && len(opts.Secrets) > 0 {
 		// Make sure Env is initialized
 		if container.Env == nil {
-			container.Env = make([]*run.EnvVar, 0)
+			container.Env = make([]*runv1.EnvVar, 0)
 		}
-		container.VolumeMounts = make([]*run.VolumeMount, 0)
-		volumes = make([]*run.Volume, 0)
+		container.VolumeMounts = make([]*runv1.VolumeMount, 0)
+		volumes = make([]*runv1.Volume, 0)
 
 		for k, v := range opts.Secrets {
 			if k[0] == '/' {
@@ -560,16 +561,16 @@ func buildServiceDefinition(projectID string, opts config.DeployOptions) run.Ser
 
 				// Only proceed if we have a valid secretName
 				if secretName != "" {
-					container.VolumeMounts = append(container.VolumeMounts, &run.VolumeMount{
+					container.VolumeMounts = append(container.VolumeMounts, &runv1.VolumeMount{
 						Name:      secretName,
 						MountPath: mountPath,
 					})
 
-					volumes = append(volumes, &run.Volume{
+					volumes = append(volumes, &runv1.Volume{
 						Name: secretName,
-						Secret: &run.SecretVolumeSource{
+						Secret: &runv1.SecretVolumeSource{
 							SecretName: secretName,
-							Items: []*run.KeyToPath{{
+							Items: []*runv1.KeyToPath{{
 								Key:  version,
 								Path: filepath.Base(mountPath),
 							}},
@@ -585,19 +586,19 @@ func buildServiceDefinition(projectID string, opts config.DeployOptions) run.Ser
 					log.Printf("Building service: Adding secret env var %s with secret %s and version %s", k, secretName, version)
 
 					// Create a properly initialized SecretKeySelector with all required fields
-					secretKeyRef := &run.SecretKeySelector{
+					secretKeyRef := &runv1.SecretKeySelector{
 						Key:  version,
 						Name: secretName,
-						LocalObjectReference: &run.LocalObjectReference{
+						LocalObjectReference: &runv1.LocalObjectReference{
 							Name: secretName,
 						},
 					}
 
 					// Use explicit field initialization to avoid null values in JSON
-					container.Env = append(container.Env, &run.EnvVar{
+					container.Env = append(container.Env, &runv1.EnvVar{
 						Name:  k,
 						Value: "", // Ensure value is empty string, not null
-						ValueFrom: &run.EnvVarSource{
+						ValueFrom: &runv1.EnvVarSource{
 							SecretKeyRef: secretKeyRef,
 						},
 					})
@@ -611,18 +612,18 @@ func buildServiceDefinition(projectID string, opts config.DeployOptions) run.Ser
 	}
 
 	// Create the service
-	rService := run.Service{
+	rService := runv1.Service{
 		ApiVersion: "serving.knative.dev/v1",
 		Kind:       "Service",
-		Metadata: &run.ObjectMeta{
+		Metadata: &runv1.ObjectMeta{
 			Namespace:   projectID,
 			Name:        opts.Service,
 			Annotations: make(map[string]string),
 		},
-		Spec: &run.ServiceSpec{
-			Template: &run.RevisionTemplate{
-				Spec: &run.RevisionSpec{
-					Containers: []*run.Container{container},
+		Spec: &runv1.ServiceSpec{
+			Template: &runv1.RevisionTemplate{
+				Spec: &runv1.RevisionSpec{
+					Containers: []*runv1.Container{container},
 					// Only set volumes if we have any
 					Volumes: volumes,
 				},
@@ -662,4 +663,413 @@ func buildServiceDefinition(projectID string, opts config.DeployOptions) run.Ser
 	}
 
 	return rService
+}
+
+// CreateOrUpdateServiceV2 deploys a service to Cloud run using the v2 API.
+// If the service doesn't exist, it creates a new one. If the service exists,
+// it updates the existing service with the config.DeployOptions.
+func CreateOrUpdateServiceV2(servicesClient *run.ProjectsLocationsServicesService, projectID, region string, opts config.DeployOptions) error {
+	parent := fmt.Sprintf("projects/%s/locations/%s", projectID, region)
+	name := fmt.Sprintf("%s/services/%s", parent, opts.Service)
+	log.Printf("Deploying container to Cloud Run service [%s] in project [%s] region [%s]\n", opts.Service, projectID, region)
+
+	var existingService *run.GoogleCloudRunV2Service
+	var err error
+
+	// Check if service exists
+	getCall := servicesClient.Get(name)
+	existingService, err = getCall.Do()
+
+	if err != nil {
+		// If the service doesn't exist, create a new one
+		gErr, ok := err.(*googleapi.Error)
+		if !ok || gErr.Code != http.StatusNotFound {
+			return err
+		}
+
+		// Create new service
+		log.Printf("Creating a new service %s\n", opts.Service)
+		service := buildServiceDefinitionV2(projectID, opts)
+
+		createCall := servicesClient.Create(parent, service)
+		_, err = createCall.Do()
+
+		if err != nil {
+			return err
+		}
+	} else {
+		// Update existing service
+		log.Printf("Updating the existing service %s\n", opts.Service)
+		updateServiceWithOptionsV2(existingService, opts)
+
+		patchCall := servicesClient.Patch(name, existingService)
+		_, err = patchCall.Do()
+
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// WaitForServiceReadyV2 waits for a Cloud Run service to reach a ready state
+// by polling its status using the v2 API.
+func WaitForServiceReadyV2(ctx context.Context, servicesClient *run.ProjectsLocationsServicesService, projectID, region, service string) error {
+	name := fmt.Sprintf("projects/%s/locations/%s/services/%s", projectID, region, service)
+
+	if err := utils.PollWithInterval(ctx, time.Minute*2, time.Second, func() (bool, error) {
+		getCall := servicesClient.Get(name)
+		runService, err := getCall.Do()
+
+		if err != nil {
+			return false, err
+		}
+
+		for _, cond := range runService.Conditions {
+			if cond.Type == "Ready" {
+				log.Println(cond.Message)
+				if cond.State == "CONDITION_SUCCEEDED" {
+					return true, nil
+				}
+				if cond.State == "CONDITION_FAILED" {
+					return false, fmt.Errorf("failed to deploy the latest revision of the service %s: %s", service, cond.Message)
+				}
+			}
+		}
+
+		return false, nil
+	}); err != nil {
+		return err
+	}
+
+	getCall := servicesClient.Get(name)
+	runService, err := getCall.Do()
+
+	if err != nil {
+		return err
+	}
+
+	// Get traffic percentage
+	var trafficPercent int64
+
+	if len(runService.Traffic) > 0 {
+		trafficPercent = runService.Traffic[0].Percent
+	}
+
+	log.Printf("Service [%s] is deployed successfully, serving %d percent of traffic.\n",
+		service, trafficPercent)
+
+	if runService.Uri != "" {
+		log.Printf("Service URL: %s \n", runService.Uri)
+	} else {
+		log.Println("Service has no URL (default URL is disabled)")
+	}
+
+	return nil
+}
+
+// updateServiceWithOptionsV2 updates a Cloud Run Service v2 with the specified options
+func updateServiceWithOptionsV2(service *run.GoogleCloudRunV2Service, opts config.DeployOptions) {
+	// Update the container image
+	if opts.Image != "" && len(service.Template.Containers) > 0 {
+		service.Template.Containers[0].Image = opts.Image
+	}
+
+	// Handle environment variables
+	if opts.ClearEnvVars {
+		if len(service.Template.Containers) > 0 {
+			service.Template.Containers[0].Env = []*run.GoogleCloudRunV2EnvVar{}
+		}
+	} else if opts.EnvVars != nil && len(opts.EnvVars) > 0 {
+		// Replace all environment variables
+		envVars := make([]*run.GoogleCloudRunV2EnvVar, 0, len(opts.EnvVars))
+		for k, v := range opts.EnvVars {
+			envVars = append(envVars, &run.GoogleCloudRunV2EnvVar{
+				Name:  k,
+				Value: v,
+			})
+		}
+		if len(service.Template.Containers) > 0 {
+			service.Template.Containers[0].Env = envVars
+		}
+	} else if opts.UpdateEnvVars != nil && len(opts.UpdateEnvVars) > 0 {
+		// Update specific environment variables
+		if len(service.Template.Containers) > 0 {
+			container := service.Template.Containers[0]
+			// Create a map for easier lookup
+			envMap := make(map[string]*run.GoogleCloudRunV2EnvVar)
+			for _, env := range container.Env {
+				envMap[env.Name] = env
+			}
+
+			// Update or add new variables
+			for k, v := range opts.UpdateEnvVars {
+				if existing, ok := envMap[k]; ok {
+					existing.Value = v
+				} else {
+					container.Env = append(container.Env, &run.GoogleCloudRunV2EnvVar{
+						Name:  k,
+						Value: v,
+					})
+				}
+			}
+		}
+	}
+
+	// Remove specific environment variables if requested
+	if len(opts.RemoveEnvVars) > 0 && len(service.Template.Containers) > 0 {
+		container := service.Template.Containers[0]
+		toRemove := make(map[string]bool)
+		for _, envVar := range opts.RemoveEnvVars {
+			toRemove[envVar] = true
+		}
+
+		newEnvs := make([]*run.GoogleCloudRunV2EnvVar, 0)
+		for _, env := range container.Env {
+			if !toRemove[env.Name] {
+				newEnvs = append(newEnvs, env)
+			}
+		}
+		container.Env = newEnvs
+	}
+
+	// Handle secrets
+	if opts.ClearSecrets {
+		// Remove all volume mounts and secret environment variables
+		if len(service.Template.Containers) > 0 {
+			container := service.Template.Containers[0]
+			newEnvs := make([]*run.GoogleCloudRunV2EnvVar, 0)
+			for _, env := range container.Env {
+				// Keep non-secret environment variables
+				if env.ValueSource == nil || env.ValueSource.SecretKeyRef == nil {
+					newEnvs = append(newEnvs, env)
+				}
+			}
+			container.Env = newEnvs
+
+			// Clear volume mounts related to secrets
+			newVolumeMounts := make([]*run.GoogleCloudRunV2VolumeMount, 0)
+			for _, vm := range container.VolumeMounts {
+				// Check if this mount is for a secret volume
+				isSecretMount := false
+				for _, vol := range service.Template.Volumes {
+					if vol.Name == vm.Name && vol.Secret != nil {
+						isSecretMount = true
+						break
+					}
+				}
+
+				if !isSecretMount {
+					newVolumeMounts = append(newVolumeMounts, vm)
+				}
+			}
+			container.VolumeMounts = newVolumeMounts
+		}
+
+		// Remove secret volumes
+		newVolumes := make([]*run.GoogleCloudRunV2Volume, 0)
+		for _, vol := range service.Template.Volumes {
+			if vol.Secret == nil {
+				newVolumes = append(newVolumes, vol)
+			}
+		}
+		service.Template.Volumes = newVolumes
+	}
+
+	// Handle secrets (both environment variables and volumes)
+	if opts.Secrets != nil && len(opts.Secrets) > 0 {
+		processSecretsV2(service, opts.Secrets)
+	}
+
+	// Set ingress settings
+	if service.Annotations == nil {
+		service.Annotations = make(map[string]string)
+	}
+
+	// Set ingress based on option
+	switch opts.Ingress {
+	case "internal":
+		service.Annotations["run.googleapis.com/ingress"] = "internal"
+		log.Println("Setting ingress to internal")
+	case "internal-and-cloud-load-balancing":
+		service.Annotations["run.googleapis.com/ingress"] = "internal-and-cloud-load-balancing"
+		log.Println("Setting ingress to internal-and-cloud-load-balancing")
+	default: // "all"
+		service.Annotations["run.googleapis.com/ingress"] = "all"
+		log.Println("Setting ingress to all")
+	}
+
+	// Set authentication
+	if opts.AllowUnauthenticated {
+		service.Annotations["run.googleapis.com/ingress-status"] = "all"
+		log.Println("Allowing unauthenticated access")
+	} else {
+		service.Annotations["run.googleapis.com/ingress-status"] = "internal-and-cloud-load-balancing"
+		log.Println("Requiring authentication for access")
+	}
+
+	// Set the default URL setting
+	if !opts.DefaultURL {
+		service.Annotations["run.googleapis.com/launch-stage"] = "BETA"
+		service.Annotations["run.googleapis.com/default-url"] = "disabled"
+		log.Println("Disabling the default URL")
+	} else {
+		// Remove the annotation if it exists to enable default URL (which is the default behavior)
+		delete(service.Annotations, "run.googleapis.com/default-url")
+	}
+}
+
+// processSecretsV2 processes secrets for environment variables and mounted volumes using the v2 API
+func processSecretsV2(service *run.GoogleCloudRunV2Service, secrets map[string]string) {
+	if len(service.Template.Containers) == 0 {
+		// No containers to add secrets to
+		return
+	}
+
+	container := service.Template.Containers[0]
+
+	// Process each secret
+	for key, secretRef := range secrets {
+		secretName, version := parseSecretReference(secretRef)
+
+		// Check if it's a volume mount (path starts with /)
+		if strings.HasPrefix(key, "/") {
+			// Create volume if it doesn't exist
+			volumeName := fmt.Sprintf("secret-volume-%s", secretName)
+
+			// Find or create the volume
+			var volume *run.GoogleCloudRunV2Volume
+			for _, v := range service.Template.Volumes {
+				if v.Name == volumeName {
+					volume = v
+					break
+				}
+			}
+
+			if volume == nil {
+				volume = &run.GoogleCloudRunV2Volume{
+					Name: volumeName,
+					Secret: &run.GoogleCloudRunV2SecretVolumeSource{
+						Secret: secretName,
+						Items: []*run.GoogleCloudRunV2VersionToPath{
+							{
+								Version: version,
+								Path:    filepath.Base(key),
+							},
+						},
+					},
+				}
+				service.Template.Volumes = append(service.Template.Volumes, volume)
+			}
+
+			// Create volume mount
+			mount := &run.GoogleCloudRunV2VolumeMount{
+				Name:      volumeName,
+				MountPath: filepath.Dir(key),
+			}
+
+			// Add mount if it doesn't exist
+			mountExists := false
+			for _, m := range container.VolumeMounts {
+				if m.Name == volumeName && m.MountPath == filepath.Dir(key) {
+					mountExists = true
+					break
+				}
+			}
+
+			if !mountExists {
+				container.VolumeMounts = append(container.VolumeMounts, mount)
+			}
+		} else {
+			// It's an environment variable
+			// Find if the environment variable already exists
+			var envVar *run.GoogleCloudRunV2EnvVar
+			for _, env := range container.Env {
+				if env.Name == key {
+					envVar = env
+					break
+				}
+			}
+
+			if envVar == nil {
+				envVar = &run.GoogleCloudRunV2EnvVar{
+					Name: key,
+				}
+				container.Env = append(container.Env, envVar)
+			}
+
+			// Set the secret reference
+			envVar.Value = ""
+			envVar.ValueSource = &run.GoogleCloudRunV2EnvVarSource{
+				SecretKeyRef: &run.GoogleCloudRunV2SecretKeySelector{
+					Secret:  secretName,
+					Version: version,
+				},
+			}
+		}
+	}
+}
+
+// buildServiceDefinitionV2 creates a new Cloud Run service definition using the v2 API
+func buildServiceDefinitionV2(projectID string, opts config.DeployOptions) *run.GoogleCloudRunV2Service {
+	service := &run.GoogleCloudRunV2Service{
+		Template: &run.GoogleCloudRunV2RevisionTemplate{
+			Containers: []*run.GoogleCloudRunV2Container{
+				{
+					Image: opts.Image,
+				},
+			},
+		},
+		Annotations: make(map[string]string),
+	}
+
+	// Add environment variables if specified
+	if opts.EnvVars != nil && len(opts.EnvVars) > 0 {
+		container := service.Template.Containers[0]
+		container.Env = make([]*run.GoogleCloudRunV2EnvVar, 0, len(opts.EnvVars))
+
+		for k, v := range opts.EnvVars {
+			container.Env = append(container.Env, &run.GoogleCloudRunV2EnvVar{
+				Name:  k,
+				Value: v,
+			})
+		}
+	}
+
+	// Set ingress based on option
+	switch opts.Ingress {
+	case "internal":
+		service.Annotations["run.googleapis.com/ingress"] = "internal"
+		log.Println("Setting ingress to internal")
+	case "internal-and-cloud-load-balancing":
+		service.Annotations["run.googleapis.com/ingress"] = "internal-and-cloud-load-balancing"
+		log.Println("Setting ingress to internal-and-cloud-load-balancing")
+	default: // "all"
+		service.Annotations["run.googleapis.com/ingress"] = "all"
+		log.Println("Setting ingress to all")
+	}
+
+	// Set authentication
+	if opts.AllowUnauthenticated {
+		service.Annotations["run.googleapis.com/ingress-status"] = "all"
+		log.Println("Allowing unauthenticated access")
+	} else {
+		service.Annotations["run.googleapis.com/ingress-status"] = "internal-and-cloud-load-balancing"
+		log.Println("Requiring authentication for access")
+	}
+
+	// Set the default URL setting
+	if !opts.DefaultURL {
+		service.Annotations["run.googleapis.com/launch-stage"] = "BETA"
+		service.Annotations["run.googleapis.com/default-url"] = "disabled"
+		log.Println("Disabling the default URL")
+	}
+
+	// Process secrets if specified
+	if opts.Secrets != nil && len(opts.Secrets) > 0 {
+		processSecretsV2(service, opts.Secrets)
+	}
+
+	return service
 }
