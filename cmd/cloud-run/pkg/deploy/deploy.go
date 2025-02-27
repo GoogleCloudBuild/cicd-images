@@ -996,16 +996,30 @@ func updateServiceWithOptionsV2(service *run.GoogleCloudRunV2Service, opts confi
 	}
 
 	// Configure VPC connectivity if specified
-	if opts.VpcNetwork != "" && opts.VpcSubnetwork != "" || opts.VpcConnector != "" || opts.VpcEgress != "" {
+	if opts.VpcConnector != "" || opts.VpcEgress != "" || (opts.VpcNetwork != "" && opts.VpcSubnetwork != "") {
 		// Initialize VPC access if not already set
 		if service.Template.VpcAccess == nil {
 			service.Template.VpcAccess = &run.GoogleCloudRunV2VpcAccess{}
 		}
 
-		// Set VPC connector if specified
+		// According to the API requirements, we can set either connector OR network_interfaces, but not both
 		if opts.VpcConnector != "" {
+			// If connector is specified, use the connector approach
 			log.Printf("Setting VPC connector to %s\n", opts.VpcConnector)
 			service.Template.VpcAccess.Connector = opts.VpcConnector
+
+			// Add a note that network/subnetwork settings are ignored when connector is specified
+			if opts.VpcNetwork != "" && opts.VpcSubnetwork != "" {
+				log.Printf("Note: VPC network/subnetwork settings are ignored when a connector is specified\n")
+			}
+		} else if opts.VpcNetwork != "" && opts.VpcSubnetwork != "" {
+			// If no connector but network/subnetwork are specified, set up network interfaces
+			log.Printf("Setting VPC network interfaces for network: %s, subnetwork: %s\n", opts.VpcNetwork, opts.VpcSubnetwork)
+			networkInterface := &run.GoogleCloudRunV2NetworkInterface{
+				Network:    opts.VpcNetwork,
+				Subnetwork: opts.VpcSubnetwork,
+			}
+			service.Template.VpcAccess.NetworkInterfaces = []*run.GoogleCloudRunV2NetworkInterface{networkInterface}
 		}
 
 		// Set VPC egress setting if specified
@@ -1016,13 +1030,6 @@ func updateServiceWithOptionsV2(service *run.GoogleCloudRunV2Service, opts confi
 			} else {
 				service.Template.VpcAccess.Egress = "PRIVATE_RANGES_ONLY"
 			}
-		}
-
-		// Log network and subnetwork settings
-		if opts.VpcNetwork != "" && opts.VpcSubnetwork != "" {
-			log.Printf("Setting VPC network: %s, subnetwork: %s\n", opts.VpcNetwork, opts.VpcSubnetwork)
-			// Note: In V2 API, network and subnetwork settings are applied through the VPC connector
-			// The connector must be properly configured in the GCP console to use the specified network/subnetwork
 		}
 	}
 }
@@ -1207,13 +1214,27 @@ func buildServiceDefinitionV2(projectID string, opts config.DeployOptions) *run.
 	}
 
 	// Configure VPC connectivity if specified
-	if opts.VpcNetwork != "" && opts.VpcSubnetwork != "" || opts.VpcConnector != "" || opts.VpcEgress != "" {
+	if opts.VpcConnector != "" || opts.VpcEgress != "" || (opts.VpcNetwork != "" && opts.VpcSubnetwork != "") {
 		service.Template.VpcAccess = &run.GoogleCloudRunV2VpcAccess{}
 
-		// Set VPC connector if specified
+		// According to the API requirements, we can set either connector OR network_interfaces, but not both
 		if opts.VpcConnector != "" {
+			// If connector is specified, use the connector approach
 			log.Printf("Setting VPC connector to %s\n", opts.VpcConnector)
 			service.Template.VpcAccess.Connector = opts.VpcConnector
+
+			// Add a note that network/subnetwork settings are ignored when connector is specified
+			if opts.VpcNetwork != "" && opts.VpcSubnetwork != "" {
+				log.Printf("Note: VPC network/subnetwork settings are ignored when a connector is specified\n")
+			}
+		} else if opts.VpcNetwork != "" && opts.VpcSubnetwork != "" {
+			// If no connector but network/subnetwork are specified, set up network interfaces
+			log.Printf("Setting VPC network interfaces for network: %s, subnetwork: %s\n", opts.VpcNetwork, opts.VpcSubnetwork)
+			networkInterface := &run.GoogleCloudRunV2NetworkInterface{
+				Network:    opts.VpcNetwork,
+				Subnetwork: opts.VpcSubnetwork,
+			}
+			service.Template.VpcAccess.NetworkInterfaces = []*run.GoogleCloudRunV2NetworkInterface{networkInterface}
 		}
 
 		// Set VPC egress setting if specified
@@ -1224,13 +1245,6 @@ func buildServiceDefinitionV2(projectID string, opts config.DeployOptions) *run.
 			} else {
 				service.Template.VpcAccess.Egress = "PRIVATE_RANGES_ONLY"
 			}
-		}
-
-		// Log network and subnetwork settings
-		if opts.VpcNetwork != "" && opts.VpcSubnetwork != "" {
-			log.Printf("Setting VPC network: %s, subnetwork: %s\n", opts.VpcNetwork, opts.VpcSubnetwork)
-			// Note: In V2 API, network and subnetwork settings are applied through the VPC connector
-			// The connector must be properly configured in the GCP console to use the specified network/subnetwork
 		}
 	}
 
