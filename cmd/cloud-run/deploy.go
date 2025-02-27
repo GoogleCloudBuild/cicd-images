@@ -63,6 +63,12 @@ Access and Traffic Configuration:
 - --default-url                Use the default URL for the service (default)
 - --no-default-url             Disable the default URL for the service
 
+VPC Connectivity:
+- --vpc-connector              The VPC connector to use for this service
+- --vpc-network                The VPC network to connect to
+- --vpc-subnetwork             The VPC subnetwork to connect to
+- --vpc-egress                 VPC egress setting (private-ranges-only or all-traffic)
+
 Examples:
   # Deploy from container image
   cloud-run deploy --project-id=my-project --region=us-central1 --service=myapp --image=gcr.io/myproject/myapp:v1
@@ -108,6 +114,12 @@ Examples:
 	// Add both --default-url and --no-default-url flags as mutually exclusive
 	deployCmd.Flags().BoolVar(&opts.DefaultURL, "default-url", true, "Use the default URL for the service")
 	deployCmd.Flags().Bool("no-default-url", false, "Disable the default URL for the service")
+
+	// Add VPC connectivity flags
+	deployCmd.Flags().StringVar(&opts.VpcConnector, "vpc-connector", "", "The VPC connector to use for this service")
+	deployCmd.Flags().StringVar(&opts.VpcNetwork, "vpc-network", "default", "The VPC network to connect to")
+	deployCmd.Flags().StringVar(&opts.VpcSubnetwork, "vpc-subnetwork", "default", "The VPC subnetwork to connect to")
+	deployCmd.Flags().StringVar(&opts.VpcEgress, "vpc-egress", "private-ranges-only", "VPC egress setting (private-ranges-only or all-traffic)")
 
 	// Link the no-default-url flag to DefaultURL
 	deployCmd.PreRunE = func(cmd *cobra.Command, args []string) error {

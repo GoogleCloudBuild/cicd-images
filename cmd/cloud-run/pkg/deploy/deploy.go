@@ -31,6 +31,14 @@ import (
 	"google.golang.org/api/run/v2"
 )
 
+// VpcConfig represents the VPC connectivity configuration
+type VpcConfig struct {
+	Network    string `json:"network"`
+	Subnetwork string `json:"subnetwork"`
+	// Egress can be "all-traffic" or "private-ranges-only"
+	Egress string `json:"egress"`
+}
+
 // CreateOrUpdateService deploys a service to Cloud run. If the service
 // doesn't exist, it creates a new one. If the service exists, it updates the
 // existing service with the config.DeployOptions.
@@ -986,6 +994,23 @@ func updateServiceWithOptionsV2(service *run.GoogleCloudRunV2Service, opts confi
 		service.DefaultUriDisabled = false
 		log.Println("Enabling the default URL")
 	}
+
+	// Configure VPC connectivity if specified
+	if opts.VpcNetwork != "" && opts.VpcSubnetwork != "" {
+		log.Printf("Setting VPC network interfaces to network: %s, subnetwork: %s\n", opts.VpcNetwork, opts.VpcSubnetwork)
+		networkInterfaceJSON := fmt.Sprintf(`[{"network":"%s","subnetwork":"%s"}]`, opts.VpcNetwork, opts.VpcSubnetwork)
+		setAnnotation(service, "run.googleapis.com/network-interfaces", networkInterfaceJSON)
+	}
+
+	if opts.VpcEgress != "" {
+		log.Printf("Setting VPC egress to %s\n", opts.VpcEgress)
+		setAnnotation(service, "run.googleapis.com/vpc-access-egress", opts.VpcEgress)
+	}
+
+	if opts.VpcConnector != "" {
+		log.Printf("Setting VPC connector to %s\n", opts.VpcConnector)
+		setAnnotation(service, "run.googleapis.com/vpc-access-connector", opts.VpcConnector)
+	}
 }
 
 // processSecretsV2 processes secrets for environment variables and mounted volumes using the v2 API
@@ -1167,10 +1192,35 @@ func buildServiceDefinitionV2(projectID string, opts config.DeployOptions) *run.
 		log.Println("Enabling the default URL")
 	}
 
+	// Configure VPC connectivity if specified
+	if opts.VpcNetwork != "" && opts.VpcSubnetwork != "" {
+		log.Printf("Setting VPC network interfaces to network: %s, subnetwork: %s\n", opts.VpcNetwork, opts.VpcSubnetwork)
+		networkInterfaceJSON := fmt.Sprintf(`[{"network":"%s","subnetwork":"%s"}]`, opts.VpcNetwork, opts.VpcSubnetwork)
+		setAnnotation(service, "run.googleapis.com/network-interfaces", networkInterfaceJSON)
+	}
+
+	if opts.VpcEgress != "" {
+		log.Printf("Setting VPC egress to %s\n", opts.VpcEgress)
+		setAnnotation(service, "run.googleapis.com/vpc-access-egress", opts.VpcEgress)
+	}
+
+	if opts.VpcConnector != "" {
+		log.Printf("Setting VPC connector to %s\n", opts.VpcConnector)
+		setAnnotation(service, "run.googleapis.com/vpc-access-connector", opts.VpcConnector)
+	}
+
 	// Process secrets if specified
 	if opts.Secrets != nil && len(opts.Secrets) > 0 {
 		processSecretsV2(service, opts.Secrets)
 	}
 
 	return service
+}
+
+// Helper function to set annotations on a service
+func setAnnotation(service *run.GoogleCloudRunV2Service, key, value string) {
+	if service.Annotations == nil {
+		service.Annotations = make(map[string]string)
+	}
+	service.Annotations[key] = value
 }

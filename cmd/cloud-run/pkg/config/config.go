@@ -36,4 +36,10 @@ type DeployOptions struct {
 	AllowUnauthenticated bool   // Whether to allow unauthenticated access (if false, --no-allow-unauthenticated)
 	Ingress              string // Ingress setting: all, internal, or internal-and-cloud-load-balancing
 	DefaultURL           bool   // Whether to use the default URL (if false, --no-default-url)
+
+	// VPC connectivity configuration
+	VpcConnector  string // VPC connector to use, empty means no VPC connector
+	VpcNetwork    string // VPC network name, typically "default"
+	VpcSubnetwork string // VPC subnetwork name, typically "default"
+	VpcEgress     string // VPC egress setting: "private-ranges-only" or "all-traffic"
 }
