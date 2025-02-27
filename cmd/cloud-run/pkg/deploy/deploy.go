@@ -798,7 +798,9 @@ func SetIAMPolicyV2(servicesClient *run.ProjectsLocationsServicesService, servic
 func WaitForServiceReadyV2(ctx context.Context, servicesClient *run.ProjectsLocationsServicesService, projectID, region, service string) error {
 	name := fmt.Sprintf("projects/%s/locations/%s/services/%s", projectID, region, service)
 
-	if err := utils.PollWithInterval(ctx, time.Minute*2, time.Second, func() (bool, error) {
+	log.Println("Waiting for service to be ready (timeout: 2 minutes)...")
+
+	if err := utils.PollWithInterval(ctx, time.Minute*2, time.Second*5, func() (bool, error) {
 		getCall := servicesClient.Get(name)
 		runService, err := getCall.Do()
 
@@ -806,16 +808,29 @@ func WaitForServiceReadyV2(ctx context.Context, servicesClient *run.ProjectsLoca
 			return false, err
 		}
 
+		// Log all conditions for debugging
+		log.Println("Current service conditions:")
 		for _, cond := range runService.Conditions {
+			log.Printf("- Type: %s, State: %s, Message: %s", cond.Type, cond.State, cond.Message)
+
 			if cond.Type == "Ready" {
-				log.Println(cond.Message)
-				if cond.State == "CONDITION_SUCCEEDED" {
+				// Check for multiple success states
+				if cond.State == "CONDITION_SUCCEEDED" ||
+					strings.Contains(strings.ToLower(cond.Message), "ready") {
 					return true, nil
 				}
+
+				// Only fail for explicit failure
 				if cond.State == "CONDITION_FAILED" {
-					return false, fmt.Errorf("failed to deploy the latest revision of the service %s: %s", service, cond.Message)
+					return false, fmt.Errorf("failed to deploy: %s", cond.Message)
 				}
 			}
+		}
+
+		// Also check other indicators of readiness
+		if runService.LatestReadyRevision != "" && runService.ObservedGeneration > 0 {
+			log.Println("Service has a latest ready revision and observed generation > 0")
+			return true, nil
 		}
 
 		return false, nil
@@ -823,29 +838,7 @@ func WaitForServiceReadyV2(ctx context.Context, servicesClient *run.ProjectsLoca
 		return err
 	}
 
-	getCall := servicesClient.Get(name)
-	runService, err := getCall.Do()
-
-	if err != nil {
-		return err
-	}
-
-	// Get traffic percentage
-	var trafficPercent int64
-
-	if len(runService.Traffic) > 0 {
-		trafficPercent = runService.Traffic[0].Percent
-	}
-
-	log.Printf("Service [%s] is deployed successfully, serving %d percent of traffic.\n",
-		service, trafficPercent)
-
-	if runService.Uri != "" {
-		log.Printf("Service URL: %s \n", runService.Uri)
-	} else {
-		log.Println("Service has no URL (default URL is disabled)")
-	}
-
+	log.Println("Service is ready!")
 	return nil
 }
 

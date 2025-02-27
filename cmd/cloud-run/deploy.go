@@ -150,6 +150,9 @@ Examples:
 		deployCmd.MarkFlagsMutuallyExclusive("set-secrets", "update-secrets", "clear-secrets")
 	}
 
+	// Add no-wait flag
+	deployCmd.Flags().Bool("no-wait", false, "Skip waiting for service to be ready")
+
 	_ = deployCmd.MarkFlagRequired("service")
 	deployCmd.MarkFlagsOneRequired(
 		"image",
@@ -204,7 +207,16 @@ func deployService(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	return deploy.WaitForServiceReadyV2(ctx, servicesClient, projectID, region, opts.Service)
+
+	// Check for no-wait flag
+	noWait, _ := cmd.Flags().GetBool("no-wait")
+	if !noWait {
+		// Wait for service to be ready
+		if err := deploy.WaitForServiceReadyV2(ctx, servicesClient, projectID, region, opts.Service); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // isValidServiceName validates that a service name meets Cloud Run requirements:
