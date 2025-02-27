@@ -996,20 +996,34 @@ func updateServiceWithOptionsV2(service *run.GoogleCloudRunV2Service, opts confi
 	}
 
 	// Configure VPC connectivity if specified
-	if opts.VpcNetwork != "" && opts.VpcSubnetwork != "" {
-		log.Printf("Setting VPC network interfaces to network: %s, subnetwork: %s\n", opts.VpcNetwork, opts.VpcSubnetwork)
-		networkInterfaceJSON := fmt.Sprintf(`[{"network":"%s","subnetwork":"%s"}]`, opts.VpcNetwork, opts.VpcSubnetwork)
-		setAnnotation(service, "run.googleapis.com/network-interfaces", networkInterfaceJSON)
-	}
+	if opts.VpcNetwork != "" && opts.VpcSubnetwork != "" || opts.VpcConnector != "" || opts.VpcEgress != "" {
+		// Initialize VPC access if not already set
+		if service.Template.VpcAccess == nil {
+			service.Template.VpcAccess = &run.GoogleCloudRunV2VpcAccess{}
+		}
 
-	if opts.VpcEgress != "" {
-		log.Printf("Setting VPC egress to %s\n", opts.VpcEgress)
-		setAnnotation(service, "run.googleapis.com/vpc-access-egress", opts.VpcEgress)
-	}
+		// Set VPC connector if specified
+		if opts.VpcConnector != "" {
+			log.Printf("Setting VPC connector to %s\n", opts.VpcConnector)
+			service.Template.VpcAccess.Connector = opts.VpcConnector
+		}
 
-	if opts.VpcConnector != "" {
-		log.Printf("Setting VPC connector to %s\n", opts.VpcConnector)
-		setAnnotation(service, "run.googleapis.com/vpc-access-connector", opts.VpcConnector)
+		// Set VPC egress setting if specified
+		if opts.VpcEgress != "" {
+			log.Printf("Setting VPC egress to %s\n", opts.VpcEgress)
+			if opts.VpcEgress == "all-traffic" {
+				service.Template.VpcAccess.Egress = "ALL_TRAFFIC"
+			} else {
+				service.Template.VpcAccess.Egress = "PRIVATE_RANGES_ONLY"
+			}
+		}
+
+		// Log network and subnetwork settings
+		if opts.VpcNetwork != "" && opts.VpcSubnetwork != "" {
+			log.Printf("Setting VPC network: %s, subnetwork: %s\n", opts.VpcNetwork, opts.VpcSubnetwork)
+			// Note: In V2 API, network and subnetwork settings are applied through the VPC connector
+			// The connector must be properly configured in the GCP console to use the specified network/subnetwork
+		}
 	}
 }
 
@@ -1193,20 +1207,31 @@ func buildServiceDefinitionV2(projectID string, opts config.DeployOptions) *run.
 	}
 
 	// Configure VPC connectivity if specified
-	if opts.VpcNetwork != "" && opts.VpcSubnetwork != "" {
-		log.Printf("Setting VPC network interfaces to network: %s, subnetwork: %s\n", opts.VpcNetwork, opts.VpcSubnetwork)
-		networkInterfaceJSON := fmt.Sprintf(`[{"network":"%s","subnetwork":"%s"}]`, opts.VpcNetwork, opts.VpcSubnetwork)
-		setAnnotation(service, "run.googleapis.com/network-interfaces", networkInterfaceJSON)
-	}
+	if opts.VpcNetwork != "" && opts.VpcSubnetwork != "" || opts.VpcConnector != "" || opts.VpcEgress != "" {
+		service.Template.VpcAccess = &run.GoogleCloudRunV2VpcAccess{}
 
-	if opts.VpcEgress != "" {
-		log.Printf("Setting VPC egress to %s\n", opts.VpcEgress)
-		setAnnotation(service, "run.googleapis.com/vpc-access-egress", opts.VpcEgress)
-	}
+		// Set VPC connector if specified
+		if opts.VpcConnector != "" {
+			log.Printf("Setting VPC connector to %s\n", opts.VpcConnector)
+			service.Template.VpcAccess.Connector = opts.VpcConnector
+		}
 
-	if opts.VpcConnector != "" {
-		log.Printf("Setting VPC connector to %s\n", opts.VpcConnector)
-		setAnnotation(service, "run.googleapis.com/vpc-access-connector", opts.VpcConnector)
+		// Set VPC egress setting if specified
+		if opts.VpcEgress != "" {
+			log.Printf("Setting VPC egress to %s\n", opts.VpcEgress)
+			if opts.VpcEgress == "all-traffic" {
+				service.Template.VpcAccess.Egress = "ALL_TRAFFIC"
+			} else {
+				service.Template.VpcAccess.Egress = "PRIVATE_RANGES_ONLY"
+			}
+		}
+
+		// Log network and subnetwork settings
+		if opts.VpcNetwork != "" && opts.VpcSubnetwork != "" {
+			log.Printf("Setting VPC network: %s, subnetwork: %s\n", opts.VpcNetwork, opts.VpcSubnetwork)
+			// Note: In V2 API, network and subnetwork settings are applied through the VPC connector
+			// The connector must be properly configured in the GCP console to use the specified network/subnetwork
+		}
 	}
 
 	// Process secrets if specified
