@@ -274,18 +274,21 @@ func updateWithOptions(service *run.Service, opts config.DeployOptions) {
 				if secretName != "" {
 					log.Printf("Adding secret env var %s with secret %s and version %s", k, secretName, version)
 
+					// Create a properly initialized SecretKeySelector with all required fields
+					secretKeyRef := &run.SecretKeySelector{
+						Key:  version,
+						Name: secretName,
+						LocalObjectReference: &run.LocalObjectReference{
+							Name: secretName,
+						},
+					}
+
 					// Use direct struct initialization to avoid null JSON fields
 					envVar := &run.EnvVar{
-						Name: k,
-						// Ensure Value is explicitly empty string, not null
+						Name:  k,
 						Value: "",
 						ValueFrom: &run.EnvVarSource{
-							SecretKeyRef: &run.SecretKeySelector{
-								Key: version,
-								LocalObjectReference: &run.LocalObjectReference{
-									Name: secretName,
-								},
-							},
+							SecretKeyRef: secretKeyRef,
 						},
 					}
 
@@ -431,7 +434,8 @@ func updateWithOptions(service *run.Service, opts config.DeployOptions) {
 										env.Value = ""
 										env.ValueFrom = &run.EnvVarSource{
 											SecretKeyRef: &run.SecretKeySelector{
-												Key: version,
+												Key:  version,
+												Name: secretName,
 												LocalObjectReference: &run.LocalObjectReference{
 													Name: secretName,
 												},
@@ -439,6 +443,7 @@ func updateWithOptions(service *run.Service, opts config.DeployOptions) {
 										}
 									} else if env.ValueFrom.SecretKeyRef != nil {
 										env.ValueFrom.SecretKeyRef.Key = version
+										env.ValueFrom.SecretKeyRef.Name = secretName
 										env.ValueFrom.SecretKeyRef.LocalObjectReference.Name = secretName
 									}
 									found = true
@@ -455,7 +460,8 @@ func updateWithOptions(service *run.Service, opts config.DeployOptions) {
 								Name: k,
 								ValueFrom: &run.EnvVarSource{
 									SecretKeyRef: &run.SecretKeySelector{
-										Key: version,
+										Key:  version,
+										Name: secretName,
 										LocalObjectReference: &run.LocalObjectReference{
 											Name: secretName,
 										},
@@ -467,6 +473,38 @@ func updateWithOptions(service *run.Service, opts config.DeployOptions) {
 				}
 			}
 		}
+	}
+
+	// Set ingress traffic policy if specified
+	if opts.Ingress != "" {
+		// Make sure metadata annotations exist
+		if service.Metadata.Annotations == nil {
+			service.Metadata.Annotations = make(map[string]string)
+		}
+
+		// Set the ingress value
+		switch opts.Ingress {
+		case "internal":
+			service.Metadata.Annotations["run.googleapis.com/ingress"] = "internal"
+		case "internal-and-cloud-load-balancing":
+			service.Metadata.Annotations["run.googleapis.com/ingress"] = "internal-and-cloud-load-balancing"
+		default: // "all" is the default
+			service.Metadata.Annotations["run.googleapis.com/ingress"] = "all"
+		}
+		log.Printf("Setting ingress to: %s", opts.Ingress)
+	}
+
+	// Set authentication policy
+	if service.Metadata.Annotations == nil {
+		service.Metadata.Annotations = make(map[string]string)
+	}
+
+	if opts.AllowUnauthenticated {
+		service.Metadata.Annotations["run.googleapis.com/ingress-status"] = "all"
+		log.Println("Allowing unauthenticated access")
+	} else {
+		service.Metadata.Annotations["run.googleapis.com/ingress-status"] = "internal-and-cloud-load-balancing"
+		log.Println("Requiring authentication for access")
 	}
 }
 
@@ -531,25 +569,27 @@ func buildServiceDefinition(projectID string, opts config.DeployOptions) run.Ser
 				if secretName != "" {
 					log.Printf("Building service: Adding secret env var %s with secret %s and version %s", k, secretName, version)
 
+					// Create a properly initialized SecretKeySelector with all required fields
+					secretKeyRef := &run.SecretKeySelector{
+						Key:  version,
+						Name: secretName,
+						LocalObjectReference: &run.LocalObjectReference{
+							Name: secretName,
+						},
+					}
+
 					// Use explicit field initialization to avoid null values in JSON
 					container.Env = append(container.Env, &run.EnvVar{
-						Name: k,
+						Name:  k,
+						Value: "", // Ensure value is empty string, not null
 						ValueFrom: &run.EnvVarSource{
-							SecretKeyRef: &run.SecretKeySelector{
-								Key: version,
-								LocalObjectReference: &run.LocalObjectReference{
-									Name: secretName,
-								},
-							},
+							SecretKeyRef: secretKeyRef,
 						},
 					})
 
 					// Log the resulting structure to verify it's set correctly
 					log.Printf("Secret reference set for new service: Name=%s, Key=%s",
 						secretName, version)
-
-					// Additional debug to see exactly what we're sending
-					container.Env[len(container.Env)-1].Value = "" // Ensure value is empty string, not null
 				}
 			}
 		}
@@ -559,7 +599,11 @@ func buildServiceDefinition(projectID string, opts config.DeployOptions) run.Ser
 	rService := run.Service{
 		ApiVersion: "serving.knative.dev/v1",
 		Kind:       "Service",
-		Metadata:   &run.ObjectMeta{Namespace: projectID, Name: opts.Service},
+		Metadata: &run.ObjectMeta{
+			Namespace:   projectID,
+			Name:        opts.Service,
+			Annotations: make(map[string]string),
+		},
 		Spec: &run.ServiceSpec{
 			Template: &run.RevisionTemplate{
 				Spec: &run.RevisionSpec{
@@ -569,6 +613,28 @@ func buildServiceDefinition(projectID string, opts config.DeployOptions) run.Ser
 				},
 			},
 		},
+	}
+
+	// Set ingress traffic policy
+	switch opts.Ingress {
+	case "internal":
+		rService.Metadata.Annotations["run.googleapis.com/ingress"] = "internal"
+		log.Printf("Setting ingress to: internal")
+	case "internal-and-cloud-load-balancing":
+		rService.Metadata.Annotations["run.googleapis.com/ingress"] = "internal-and-cloud-load-balancing"
+		log.Printf("Setting ingress to: internal-and-cloud-load-balancing")
+	default: // "all" is the default
+		rService.Metadata.Annotations["run.googleapis.com/ingress"] = "all"
+		log.Printf("Setting ingress to: all")
+	}
+
+	// Set authentication policy
+	if opts.AllowUnauthenticated {
+		rService.Metadata.Annotations["run.googleapis.com/ingress-status"] = "all"
+		log.Println("Allowing unauthenticated access")
+	} else {
+		rService.Metadata.Annotations["run.googleapis.com/ingress-status"] = "internal-and-cloud-load-balancing"
+		log.Println("Requiring authentication for access")
 	}
 
 	return rService

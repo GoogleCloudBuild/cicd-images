@@ -52,6 +52,11 @@ Secrets:
 - --update-secrets KEY=VALUE  Update or add new secrets
 - --clear-secrets            Remove all secrets
 
+Access and Traffic Configuration:
+- --allow-unauthenticated      Allow unauthenticated access to the service
+- --no-allow-unauthenticated   Require authentication for access to the service
+- --ingress TYPE               Set the ingress traffic settings (all, internal, internal-and-cloud-load-balancing)
+
 Examples:
   # Deploy from container image
   cloud-run deploy --project-id=my-project --region=us-central1 --service=myapp --image=gcr.io/myproject/myapp:v1
@@ -66,7 +71,10 @@ Examples:
   cloud-run deploy --service=myapp --set-secrets=/secrets/api/key=mysecret:latest
 
   # Set a secret as an environment variable
-  cloud-run deploy --service=myapp --set-secrets=API_KEY=mysecret:1`,
+  cloud-run deploy --service=myapp --set-secrets=API_KEY=mysecret:1
+
+  # Deploy internal service requiring authentication
+  cloud-run deploy --service=myapp --image=gcr.io/myproject/myapp:v1 --no-allow-unauthenticated --ingress internal`,
 		RunE: deployService,
 	}
 	deployCmd.Flags().StringVar(&opts.Image, "image", "", "The container image to deploy (e.g., gcr.io/project/image:tag)")
@@ -83,6 +91,10 @@ Examples:
 	deployCmd.Flags().StringSliceVar(&opts.RemoveSecrets, "remove-secrets", nil, "List of secrets to remove")
 	deployCmd.Flags().StringToStringVar(&opts.UpdateSecrets, "update-secrets", nil, "List of key-value pairs to update or add as secrets")
 	deployCmd.Flags().BoolVar(&opts.ClearSecrets, "clear-secrets", false, "Remove all secrets")
+
+	// Add access and traffic configuration flags
+	deployCmd.Flags().BoolVar(&opts.AllowUnauthenticated, "allow-unauthenticated", true, "Allow unauthenticated access to the service")
+	deployCmd.Flags().StringVar(&opts.Ingress, "ingress", "all", "Set the ingress traffic settings (all, internal, internal-and-cloud-load-balancing)")
 
 	// Flag validations
 	// Only one of these env var flags can be used at a time, but all are optional
