@@ -48,13 +48,12 @@ EOF
 FROM gcr.io/cloud-marketplace/google/debian12:latest
 WORKDIR /
 
-# Update path for gsutil command
-ENV PATH=$PATH:/root/.local/bin
+
 
 # Packages to be installed by pip
 COPY --from=builder /src/images/gcb-internal/requirements.txt .
 
-# hadolint ignore=DL3008, DL3013
+# hadolint ignore=DL3008, DL3013, DL4006
 RUN <<EOF
     apt-get update -y
     apt-get -y upgrade
@@ -63,18 +62,22 @@ RUN <<EOF
         xxd \
         nodejs npm \
         maven \
-        twine python3-pip pipx\
+        twine python3-pip pipx \
         git ca-certificates \
-        tar unzip
+        tar unzip \
+        curl gnupg
     pip install --break-system-packages --no-cache-dir --require-hashes -r requirements.txt
-    pipx install gsutil
+    echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" \
+        | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+    curl "https://packages.cloud.google.com/apt/doc/apt-key.gpg" \
+        | gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg
+    apt-get update -y
+    apt-get install -y --no-install-recommends google-cloud-cli
 EOF
 
 RUN rm requirements.txt
 
-# Create config file for gsutil to access credentials from metadata server
-RUN echo "[GoogleCompute]" >> /etc/boto.cfg && \
-    echo "service_account = default"  >> /etc/boto.cfg
+
 
 COPY --from=builder /src/go-steps /usr/local/bin/go-steps
 COPY --from=builder /src/gcs-fetcher /usr/local/bin/gcs-fetcher

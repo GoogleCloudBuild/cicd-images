@@ -70,14 +70,10 @@ commandTests:
     command: "which"
     args: ["gcs-fetcher"]
     expectedOutput: ["/usr/local/bin/gcs-fetcher"]
-  - name: "which gsutil"
+  - name: "which gcloud"
     command: "which"
-    args: ["gsutil"]
-    expectedOutput: ["/root/.local/bin/gsutil"]
-  - name: "boto config exists"
-    command: "ls"
-    args: ["/etc/boto.cfg"]
-    expectedOutput: ["/etc/boto.cfg"]
+    args: ["gcloud"]
+    expectedOutput: ["/usr/bin/gcloud"]
   - name: "which tar"
     command: "which"
     args: ["tar"]
